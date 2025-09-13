@@ -1,8 +1,26 @@
-node_modules
-dist
+# VCS
 .git
 .gitignore
-Dockerfile*
-docker-compose*.yml
-README.md
+
+# Node / Web
+node_modules
+dist
+build
+.cache
+.next
+out
+coverage
+*.log
+
+# Editors/OS
 .vscode
+.idea
+.DS_Store
+
+# Backends you don’t need in this image
+vendor
+storage
+public/storage
+tmp
+*.sqlite
+.env*
