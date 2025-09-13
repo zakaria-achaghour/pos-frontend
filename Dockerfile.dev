@@ -1,0 +1,19 @@
+# ---------- Dev image: Vite + hot reload ----------
+FROM node:20-alpine
+
+WORKDIR /app
+
+# install deps first for better caching
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
+RUN if [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm i; \
+    elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    else npm i; fi
+
+# copy source
+COPY . .
+
+EXPOSE 5173
+
+# By default, Vite binds to 0.0.0.0 for Docker
+CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]
