@@ -3,15 +3,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# install deps first for better caching
+# Install deps for caching. We don't copy source here; compose mounts it.
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
 RUN if [ -f package-lock.json ]; then npm ci; \
     elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm i; \
     elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
     else npm i; fi
 
-# copy source
-COPY . .
+# Improve file watching on Windows/WSL/VMs
+ENV CHOKIDAR_USEPOLLING=true
 
 EXPOSE 5173
 
