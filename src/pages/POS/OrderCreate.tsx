@@ -5,6 +5,21 @@ import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Button from '../../components/ui/button/Button';
 
+// Toast notification function
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium transition-all ${
+    type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    if (document.body.contains(toast)) {
+      document.body.removeChild(toast);
+    }
+  }, 3000);
+};
+
 // Mock data
 const mockCategories = [
   { id: 1, name: 'Appetizers' },
@@ -125,29 +140,44 @@ export default function OrderCreate() {
   };
 
   const handlePlaceOrder = async () => {
+    if (cart.length === 0) {
+      showToast('Please add items to the cart before placing order', 'error');
+      return;
+    }
+
     try {
       setSubmitting(true);
       
       // TODO: Replace with actual API calls
-      // const orderData = {
-      //   table_id: tableId,
-      //   waiter_id: user?.role === 'waiter' ? user.id : null,
-      //   items: cart.map(item => ({
-      //     menu_item_id: item.id,
-      //     quantity: item.quantity,
-      //     price: item.price
-      //   }))
-      // };
-      // const orderResponse = await api.post('/orders', orderData);
+      const orderData = {
+        table_id: tableId,
+        table_name: tableName,
+        waiter_id: user?.role === 'waiter' ? user.id : null,
+        waiter_name: user?.name,
+        items: cart.map(item => ({
+          menu_item_id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        total: getTotal(),
+        status: 'pending'
+      };
+      
+      console.log('Creating order:', orderData);
       
       // Simulate API calls
       setTimeout(() => {
-        const orderId = Math.floor(Math.random() * 1000);
+        const orderId = Math.floor(Math.random() * 1000) + 100;
+        
+        showToast(`Order #${orderId} created successfully! 🍽️`, 'success');
+        
         // For waiters, redirect back to tables after successful order
         if (user?.role === 'waiter') {
           navigate('/tables', { 
             state: { 
-              message: `Order created successfully for ${tableName}!` 
+              message: `Order #${orderId} created successfully for ${tableName}! 🎉`,
+              type: 'success'
             }
           });
         } else {
@@ -156,6 +186,7 @@ export default function OrderCreate() {
       }, 1000);
     } catch (error) {
       console.error('Error placing order:', error);
+      showToast('Failed to create order. Please try again.', 'error');
       setSubmitting(false);
     }
   };

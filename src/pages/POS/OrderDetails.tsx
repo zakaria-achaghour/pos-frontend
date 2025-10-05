@@ -1,20 +1,38 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Button from '../../components/ui/button/Button';
 import { getUser } from '../../app/auth';
 
-// Mock data
+// Toast notification function
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium transition-all ${
+    type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    if (document.body.contains(toast)) {
+      document.body.removeChild(toast);
+    }
+  }, 3000);
+};
+
+// Enhanced mock data with kitchen status
 const mockOrderDetails = {
   id: 1,
   table_name: 'Table 3',
+  table_id: 3,
   status: 'open',
   total: 245.50,
   created_at: '2024-10-04 14:30',
+  waiter_name: 'John Doe',
   items: [
-    { id: 1, name: 'Caesar Salad', quantity: 2, price: 85.00, line_total: 170.00 },
-    { id: 2, name: 'Orange Juice', quantity: 3, price: 25.00, line_total: 75.00 },
+    { id: 1, name: 'Caesar Salad', quantity: 2, price: 85.00, line_total: 170.00, kitchen_status: 'ready', special_notes: '' },
+    { id: 2, name: 'Orange Juice', quantity: 3, price: 25.00, line_total: 75.00, kitchen_status: 'served', special_notes: 'Extra ice' },
+    { id: 3, name: 'Grilled Chicken', quantity: 1, price: 150.00, line_total: 150.00, kitchen_status: 'preparing', special_notes: 'Well done' },
   ]
 };
 
@@ -24,23 +42,59 @@ interface OrderItem {
   quantity: number;
   price: number;
   line_total: number;
+  kitchen_status: 'pending' | 'preparing' | 'ready' | 'served';
+  special_notes?: string;
 }
 
 interface Order {
   id: number;
   table_name: string;
+  table_id: number;
   status: 'open' | 'paid';
   total: number;
   created_at: string;
+  waiter_name: string;
   items: OrderItem[];
 }
 
 export default function OrderDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
   const user = getUser();
+
+  // Get kitchen status styling
+  const getKitchenStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-gray-100 text-gray-800';
+      case 'preparing':
+        return 'bg-orange-100 text-orange-800';
+      case 'ready':
+        return 'bg-green-100 text-green-800';
+      case 'served':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getKitchenStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return '⏳';
+      case 'preparing':
+        return '👨‍🍳';
+      case 'ready':
+        return '✅';
+      case 'served':
+        return '🍽️';
+      default:
+        return '❓';
+    }
+  };
 
   useEffect(() => {
     fetchOrder();
@@ -172,41 +226,94 @@ export default function OrderDetails() {
           <div className="p-6">
             <div className="space-y-4">
               {order.items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-500">{item.price.toFixed(2)} MAD each</p>
-                  </div>
-                  <div className="text-center min-w-[60px]">
-                    <span className="text-gray-600">× {item.quantity}</span>
-                  </div>
-                  <div className="text-right min-w-[100px]">
-                    <span className="font-semibold">{item.line_total.toFixed(2)} MAD</span>
+                <div key={item.id} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-medium text-gray-900">{item.name}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getKitchenStatusColor(item.kitchen_status)}`}>
+                          {getKitchenStatusIcon(item.kitchen_status)} {item.kitchen_status.charAt(0).toUpperCase() + item.kitchen_status.slice(1)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">{item.price.toFixed(2)} MAD each</p>
+                      {item.special_notes && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          <span className="font-medium">Note:</span> {item.special_notes}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-center min-w-[80px]">
+                      <span className="text-gray-600 text-lg">× {item.quantity}</span>
+                    </div>
+                    <div className="text-right min-w-[120px]">
+                      <span className="font-semibold text-lg">{item.line_total.toFixed(2)} MAD</span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
             
-            <div className="border-t border-gray-200 pt-4 mt-4">
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total:</span>
-                <span>{order.total.toFixed(2)} MAD</span>
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-medium text-gray-600">Order Total:</span>
+                <span className="text-2xl font-bold text-green-600">{order.total.toFixed(2)} MAD</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Waiter Actions */}
+        {user?.role === 'waiter' && order.status === 'open' && (
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Waiter Actions</h3>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => navigate(`/orders/new?table=${order.table_id}&tableName=${encodeURIComponent(order.table_name)}`)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                ➕ Add More Items
+              </Button>
+              <Button
+                onClick={() => showToast('Kitchen notified about table status', 'info')}
+                variant="outline"
+              >
+                📞 Call Kitchen
+              </Button>
+              <Button
+                onClick={() => {
+                  showToast('Order ticket reprinted', 'success');
+                }}
+                variant="outline"
+              >
+                🖨️ Re-print Ticket
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         {canCloseOrder() && (
           <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-            <Button
-              onClick={handleCloseOrder}
-              disabled={closing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {closing ? 'Processing...' : 'Close & Cash Payment'}
-            </Button>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Actions</h3>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleCloseOrder}
+                disabled={closing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {closing ? 'Processing...' : '💵 Cash Payment'}
+              </Button>
+              <Button
+                onClick={() => {
+                  showToast('Card payment processed', 'success');
+                  handleCloseOrder();
+                }}
+                disabled={closing}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                💳 Card Payment
+              </Button>
+            </div>
           </div>
         )}
       </div>
