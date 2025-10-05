@@ -20,6 +20,12 @@ const navItems: NavItem[] = [
     allowedRoles: ['owner', 'manager']
   },
   {
+    icon: "💰",
+    name: "Cashier Dashboard",
+    path: "/cashier/dashboard",
+    allowedRoles: ['cashier']
+  },
+  {
     icon: "🍽️",
     name: "Tables",
     path: "/tables",
