@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       case 'manager':
         return '/dashboard';
       case 'cashier':
-        return '/orders';
+        return '/cashier/dashboard';
       case 'waiter':
         return '/tables';
       case 'kitchen':

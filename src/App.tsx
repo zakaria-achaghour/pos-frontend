@@ -22,6 +22,8 @@ import DailySummary from "./pages/POS/DailySummary";
 import AdminTenants from "./pages/POS/AdminTenants";
 import AdminTenantOverview from "./pages/POS/AdminTenantOverview";
 import KitchenTickets from "./pages/POS/KitchenTickets";
+import CashierDashboard from "./pages/POS/CashierDashboard";
+import EnhancedOrdersList from "./pages/POS/EnhancedOrdersList";
 
 // Protected Route Component
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -69,7 +71,7 @@ export default function App() {
             {/* Orders - accessible by owner, manager, cashier, waiter */}
             <Route path="/orders" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
-                <OrdersList />
+                <EnhancedOrdersList />
               </ProtectedRoute>
             } />
             <Route path="/orders/new" element={
@@ -80,6 +82,18 @@ export default function App() {
             <Route path="/orders/:id" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
                 <OrderDetails />
+              </ProtectedRoute>
+            } />
+            
+            {/* Cashier-specific routes */}
+            <Route path="/cashier/dashboard" element={
+              <ProtectedRoute allowedRoles={['cashier']}>
+                <CashierDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/cashier/orders" element={
+              <ProtectedRoute allowedRoles={['cashier']}>
+                <EnhancedOrdersList />
               </ProtectedRoute>
             } />
             
