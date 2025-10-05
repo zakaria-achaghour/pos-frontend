@@ -54,6 +54,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  notes?: string;
 }
 
 export default function OrderCreate() {
@@ -63,6 +64,8 @@ export default function OrderCreate() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [tempNotes, setTempNotes] = useState<string>('');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -112,31 +115,44 @@ export default function OrderCreate() {
     }
   };
 
-  const addToCart = (item: Item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+  const addToCart = (item: Item, notes: string = '') => {
+    const existingItem = cart.find((cartItem: CartItem) => cartItem.id === item.id && cartItem.notes === notes);
     if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.id === item.id
+      setCart(cart.map((cartItem: CartItem) =>
+        cartItem.id === item.id && cartItem.notes === notes
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ));
     } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
+      setCart([...cart, { ...item, quantity: 1, notes }]);
+    }
+    // Reset the expanded state after adding to cart
+    setExpandedItem(null);
+    setTempNotes('');
+  };
+
+  const toggleItemExpansion = (itemId: number) => {
+    if (expandedItem === itemId) {
+      setExpandedItem(null);
+      setTempNotes('');
+    } else {
+      setExpandedItem(itemId);
+      setTempNotes('');
     }
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (cartIndex: number, quantity: number) => {
     if (quantity === 0) {
-      setCart(cart.filter(item => item.id !== id));
+      setCart(cart.filter((_, index) => index !== cartIndex));
     } else {
-      setCart(cart.map(item =>
-        item.id === id ? { ...item, quantity } : item
+      setCart(cart.map((item: CartItem, index) =>
+        index === cartIndex ? { ...item, quantity } : item
       ));
     }
   };
 
   const getTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total: number, item: CartItem) => total + (item.price * item.quantity), 0);
   };
 
   const handlePlaceOrder = async () => {
@@ -154,11 +170,12 @@ export default function OrderCreate() {
         table_name: tableName,
         waiter_id: user?.role === 'waiter' ? user.id : null,
         waiter_name: user?.name,
-        items: cart.map(item => ({
+        items: cart.map((item: CartItem) => ({
           menu_item_id: item.id,
           name: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          notes: item.notes || ''
         })),
         total: getTotal(),
         status: 'pending'
@@ -268,16 +285,79 @@ export default function OrderCreate() {
             <h3 className="text-lg font-semibold mb-4">
               {categories.find(c => c.id === selectedCategory)?.name || 'Items'}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => addToCart(item)}
-                  className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-                >
-                  <div className="font-medium text-gray-900">{item.name}</div>
-                  <div className="text-blue-600 font-semibold">{item.price.toFixed(2)} MAD</div>
-                </button>
+                <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  {/* Item Header */}
+                  <div className="p-4">
+                    <div className="font-medium text-gray-900 mb-1">{item.name}</div>
+                    <div className="text-blue-600 font-semibold mb-3">{item.price.toFixed(2)} MAD</div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => addToCart(item, '')}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Quick Add
+                      </button>
+                      <button
+                        onClick={() => toggleItemExpansion(item.id)}
+                        className={`px-3 py-2 text-sm rounded transition-colors ${
+                          expandedItem === item.id 
+                            ? 'bg-orange-100 text-orange-700 border border-orange-300' 
+                            : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {expandedItem === item.id ? '📝 Close' : '📝 Notes'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Notes Section */}
+                  {expandedItem === item.id && (
+                    <div className="border-t border-gray-200 p-4 bg-gray-50">
+                      <div className="mb-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Quick Options
+                        </label>
+                        <div className="flex flex-wrap gap-1">
+                          {['Extra cheese', 'No tomatoes', 'No onions', 'Well done', 'Medium rare', 'Spicy'].map((option) => (
+                            <button
+                              key={option}
+                              onClick={() => setTempNotes(prev => 
+                                prev ? `${prev}, ${option}` : option
+                              )}
+                              className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Custom Notes
+                        </label>
+                        <textarea
+                          value={tempNotes}
+                          onChange={(e: any) => setTempNotes(e.target.value)}
+                          placeholder="Add special instructions..."
+                          className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                          rows={2}
+                        />
+                      </div>
+                      
+                      <button
+                        onClick={() => addToCart(item, tempNotes.trim())}
+                        className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                      >
+                        Add with Notes
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -293,26 +373,31 @@ export default function OrderCreate() {
             ) : (
               <>
                 <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                  {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-gray-600">{item.price.toFixed(2)} MAD</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-6 h-6 rounded-full bg-gray-300 text-gray-700 hover:bg-gray-400 flex items-center justify-center text-sm"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center text-sm">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-6 h-6 rounded-full bg-blue-500 text-white hover:bg-blue-600 flex items-center justify-center text-sm"
-                        >
-                          +
-                        </button>
+                  {cart.map((item, index) => (
+                    <div key={`${item.id}-${index}`} className="p-2 bg-gray-50 rounded">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{item.name}</div>
+                          <div className="text-xs text-gray-600">{item.price.toFixed(2)} MAD</div>
+                          {item.notes && (
+                            <div className="text-xs text-orange-600 mt-1 italic">📝 {item.notes}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateQuantity(index, item.quantity - 1)}
+                            className="w-6 h-6 rounded-full bg-gray-300 text-gray-700 hover:bg-gray-400 flex items-center justify-center text-sm"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center text-sm">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(index, item.quantity + 1)}
+                            className="w-6 h-6 rounded-full bg-blue-500 text-white hover:bg-blue-600 flex items-center justify-center text-sm"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
