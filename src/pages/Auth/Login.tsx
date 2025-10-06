@@ -16,12 +16,12 @@ const Login = () => {
     setError('');
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         const redirectPath = getRoleBasedRedirect();
         navigate(redirectPath);
       } else {
-        setError('Invalid credentials');
+        setError(result.error || 'Invalid credentials');
       }
     } catch (err) {
       setError('Login failed');

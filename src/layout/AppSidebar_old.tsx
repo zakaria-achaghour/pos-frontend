@@ -31,7 +31,19 @@ const navItems: NavItem[] = [
     allowedRoles: ['owner']
   },
   {
-    icon: "💰",
+    icon: "📊",
+    name: "Dashboard",
+    path: "/dashboard",
+    allowedRoles: ['owner', 'manager']
+  },
+  {
+    icon: "�",
+    name: "Owner Dashboard",
+    path: "/owner/dashboard",
+    allowedRoles: ['owner', 'manager']
+  },
+  {
+    icon: "�💰",
     name: "Cashier Dashboard",
     path: "/cashier/dashboard",
     allowedRoles: ['cashier']

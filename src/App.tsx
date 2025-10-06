@@ -12,7 +12,11 @@ import RoleBasedRedirect from "./components/auth/RoleBasedRedirect";
 
 // POS Pages
 import Dashboard from "./pages/POS/Dashboard";
+import OwnerDashboard from "./pages/POS/OwnerDashboard";
 import Tables from "./pages/POS/Tables";
+import TableManagement from "./pages/POS/TableManagement";
+import EnhancedTableManagement from "./pages/POS/EnhancedTableManagement";
+import StaffManagement from "./pages/POS/StaffManagement";
 import Categories from "./pages/POS/Categories";
 import Items from "./pages/POS/Items";
 import OrdersList from "./pages/POS/OrdersList";
@@ -49,10 +53,38 @@ export default function App() {
               </ProtectedRoute>
             } />
             
+            {/* Enhanced Owner Dashboard */}
+            <Route path="/owner/dashboard" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <OwnerDashboard />
+              </ProtectedRoute>
+            } />
+            
             {/* Tables - accessible by owner, manager, cashier, waiter */}
             <Route path="/tables" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
                 <Tables />
+              </ProtectedRoute>
+            } />
+            
+            {/* Table Management with CRUD */}
+            <Route path="/tables/manage" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <TableManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Enhanced Table Management for Owners/Managers */}
+            <Route path="/owner/tables" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <EnhancedTableManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Staff Management for Owners */}
+            <Route path="/owner/staff" element={
+              <ProtectedRoute allowedRoles={['owner']}>
+                <StaffManagement />
               </ProtectedRoute>
             } />
             
