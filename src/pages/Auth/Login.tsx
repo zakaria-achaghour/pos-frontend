@@ -16,14 +16,27 @@ const Login = () => {
     setError('');
 
     try {
+      console.log('🚀 Starting login process...');
       const result = await login(email, password);
-      if (result.success) {
+      console.log('📨 Login result:', result);
+      
+      if (result.success && result.redirectPath) {
+        console.log('✅ Login successful, redirect path provided:', result.redirectPath);
+        console.log('🧭 Navigating to:', result.redirectPath);
+        navigate(result.redirectPath);
+      } else if (result.success) {
+        // Fallback to getRoleBasedRedirect if no redirectPath provided
+        console.log('✅ Login successful, getting redirect path from context...');
         const redirectPath = getRoleBasedRedirect();
+        console.log('🔀 Redirect path from context:', redirectPath);
+        console.log('🧭 Navigating to:', redirectPath);
         navigate(redirectPath);
       } else {
+        console.log('❌ Login failed:', result.error);
         setError(result.error || 'Invalid credentials');
       }
     } catch (err) {
+      console.error('💥 Login exception:', err);
       setError('Login failed');
     } finally {
       setLoading(false);

@@ -1,108 +1,46 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } fr  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        setLoading(true);
-        const data = await dashboardAPI.getMetrics(selectedTimeframe);
-        setMetrics(data);
-      } catch (err: any) {
-        console.error('Error fetching metrics:', handleApiError(err));
-        // Fallback to mock data for development
-        setMetrics(mockMetrics);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMetrics();
-  }, [selectedTimeframe]);/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { dashboardAPI, DashboardMetrics } from '../../api/dashboard';
 import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 
-interface DashboardMetrics {
-  // Revenue Metrics
-  todayRevenue: number;
-  yesterdayRevenue: number;
-  weekRevenue: number;
-  monthRevenue: number;
-  
-  // Order Metrics
-  todayOrders: number;
-  averageTicket: number;
-  completionRate: number;
-  
-  // Table Metrics
-  totalTables: number;
-  occupiedTables: number;
-  averageTurnover: number;
-  
-  // Staff Metrics
-  activeStaff: number;
-  topPerformer: {
-    name: string;
-    ordersCompleted: number;
-    revenue: number;
-  };
-  
-  // Payment Breakdown
-  paymentMethods: {
-    cash: number;
-    card: number;
-    other: number;
-  };
-  
-  // Popular Items
-  topItems: Array<{
-    name: string;
-    sold: number;
-    revenue: number;
-  }>;
-  
-  // Hourly Sales
-  hourlySales: Array<{
-    hour: string;
-    sales: number;
-    orders: number;
-  }>;
-}
-
 const mockMetrics: DashboardMetrics = {
-  todayRevenue: 15750.00,
+  total_revenue: 15750.00,
+  total_orders: 156,
+  paid_orders: 147,
+  cancelled_orders: 9,
+  average_order_value: 101.00,
+  active_staff: 8,
+  occupied_tables: 12,
+  available_tables: 8
+};
+
+// Extended mock data for the dashboard
+const extendedMockData = {
   yesterdayRevenue: 14200.00,
   weekRevenue: 89400.00,
   monthRevenue: 387500.00,
-  
-  todayOrders: 156,
-  averageTicket: 101.00,
   completionRate: 94.5,
-  
   totalTables: 20,
-  occupiedTables: 12,
   averageTurnover: 1.8,
-  
-  activeStaff: 8,
   topPerformer: {
     name: "Sarah",
     ordersCompleted: 28,
     revenue: 2850.00
   },
-  
   paymentMethods: {
     cash: 6300.00,
     card: 8450.00,
     other: 1000.00
   },
-  
   topItems: [
     { name: "Tagine Beef", sold: 24, revenue: 1440.00 },
     { name: "Couscous Royal", sold: 18, revenue: 1260.00 },
     { name: "Pastilla Chicken", sold: 15, revenue: 900.00 },
     { name: "Mint Tea", sold: 45, revenue: 450.00 }
   ],
-  
   hourlySales: [
     { hour: "09:00", sales: 450, orders: 5 },
     { hour: "10:00", sales: 720, orders: 8 },
@@ -130,13 +68,13 @@ export default function OwnerDashboard() {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-          setMetrics(mockMetrics);
-          setLoading(false);
-        }, 800);
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
+        const data = await dashboardAPI.getMetrics(selectedTimeframe);
+        setMetrics(data);
+      } catch (err: any) {
+        console.error('Error fetching metrics:', handleApiError(err));
+        // Fallback to mock data for development
+        setMetrics(mockMetrics);
+      } finally {
         setLoading(false);
       }
     };
@@ -147,17 +85,17 @@ export default function OwnerDashboard() {
   const getRevenueByTimeframe = () => {
     if (!metrics) return 0;
     switch (selectedTimeframe) {
-      case 'today': return metrics.todayRevenue;
-      case 'week': return metrics.weekRevenue;
-      case 'month': return metrics.monthRevenue;
-      default: return metrics.todayRevenue;
+      case 'today': return metrics.total_revenue;
+      case 'week': return extendedMockData.weekRevenue;
+      case 'month': return extendedMockData.monthRevenue;
+      default: return metrics.total_revenue;
     }
   };
 
   const getRevenueChange = () => {
     if (!metrics) return 0;
-    const today = metrics.todayRevenue;
-    const yesterday = metrics.yesterdayRevenue;
+    const today = metrics.total_revenue;
+    const yesterday = extendedMockData.yesterdayRevenue;
     return yesterday > 0 ? ((today - yesterday) / yesterday * 100) : 0;
   };
 
@@ -235,8 +173,8 @@ export default function OwnerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Orders Today</p>
-              <p className="text-2xl font-bold text-gray-900">{metrics.todayOrders}</p>
-              <p className="text-sm text-gray-500">MAD {metrics.averageTicket.toFixed(2)} avg ticket</p>
+              <p className="text-2xl font-bold text-gray-900">{metrics.total_orders}</p>
+              <p className="text-sm text-gray-500">MAD {metrics.average_order_value.toFixed(2)} avg ticket</p>
             </div>
             <div className="text-2xl">🧾</div>
           </div>
@@ -248,9 +186,9 @@ export default function OwnerDashboard() {
             <div>
               <p className="text-sm text-gray-600">Table Occupancy</p>
               <p className="text-2xl font-bold text-gray-900">
-                {metrics.occupiedTables}/{metrics.totalTables}
+                {metrics.occupied_tables}/{metrics.occupied_tables + metrics.available_tables}
               </p>
-              <p className="text-sm text-gray-500">{((metrics.occupiedTables / metrics.totalTables) * 100).toFixed(0)}% occupied</p>
+              <p className="text-sm text-gray-500">{((metrics.occupied_tables / (metrics.occupied_tables + metrics.available_tables)) * 100).toFixed(0)}% occupied</p>
             </div>
             <div className="text-2xl">🍽️</div>
           </div>
@@ -261,8 +199,8 @@ export default function OwnerDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Top Performer</p>
-              <p className="text-lg font-bold text-gray-900">{metrics.topPerformer.name}</p>
-              <p className="text-sm text-gray-500">{metrics.topPerformer.ordersCompleted} orders • MAD {metrics.topPerformer.revenue.toFixed(2)}</p>
+              <p className="text-lg font-bold text-gray-900">{extendedMockData.topPerformer.name}</p>
+              <p className="text-sm text-gray-500">{extendedMockData.topPerformer.ordersCompleted} orders • MAD {extendedMockData.topPerformer.revenue.toFixed(2)}</p>
             </div>
             <div className="text-2xl">👑</div>
           </div>
@@ -275,7 +213,7 @@ export default function OwnerDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">📈 Hourly Sales</h3>
           <div className="space-y-2">
-            {metrics.hourlySales.slice(-8).map((hour, index) => (
+            {extendedMockData.hourlySales.slice(-8).map((hour) => (
               <div key={hour.hour} className="flex items-center gap-3">
                 <div className="w-12 text-sm text-gray-600">{hour.hour}</div>
                 <div className="flex-1 bg-gray-200 rounded-full h-3 relative">
@@ -300,9 +238,9 @@ export default function OwnerDashboard() {
                 <span>Cash</span>
               </div>
               <div className="text-right">
-                <div className="font-semibold">MAD {metrics.paymentMethods.cash.toFixed(2)}</div>
+                <div className="font-semibold">MAD {extendedMockData.paymentMethods.cash.toFixed(2)}</div>
                 <div className="text-sm text-gray-500">
-                  {((metrics.paymentMethods.cash / metrics.todayRevenue) * 100).toFixed(0)}%
+                  {((extendedMockData.paymentMethods.cash / metrics.total_revenue) * 100).toFixed(0)}%
                 </div>
               </div>
             </div>
@@ -312,9 +250,9 @@ export default function OwnerDashboard() {
                 <span>Card</span>
               </div>
               <div className="text-right">
-                <div className="font-semibold">MAD {metrics.paymentMethods.card.toFixed(2)}</div>
+                <div className="font-semibold">MAD {extendedMockData.paymentMethods.card.toFixed(2)}</div>
                 <div className="text-sm text-gray-500">
-                  {((metrics.paymentMethods.card / metrics.todayRevenue) * 100).toFixed(0)}%
+                  {((extendedMockData.paymentMethods.card / metrics.total_revenue) * 100).toFixed(0)}%
                 </div>
               </div>
             </div>
@@ -324,9 +262,9 @@ export default function OwnerDashboard() {
                 <span>Other</span>
               </div>
               <div className="text-right">
-                <div className="font-semibold">MAD {metrics.paymentMethods.other.toFixed(2)}</div>
+                <div className="font-semibold">MAD {extendedMockData.paymentMethods.other.toFixed(2)}</div>
                 <div className="text-sm text-gray-500">
-                  {((metrics.paymentMethods.other / metrics.todayRevenue) * 100).toFixed(0)}%
+                  {((extendedMockData.paymentMethods.other / metrics.total_revenue) * 100).toFixed(0)}%
                 </div>
               </div>
             </div>
@@ -338,7 +276,7 @@ export default function OwnerDashboard() {
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">🏆 Top Selling Items Today</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {metrics.topItems.map((item, index) => (
+          {extendedMockData.topItems.map((item, index) => (
             <div key={item.name} className="border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅'}</span>
