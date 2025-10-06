@@ -1,6 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } fr  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true);
+        const data = await dashboardAPI.getMetrics(selectedTimeframe);
+        setMetrics(data);
+      } catch (err: any) {
+        console.error('Error fetching metrics:', handleApiError(err));
+        // Fallback to mock data for development
+        setMetrics(mockMetrics);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, [selectedTimeframe]);/AuthContext';
+import { dashboardAPI, DashboardMetrics } from '../../api/dashboard';
+import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 

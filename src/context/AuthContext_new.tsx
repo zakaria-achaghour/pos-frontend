@@ -1,8 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI, User, LoginCredentials } from '../api/auth';
-import { handleApiError } from '../api/client';
-
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI, User as ApiUser } from '../api/auth';
 import { handleApiError } from '../api/client';
 
