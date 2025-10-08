@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuthRedux';
+import { useStaff } from '../../hooks/useStaffRedux';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Alert from '../../components/ui/alert/Alert';
-import { staffAPI, Staff as ApiStaff } from '../../api/staff';
 
 interface StaffMember {
   id: number;

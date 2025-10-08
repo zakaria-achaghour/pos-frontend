@@ -1,7 +1,7 @@
 ﻿import { useCallback, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useAuth } from "../context/AuthContext";
-import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../hooks/useAuthRedux";
+import { useSidebar } from "../hooks/useSidebarRedux";
 
 type NavItem = {
   name: string;

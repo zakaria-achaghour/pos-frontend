@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuthRedux';
 import { dashboardAPI, DashboardMetrics } from '../../api/dashboard';
 import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
