@@ -65,16 +65,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Check for existing auth token on app load
     const initializeAuth = async () => {
+      console.log('🔍 Initializing auth...');
+      
       try {
         if (authAPI.isAuthenticated()) {
+          console.log('🎫 Token found in storage, verifying...');
           // Verify token by fetching user data
           const userData = await authAPI.me();
+          console.log('✅ Token valid, user data:', userData);
           setUser(userData);
+        } else {
+          console.log('❌ No token found in storage');
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('❌ Error initializing auth:', error);
+        console.log('🧹 Clearing invalid auth data...');
         authAPI.clearAuthData();
       } finally {
+        console.log('✅ Auth initialization complete');
         setIsLoading(false);
       }
     };

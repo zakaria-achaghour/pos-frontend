@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import Alert from '../../components/ui/alert/Alert';
+import { staffAPI, Staff as ApiStaff } from '../../api/staff';
 
 interface StaffMember {
   id: number;
@@ -36,13 +38,49 @@ interface StaffMember {
 }
 
 interface StaffFormData {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
   salary: number;
   hireDate: string;
+  password: string;
+  employee_id: string;
 }
+
+// Map API Staff to local StaffMember format
+const mapApiStaffToLocal = (apiStaff: any): StaffMember => {
+  return {
+    id: apiStaff.id,
+    name: apiStaff.first_name && apiStaff.last_name 
+      ? `${apiStaff.first_name} ${apiStaff.last_name}` 
+      : apiStaff.name || 'Unknown',
+    email: apiStaff.email || '',
+    phone: apiStaff.phone || '',
+    role: apiStaff.role || 'waiter',
+    status: apiStaff.is_active ? 'active' : 'inactive',
+    hireDate: apiStaff.hire_date || apiStaff.created_at || new Date().toISOString().split('T')[0],
+    salary: apiStaff.hourly_rate || 0,
+    // Set default values for complex fields not provided by API
+    shiftSchedule: {
+      monday: { start: '09:00', end: '17:00', isWorking: true },
+      tuesday: { start: '09:00', end: '17:00', isWorking: true },
+      wednesday: { start: '09:00', end: '17:00', isWorking: true },
+      thursday: { start: '09:00', end: '17:00', isWorking: true },
+      friday: { start: '09:00', end: '17:00', isWorking: true },
+      saturday: { start: '10:00', end: '18:00', isWorking: true },
+      sunday: { start: '10:00', end: '18:00', isWorking: false }
+    },
+    performance: {
+      ordersCompleted: 0,
+      revenueGenerated: 0,
+      customerRating: 4.5,
+      punctualityScore: 90,
+      tips: 0
+    }
+  };
+};
 
 // Mock staff data
 const initialStaff: StaffMember[] = [
@@ -140,23 +178,56 @@ const initialStaff: StaffMember[] = [
 ];
 
 export default function StaffManagement() {
-  const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<StaffMember | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'performance' | 'schedule'>('grid');
   const [roleFilter, setRoleFilter] = useState<'all' | 'manager' | 'cashier' | 'waiter' | 'kitchen'>('all');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user } = useAuth();
 
   const [formData, setFormData] = useState<StaffFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     role: 'waiter',
     salary: 3000,
-    hireDate: new Date().toISOString().split('T')[0]
+    hireDate: new Date().toISOString().split('T')[0],
+    password: 'password123',
+    employee_id: ''
   });
+
+  // Fetch staff data from API
+  const fetchStaff = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🔄 Fetching staff data from API...');
+      const response = await staffAPI.getStaff();
+      console.log('✅ API Response:', response);
+      
+      const mappedStaff = response.data.map(mapApiStaffToLocal);
+      console.log('📝 Mapped staff data:', mappedStaff);
+      
+      setStaff(mappedStaff);
+    } catch (error: any) {
+      console.error('❌ Error fetching staff:', error);
+      setError(error.response?.data?.message || 'Failed to fetch staff data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load staff data on component mount
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   // Filter staff by role
   const filteredStaff = staff.filter(member => 
@@ -174,48 +245,83 @@ export default function StaffManagement() {
 
   // Add new staff member
   const handleAddStaff = async () => {
-    if (!formData.name.trim() || !formData.email.trim()) {
-      alert('Please fill in all required fields');
+    if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()) {
+      setError('Please fill in all required fields');
       return;
     }
 
     setLoading(true);
+    setError(null);
+    setValidationErrors({});
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('➕ Creating new staff member:', formData);
       
-      const newMember: StaffMember = {
-        id: Math.max(...staff.map(s => s.id)) + 1,
-        name: formData.name,
+      // Generate user_id (you might want to get this from user context or backend)
+      const userId = user?.id || 1; // Fallback to 1 if user ID not available
+      
+      // Generate employee_id if not provided
+      const employeeId = formData.employee_id || `EMP${Date.now()}`;
+      
+      const createData = {
+        user_id: userId,
+        employee_id: employeeId,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
         email: formData.email,
+        position: formData.role, // Backend expects 'position' instead of 'role'
         phone: formData.phone,
-        role: formData.role,
-        status: 'active',
-        hireDate: formData.hireDate,
-        salary: formData.salary,
-        shiftSchedule: {
-          monday: { start: '09:00', end: '17:00', isWorking: true },
-          tuesday: { start: '09:00', end: '17:00', isWorking: true },
-          wednesday: { start: '09:00', end: '17:00', isWorking: true },
-          thursday: { start: '09:00', end: '17:00', isWorking: true },
-          friday: { start: '09:00', end: '17:00', isWorking: true },
-          saturday: { start: '09:00', end: '17:00', isWorking: false },
-          sunday: { start: '09:00', end: '17:00', isWorking: false }
-        },
-        performance: {
-          ordersCompleted: 0,
-          revenueGenerated: 0,
-          customerRating: 5.0,
-          punctualityScore: 100,
-          tips: 0
-        }
+        hire_date: formData.hireDate,
+        hourly_rate: formData.salary,
+        password: formData.password
       };
-
-      setStaff(prev => [...prev, newMember]);
+      
+      console.log('📤 Sending data to API:', createData);
+      
+      const response = await fetch('http://localhost:8080/api/staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(createData)
+      });
+      
+      const responseData = await response.json();
+      console.log('📡 API Response:', responseData);
+      
+      if (!response.ok) {
+        if (responseData.errors) {
+          setValidationErrors(responseData.errors);
+          setError(responseData.message || 'Validation errors occurred');
+        } else {
+          setError(responseData.message || 'Failed to add staff member');
+        }
+        return;
+      }
+      
+      // Success - refresh the staff list
+      await fetchStaff();
+      
+      setFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        role: 'waiter',
+        salary: 3000,
+        hireDate: new Date().toISOString().split('T')[0],
+        password: 'password123',
+        employee_id: ''
+      });
       setShowAddModal(false);
-      resetForm();
-      showToast(`Staff member "${newMember.name}" added successfully!`, 'success');
-    } catch (error) {
-      showToast('Failed to add staff member', 'error');
+      setSuccessMessage('Staff member added successfully!');
+      
+      // Auto-hide success message
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('❌ Error adding staff:', error);
+      setError('Failed to add staff member. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -227,14 +333,38 @@ export default function StaffManagement() {
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setStaff(prev => prev.map(member => 
+      setStaff(prev => prev.map((member: StaffMember) => 
         member.id === memberId ? { ...member, status: newStatus } : member
       ));
       
-      const member = staff.find(s => s.id === memberId);
+      const member = staff.find((s: StaffMember) => s.id === memberId);
       showToast(`${member?.name}'s status updated to ${newStatus}`, 'success');
     } catch (error) {
       showToast('Failed to update status', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete staff member
+  const handleDeleteStaff = async (memberId: number) => {
+    if (!confirm('Are you sure you want to delete this staff member?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('🗑️ Deleting staff member:', memberId);
+      await staffAPI.deleteStaff(memberId);
+      
+      setStaff(prev => prev.filter((member: StaffMember) => member.id !== memberId));
+      setSuccessMessage('Staff member deleted successfully!');
+      
+      // Auto-hide success message
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('❌ Error deleting staff:', error);
+      setError(error.response?.data?.message || 'Failed to delete staff member');
     } finally {
       setLoading(false);
     }
@@ -278,13 +408,18 @@ export default function StaffManagement() {
   // Reset form
   const resetForm = () => {
     setFormData({
-      name: '',
+      first_name: '',
+      last_name: '',
       email: '',
       phone: '',
       role: 'waiter',
       salary: 3000,
-      hireDate: new Date().toISOString().split('T')[0]
+      hireDate: new Date().toISOString().split('T')[0],
+      password: 'password123',
+      employee_id: ''
     });
+    setValidationErrors({});
+    setError(null);
   };
 
   // Close modals
@@ -348,6 +483,38 @@ export default function StaffManagement() {
     <div className="space-y-6">
       <PageMeta title="Staff Management | POS System" description="Manage restaurant staff and schedules" />
       <PageBreadcrumb pageTitle="Staff Management" />
+      
+      {/* Success Message */}
+      {successMessage && (
+        <Alert
+          message={successMessage}
+          type="success"
+          onClose={() => setSuccessMessage(null)}
+        />
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <Alert
+          message={error}
+          type="error"
+          onClose={() => setError(null)}
+        />
+      )}
+
+      {/* Validation Errors */}
+      {Object.keys(validationErrors).length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h4 className="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
+          <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+            {Object.entries(validationErrors).map(([field, errors]) => (
+              <li key={field}>
+                <strong>{field.replace('_', ' ')}:</strong> {errors[0]}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       
       {/* Header with Stats */}
       <div className="bg-white p-6 rounded-lg shadow">
@@ -645,18 +812,55 @@ export default function StaffManagement() {
             <h3 className="text-xl font-bold mb-4">Add New Staff Member</h3>
             
             <div className="space-y-4">
+              {/* Employee ID */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="employee_id"
+                  value={formData.employee_id}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Will be auto-generated if empty"
+                />
+                {validationErrors.employee_id && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.employee_id[0]}</p>
+                )}
+              </div>
+
+              {/* First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={formData.first_name}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
+                {validationErrors.first_name && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.first_name[0]}</p>
+                )}
               </div>
 
+              {/* Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                {validationErrors.last_name && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.last_name[0]}</p>
+                )}
+              </div>
+
+              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                 <input
@@ -667,8 +871,12 @@ export default function StaffManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
+                {validationErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.email[0]}</p>
+                )}
               </div>
 
+              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <input
@@ -678,10 +886,14 @@ export default function StaffManagement() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
+                {validationErrors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.phone[0]}</p>
+                )}
               </div>
 
+              {/* Role/Position */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
                 <select
                   name="role"
                   value={formData.role}
@@ -693,21 +905,29 @@ export default function StaffManagement() {
                   <option value="kitchen">Kitchen Staff</option>
                   <option value="manager">Manager</option>
                 </select>
+                {validationErrors.position && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.position[0]}</p>
+                )}
               </div>
 
+              {/* Salary */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Salary (MAD)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (MAD)</label>
                 <input
                   type="number"
                   name="salary"
                   value={formData.salary}
                   onChange={handleInputChange}
-                  min="2000"
-                  max="10000"
+                  min="20"
+                  max="200"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
+                {validationErrors.hourly_rate && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.hourly_rate[0]}</p>
+                )}
               </div>
 
+              {/* Hire Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
                 <input
@@ -717,7 +937,34 @@ export default function StaffManagement() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
+                {validationErrors.hire_date && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.hire_date[0]}</p>
+                )}
               </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                {validationErrors.password && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.password[0]}</p>
+                )}
+              </div>
+
+              {/* User ID Error */}
+              {validationErrors.user_id && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-700 text-sm">
+                    <strong>User ID Error:</strong> {validationErrors.user_id[0]}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -731,7 +978,7 @@ export default function StaffManagement() {
               <button
                 onClick={handleAddStaff}
                 className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-                disabled={loading || !formData.name.trim() || !formData.email.trim()}
+                disabled={loading || !formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()}
               >
                 {loading ? 'Adding...' : 'Add Staff'}
               </button>

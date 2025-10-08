@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 
@@ -7,8 +7,22 @@ const Login = () => {
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, getRoleBasedRedirect } = useAuth();
+  const { login, getRoleBasedRedirect, user, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user is already authenticated when component mounts
+  useEffect(() => {
+    console.log('🔍 Login component mounted, checking existing auth...');
+    console.log('👤 Current user:', user);
+    console.log('⏳ Is loading:', isLoading);
+    
+    if (!isLoading && user) {
+      console.log('✅ User already authenticated, redirecting...');
+      const redirectPath = getRoleBasedRedirect();
+      console.log('🧭 Redirect path:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, isLoading, navigate, getRoleBasedRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +61,20 @@ const Login = () => {
     setEmail(userEmail);
     setPassword('password123');
   };
+
+  // Show loading state while checking existing authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

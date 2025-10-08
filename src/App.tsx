@@ -25,6 +25,9 @@ import OrderDetails from "./pages/POS/OrderDetails";
 import DailySummary from "./pages/POS/DailySummary";
 import AdminTenants from "./pages/POS/AdminTenants";
 import AdminTenantOverview from "./pages/POS/AdminTenantOverview";
+import CreateRestaurant from "./pages/POS/CreateRestaurant";
+import EditRestaurant from "./pages/POS/EditRestaurant";
+import RestaurantDetails from "./pages/POS/RestaurantDetails";
 import KitchenTickets from "./pages/POS/KitchenTickets";
 import CashierDashboard from "./pages/POS/CashierDashboard";
 import EnhancedOrdersList from "./pages/POS/EnhancedOrdersList";
@@ -147,6 +150,21 @@ export default function App() {
             <Route path="/admin/tenants" element={
               <ProtectedRoute allowedRoles={['superadmin']}>
                 <AdminTenants />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/restaurants/create" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <CreateRestaurant />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/restaurants/:id" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <RestaurantDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/restaurants/:id/edit" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <EditRestaurant />
               </ProtectedRoute>
             } />
             <Route path="/admin/tenants/:id" element={
