@@ -1,9 +1,12 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuthRedux';
 import { useStaff } from '../../hooks/useStaffRedux';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Alert from '../../components/ui/alert/Alert';
+import { staffAPI } from '../../api/staff';
+import type { Staff } from '../../api/staff';
 
 interface StaffMember {
   id: number;
@@ -50,12 +53,10 @@ interface StaffFormData {
 }
 
 // Map API Staff to local StaffMember format
-const mapApiStaffToLocal = (apiStaff: any): StaffMember => {
+const mapApiStaffToLocal = (apiStaff: Staff): StaffMember => {
   return {
     id: apiStaff.id,
-    name: apiStaff.first_name && apiStaff.last_name 
-      ? `${apiStaff.first_name} ${apiStaff.last_name}` 
-      : apiStaff.name || 'Unknown',
+    name: apiStaff.name || 'Unknown',
     email: apiStaff.email || '',
     phone: apiStaff.phone || '',
     role: apiStaff.role || 'waiter',
@@ -278,7 +279,7 @@ export default function StaffManagement() {
       
       console.log('📤 Sending data to API:', createData);
       
-      const response = await fetch('http://localhost:8080/api/staff', {
+      const response = await fetch('/api/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -487,18 +488,18 @@ export default function StaffManagement() {
       {/* Success Message */}
       {successMessage && (
         <Alert
+          variant="success"
+          title="Success!"
           message={successMessage}
-          type="success"
-          onClose={() => setSuccessMessage(null)}
         />
       )}
 
       {/* Error Message */}
       {error && (
         <Alert
+          variant="error"
+          title="Error"
           message={error}
-          type="error"
-          onClose={() => setError(null)}
         />
       )}
 

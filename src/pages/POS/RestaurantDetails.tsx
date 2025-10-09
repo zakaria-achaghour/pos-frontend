@@ -1,9 +1,11 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Button from '../../components/ui/button/Button';
-import { restaurantAPI, Restaurant } from '../../api/restaurants';
+import { restaurantAPI } from '../../api/restaurants';
+import type { Restaurant } from '../../api/restaurants';
 
 export default function RestaurantDetails() {
   const navigate = useNavigate();

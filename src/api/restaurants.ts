@@ -1,9 +1,11 @@
-import apiClient, { ApiResponse, PaginatedResponse } from './client';
+import apiClient from './client';
+import type { ApiResponse, PaginatedResponse } from './client';
 
 // Restaurant types
 export interface Restaurant {
   id: number;
   name: string;
+  slug?: string;
   description?: string;
   address: string;
   city?: string;

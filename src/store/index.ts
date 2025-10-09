@@ -4,6 +4,13 @@ import sidebarSlice from './slices/sidebarSlice';
 import themeSlice from './slices/themeSlice';
 import staffSlice from './slices/staffSlice';
 import restaurantSlice from './slices/restaurantSlice';
+import menuSlice from './slices/menuSlice';
+import orderSlice from './slices/orderSlice';
+import tableSlice from './slices/tableSlice';
+import dashboardSlice from './slices/dashboardSlice';
+import kitchenSlice from './slices/kitchenSlice';
+import attendanceSlice from './slices/attendanceSlice';
+import scheduleSlice from './slices/scheduleSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +19,13 @@ export const store = configureStore({
     theme: themeSlice,
     staff: staffSlice,
     restaurant: restaurantSlice,
+    menu: menuSlice,
+    orders: orderSlice,
+    tables: tableSlice,
+    dashboard: dashboardSlice,
+    kitchen: kitchenSlice,
+    attendance: attendanceSlice,
+    schedules: scheduleSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

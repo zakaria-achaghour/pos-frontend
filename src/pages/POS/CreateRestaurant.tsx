@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
@@ -6,7 +7,8 @@ import Input from '../../components/form/input/InputField';
 import Label from '../../components/form/Label';
 import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
-import { restaurantAPI, CreateRestaurantData } from '../../api/restaurants';
+import { restaurantAPI } from '../../api/restaurants';
+import type { CreateRestaurantData } from '../../api/restaurants';
 
 export default function CreateRestaurant() {
   const navigate = useNavigate();

@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { apiConfig } from '../config';
 
 // Create axios instance with environment configuration
@@ -32,12 +33,28 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
+    console.log('🔍 API Response Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      method: error.config?.method,
+      data: error.response?.data
+    });
+    
     // Handle common errors
     if (error.response?.status === 401) {
       // Token expired or invalid
+      console.log('🚫 401 Unauthorized - Clearing auth data');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Only redirect if not already on login page and not during initialization
+      const isInitRequest = error.config?.url?.includes('/me');
+      const isOnLoginPage = window.location.pathname === '/login';
+      
+      if (!isOnLoginPage && !isInitRequest) {
+        console.log('🔄 Redirecting to login...');
+        window.location.href = '/login';
+      }
     }
     
     if (error.response?.status === 403) {

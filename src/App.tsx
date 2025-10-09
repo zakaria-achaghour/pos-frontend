@@ -1,6 +1,10 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import NotFound from "./pages/OtherPage/NotFound";
+
+// Debug component (temporary)
+import AuthDebugPanel from "./components/debug/AuthDebugPanel";
 
 // Layouts
 import AppLayout from "./layout/AppLayout";
@@ -178,6 +182,11 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
+      
+      {/* Temporary Debug Panel */}
+      <div id="auth-debug">
+        <AuthDebugPanel />
+      </div>
     </>
   );
 }

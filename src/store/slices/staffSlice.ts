@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { staffAPI, Staff as ApiStaff } from '../../api/staff';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { staffAPI } from '../../api/staff';
 
 interface StaffMember {
   id: number;
@@ -136,7 +137,7 @@ export const createStaffMember = createAsyncThunk(
       
       console.log('📤 Sending data to API:', createData);
       
-      const response = await fetch('http://localhost:8080/api/staff', {
+      const response = await fetch('/api/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +224,7 @@ const staffSlice = createSlice({
             ...(member.role === 'waiter' && { tableAssignments: [] })
           };
         } else {
-          member.currentShift = undefined;
+          delete member.currentShift;
         }
       }
     },

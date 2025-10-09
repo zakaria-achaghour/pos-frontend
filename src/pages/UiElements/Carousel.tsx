@@ -1,3 +1,4 @@
+import React from 'react';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import SlideOnly from "../../components/ui/carousel/SlideOnly";
 import WithControl from "../../components/ui/carousel/WithControl";

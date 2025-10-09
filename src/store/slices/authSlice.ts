@@ -1,5 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { authAPI, User as ApiUser, AuthResponse } from '../../api/auth';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { authAPI } from '../../api/auth';
+import type { User as ApiUser } from '../../api/auth';
 import { handleApiError } from '../../api/client';
 
 interface AuthState {
@@ -13,12 +15,6 @@ interface AuthState {
 interface LoginCredentials {
   email: string;
   password: string;
-}
-
-interface LoginResult {
-  success: boolean;
-  error?: string;
-  redirectPath?: string;
 }
 
 const initialState: AuthState = {
@@ -68,19 +64,42 @@ export const initializeAuth = createAsyncThunk(
     try {
       console.log('🔍 Initializing auth...');
       
-      if (authAPI.isAuthenticated()) {
-        console.log('🎫 Token found in storage, verifying...');
-        // Verify token by fetching user data
-        const userData = await authAPI.me();
-        console.log('✅ Token valid, user data:', userData);
-        return userData;
+      const token = authAPI.getStoredToken();
+      const storedUser = authAPI.getStoredUser();
+      
+      console.log('🎫 Token exists:', !!token);
+      console.log('👤 Stored user exists:', !!storedUser);
+      
+      if (token && storedUser) {
+        console.log('🎫 Token and user found in storage, verifying with API...');
+        try {
+          // Verify token by fetching fresh user data
+          const userData = await authAPI.me();
+          console.log('✅ Token valid, fresh user data:', userData);
+          return userData;
+        } catch (apiError: any) {
+          console.log('❌ Token verification failed:', apiError.response?.status);
+          
+          // If API call fails with 401, token is invalid
+          if (apiError.response?.status === 401) {
+            console.log('🧹 Clearing invalid auth data...');
+            authAPI.clearAuthData();
+            return null;
+          }
+          
+          // For other errors (network, 500, etc.), use stored user data
+          // This prevents logout on temporary network issues
+          console.log('⚠️ API error but token might be valid, using stored user data');
+          return storedUser;
+        }
       } else {
-        console.log('❌ No token found in storage');
+        console.log('❌ No complete auth data found in storage');
+        authAPI.clearAuthData(); // Clean up any partial data
         return null;
       }
     } catch (error: any) {
       console.error('❌ Error initializing auth:', error);
-      console.log('🧹 Clearing invalid auth data...');
+      console.log('🧹 Clearing auth data due to initialization error...');
       authAPI.clearAuthData();
       return rejectWithValue(handleApiError(error));
     }
@@ -119,7 +138,7 @@ export const loginUser = createAsyncThunk<
 
 export const logoutUser = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async () => {
     try {
       await authAPI.logout();
     } catch (error: any) {

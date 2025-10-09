@@ -1,4 +1,5 @@
-import apiClient, { ApiResponse, PaginatedResponse } from './client';
+import apiClient from './client';
+import type { ApiResponse, PaginatedResponse } from './client';
 
 // Staff types
 export interface Staff {

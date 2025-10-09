@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
@@ -6,7 +7,8 @@ import Input from '../../components/form/input/InputField';
 import Label from '../../components/form/Label';
 import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
-import { restaurantAPI, Restaurant, UpdateRestaurantData } from '../../api/restaurants';
+import { restaurantAPI } from '../../api/restaurants';
+import type { Restaurant, UpdateRestaurantData } from '../../api/restaurants';
 
 export default function EditRestaurant() {
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ export default function EditRestaurant() {
         email: data.email || '',
         website: data.website || '',
         license_number: data.license_number || '',
-        tax_number: data.tax_rate || '', // Using tax_rate from API
+        tax_number: data.tax_number || data.tax_rate || '', // Try both field names
         owner_name: owner?.name || data.owner_name || '',
         owner_email: owner?.email || data.owner_email || '',
         owner_phone: data.owner_phone || '',
@@ -99,8 +101,70 @@ export default function EditRestaurant() {
     setSuccessMessage(null);
 
     try {
-      console.log('🔄 Updating restaurant with data:', formData);
-      const response = await restaurantAPI.updateRestaurant(restaurant.id, formData);
+      // Validate required fields
+      if (!formData.name?.trim()) {
+        setError('Restaurant name is required');
+        return;
+      }
+      if (!formData.address?.trim()) {
+        setError('Address is required');
+        return;
+      }
+      if (!formData.city?.trim()) {
+        setError('City is required');
+        return;
+      }
+      if (!formData.owner_name?.trim()) {
+        setError('Owner name is required');
+        return;
+      }
+      if (!formData.owner_email?.trim()) {
+        setError('Owner email is required');
+        return;
+      }
+
+      // Clean the data and ensure all required fields are present
+      const cleanedData: UpdateRestaurantData = {
+        name: formData.name.trim(),
+        address: formData.address.trim(),
+        city: formData.city.trim(),
+        country: formData.country || 'Morocco',
+        owner_name: formData.owner_name.trim(),
+        owner_email: formData.owner_email.trim(),
+        subscription_plan: formData.subscription_plan || 'basic',
+        timezone: formData.timezone || 'Africa/Casablanca',
+        currency: formData.currency || 'MAD',
+        status: formData.status as 'active' | 'inactive'
+      };
+
+      // Add optional fields only if they have values
+      if (formData.description?.trim()) {
+        cleanedData.description = formData.description.trim();
+      }
+      if (formData.phone?.trim()) {
+        cleanedData.phone = formData.phone.trim();
+      }
+      if (formData.email?.trim()) {
+        cleanedData.email = formData.email.trim();
+      }
+      if (formData.website?.trim()) {
+        cleanedData.website = formData.website.trim();
+      }
+      if (formData.license_number?.trim()) {
+        cleanedData.license_number = formData.license_number.trim();
+      }
+      if (formData.tax_number?.trim()) {
+        cleanedData.tax_number = formData.tax_number.trim();
+      }
+      if (formData.owner_phone?.trim()) {
+        cleanedData.owner_phone = formData.owner_phone.trim();
+      }
+
+      console.log('🔄 Updating restaurant with data:', cleanedData);
+      console.log('🔄 Restaurant ID:', restaurant.id);
+      console.log('🔄 Payload being sent:', JSON.stringify(cleanedData, null, 2));
+      
+      const response = await restaurantAPI.updateRestaurant(restaurant.id, cleanedData);
       console.log('📡 Update response:', response);
       
       // Check if response has a message property (from your API response)
@@ -123,7 +187,19 @@ export default function EditRestaurant() {
       // navigate('/admin/tenants');
     } catch (error: any) {
       console.error('Error updating restaurant:', error);
-      setError(error.response?.data?.message || 'Failed to update restaurant');
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      // Handle validation errors (422)
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = Object.keys(validationErrors).map(field => 
+          `${field}: ${validationErrors[field].join(', ')}`
+        ).join('\n');
+        setError(`Validation errors:\n${errorMessages}`);
+      } else {
+        setError(error.response?.data?.message || error.message || 'Failed to update restaurant');
+      }
     } finally {
       setSaving(false);
     }
