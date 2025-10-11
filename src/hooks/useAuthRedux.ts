@@ -1,6 +1,5 @@
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
-  selectAuth,
   selectUser,
   selectIsAuthenticated,
   selectIsLoading,
@@ -14,7 +13,6 @@ import {
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
-  const auth = useAppSelector(selectAuth);
   const user = useAppSelector(selectUser);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const isLoading = useAppSelector(selectIsLoading);
@@ -22,13 +20,9 @@ export const useAuth = () => {
   const loginError = useAppSelector(selectLoginError);
   
   const getRoleBasedRedirect = () => {
-    console.log('🧭 Getting role-based redirect for user:', user);
     if (!user) {
-      console.log('❌ No user found, redirecting to login');
       return '/login';
     }
-    
-    console.log('👤 User role:', user.role);
     
     let redirectPath: string;
     switch (user.role) {
@@ -47,11 +41,9 @@ export const useAuth = () => {
         redirectPath = '/pos/orders';
         break;
       default:
-        console.log('⚠️ Unknown role, redirecting to default dashboard');
         redirectPath = '/pos/orders';
     }
     
-    console.log('🔀 Computed redirect path:', redirectPath);
     return redirectPath;
   };
 

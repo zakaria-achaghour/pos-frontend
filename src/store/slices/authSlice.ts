@@ -27,9 +27,6 @@ const initialState: AuthState = {
 
 // Helper function to get redirect path for a specific user
 const getRedirectPathForUser = (user: ApiUser): string => {
-  console.log('🧭 Getting redirect path for user:', user);
-  console.log('👤 User role:', user.role);
-  
   let redirectPath: string;
   switch (user.role) {
     case 'superadmin':
@@ -53,7 +50,6 @@ const getRedirectPathForUser = (user: ApiUser): string => {
       break;
   }
   
-  console.log('🔀 Calculated redirect path:', redirectPath);
   return redirectPath;
 };
 
@@ -62,44 +58,30 @@ export const initializeAuth = createAsyncThunk(
   'auth/initialize',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('🔍 Initializing auth...');
-      
       const token = authAPI.getStoredToken();
       const storedUser = authAPI.getStoredUser();
       
-      console.log('🎫 Token exists:', !!token);
-      console.log('👤 Stored user exists:', !!storedUser);
-      
       if (token && storedUser) {
-        console.log('🎫 Token and user found in storage, verifying with API...');
         try {
           // Verify token by fetching fresh user data
           const userData = await authAPI.me();
-          console.log('✅ Token valid, fresh user data:', userData);
           return userData;
         } catch (apiError: any) {
-          console.log('❌ Token verification failed:', apiError.response?.status);
-          
           // If API call fails with 401, token is invalid
           if (apiError.response?.status === 401) {
-            console.log('🧹 Clearing invalid auth data...');
             authAPI.clearAuthData();
             return null;
           }
           
           // For other errors (network, 500, etc.), use stored user data
           // This prevents logout on temporary network issues
-          console.log('⚠️ API error but token might be valid, using stored user data');
           return storedUser;
         }
       } else {
-        console.log('❌ No complete auth data found in storage');
         authAPI.clearAuthData(); // Clean up any partial data
         return null;
       }
     } catch (error: any) {
-      console.error('❌ Error initializing auth:', error);
-      console.log('🧹 Clearing auth data due to initialization error...');
       authAPI.clearAuthData();
       return rejectWithValue(handleApiError(error));
     }
@@ -114,22 +96,15 @@ export const loginUser = createAsyncThunk<
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      console.log('🔐 Attempting login with:', { email: credentials.email });
       const authData = await authAPI.login(credentials);
-      console.log('✅ Login API response:', authData);
       
       authAPI.storeAuthData(authData);
       
-      console.log('👤 User logged in:', authData.user);
-      console.log('🔀 User role:', authData.user.role);
-      
       // Calculate redirect path using the fresh user data
       const redirectPath = getRedirectPathForUser(authData.user);
-      console.log('🔀 Calculated redirect path:', redirectPath);
       
       return { user: authData.user, redirectPath };
     } catch (error: any) {
-      console.error('❌ Login error:', error);
       const errorMessage = handleApiError(error);
       return rejectWithValue(errorMessage);
     }
@@ -235,13 +210,9 @@ export const selectHasRole = (roles: string | string[]) => (state: { auth: AuthS
 
 export const selectGetRoleBasedRedirect = (state: { auth: AuthState }): string => {
   const user = state.auth.user;
-  console.log('🧭 Getting role-based redirect for user:', user);
   if (!user) {
-    console.log('❌ No user found, redirecting to login');
     return '/login';
   }
-  
-  console.log('👤 User role:', user.role);
   
   let redirectPath: string;
   switch (user.role) {
@@ -266,7 +237,6 @@ export const selectGetRoleBasedRedirect = (state: { auth: AuthState }): string =
       break;
   }
   
-  console.log('🔀 Redirecting to:', redirectPath);
   return redirectPath;
 };
 

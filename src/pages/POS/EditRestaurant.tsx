@@ -48,9 +48,7 @@ export default function EditRestaurant() {
   const fetchRestaurant = async (restaurantId: number) => {
     try {
       setLoading(true);
-      console.log('Fetching restaurant with ID:', restaurantId);
       const data = await restaurantAPI.getRestaurant(restaurantId);
-      console.log('Restaurant data received:', data);
       setRestaurant(data);
       
       // Extract owner information from users array if available
@@ -76,8 +74,6 @@ export default function EditRestaurant() {
         status: data.is_active ? 'active' : 'inactive' // Convert boolean to string
       });
     } catch (error: any) {
-      console.error('Error fetching restaurant:', error);
-      console.error('Full error object:', error);
       setError(`Failed to load restaurant data: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
@@ -170,7 +166,6 @@ export default function EditRestaurant() {
       // Check if response has a message property (from your API response)
       if (response && typeof response === 'object' && 'message' in response) {
         setSuccessMessage(response.message as string);
-        console.log('✅ Success message:', response.message);
         
         // Auto-hide success message after 5 seconds
         setTimeout(() => {
@@ -186,10 +181,6 @@ export default function EditRestaurant() {
       // Don't navigate immediately, let user see the success message
       // navigate('/admin/tenants');
     } catch (error: any) {
-      console.error('Error updating restaurant:', error);
-      console.error('Error response data:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
       // Handle validation errors (422)
       if (error.response?.status === 422 && error.response?.data?.errors) {
         const validationErrors = error.response.data.errors;

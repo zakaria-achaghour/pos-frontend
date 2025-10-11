@@ -1,56 +1,15 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuthRedux';
-import { useStaff } from '../../hooks/useStaffRedux';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Alert from '../../components/ui/alert/Alert';
 import { staffAPI } from '../../api/staff';
 import type { Staff } from '../../api/staff';
+import StaffForm from '../../components/staff/StaffForm';
+import type { StaffMember, StaffFormData, StaffStatus } from '../../types/staff';
 
-interface StaffMember {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
-  status: 'active' | 'inactive' | 'on-break' | 'vacation';
-  hireDate: string;
-  salary: number;
-  shiftSchedule: {
-    monday: { start: string; end: string; isWorking: boolean };
-    tuesday: { start: string; end: string; isWorking: boolean };
-    wednesday: { start: string; end: string; isWorking: boolean };
-    thursday: { start: string; end: string; isWorking: boolean };
-    friday: { start: string; end: string; isWorking: boolean };
-    saturday: { start: string; end: string; isWorking: boolean };
-    sunday: { start: string; end: string; isWorking: boolean };
-  };
-  performance: {
-    ordersCompleted: number;
-    revenueGenerated: number;
-    customerRating: number;
-    punctualityScore: number;
-    tips: number;
-  };
-  currentShift?: {
-    clockIn: string;
-    isActive: boolean;
-    tableAssignments?: number[];
-  };
-}
-
-interface StaffFormData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
-  salary: number;
-  hireDate: string;
-  password: string;
-  employee_id: string;
-}
+// Types moved to src/types/staff.ts
 
 // Map API Staff to local StaffMember format
 const mapApiStaffToLocal = (apiStaff: Staff): StaffMember => {
@@ -191,17 +150,7 @@ export default function StaffManagement() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const [formData, setFormData] = useState<StaffFormData>({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    role: 'waiter',
-    salary: 3000,
-    hireDate: new Date().toISOString().split('T')[0],
-    password: 'password123',
-    employee_id: ''
-  });
+  // Form state handled inside StaffForm (Formik)
 
   // Fetch staff data from API
   const fetchStaff = async () => {
@@ -235,62 +184,42 @@ export default function StaffManagement() {
     roleFilter === 'all' || member.role === roleFilter
   );
 
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'salary' ? parseFloat(value) || 0 : value
-    }));
-  };
+  // Form inputs handled by StaffForm
 
   // Add new staff member
-  const handleAddStaff = async () => {
-    if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
+  const handleSubmitNewStaff = async (values: StaffFormData) => {
     setLoading(true);
     setError(null);
     setValidationErrors({});
-    
+
     try {
-      console.log('➕ Creating new staff member:', formData);
-      
-      // Generate user_id (you might want to get this from user context or backend)
-      const userId = user?.id || 1; // Fallback to 1 if user ID not available
-      
-      // Generate employee_id if not provided
-      const employeeId = formData.employee_id || `EMP${Date.now()}`;
-      
+      const userId = user?.id || 1;
+      const employeeId = values.employee_id || `EMP${Date.now()}`;
+
       const createData = {
         user_id: userId,
         employee_id: employeeId,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        position: formData.role, // Backend expects 'position' instead of 'role'
-        phone: formData.phone,
-        hire_date: formData.hireDate,
-        hourly_rate: formData.salary,
-        password: formData.password
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email,
+        position: values.role,
+        phone: values.phone,
+        hire_date: values.hireDate,
+        hourly_rate: values.salary,
+        password: values.password,
       };
-      
-      console.log('📤 Sending data to API:', createData);
-      
+
       const response = await fetch('/api/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(createData)
+        body: JSON.stringify(createData),
       });
-      
+
       const responseData = await response.json();
-      console.log('📡 API Response:', responseData);
-      
+
       if (!response.ok) {
         if (responseData.errors) {
           setValidationErrors(responseData.errors);
@@ -300,25 +229,10 @@ export default function StaffManagement() {
         }
         return;
       }
-      
-      // Success - refresh the staff list
+
       await fetchStaff();
-      
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        role: 'waiter',
-        salary: 3000,
-        hireDate: new Date().toISOString().split('T')[0],
-        password: 'password123',
-        employee_id: ''
-      });
       setShowAddModal(false);
       setSuccessMessage('Staff member added successfully!');
-      
-      // Auto-hide success message
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error: any) {
       console.error('❌ Error adding staff:', error);
@@ -408,17 +322,6 @@ export default function StaffManagement() {
 
   // Reset form
   const resetForm = () => {
-    setFormData({
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: '',
-      role: 'waiter',
-      salary: 3000,
-      hireDate: new Date().toISOString().split('T')[0],
-      password: 'password123',
-      employee_id: ''
-    });
     setValidationErrors({});
     setError(null);
   };
@@ -811,179 +714,12 @@ export default function StaffManagement() {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-lg border">
             <h3 className="text-xl font-bold mb-4">Add New Staff Member</h3>
-            
-            <div className="space-y-4">
-              {/* Employee ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-                <input
-                  type="text"
-                  name="employee_id"
-                  value={formData.employee_id}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Will be auto-generated if empty"
-                />
-                {validationErrors.employee_id && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.employee_id[0]}</p>
-                )}
-              </div>
-
-              {/* First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                {validationErrors.first_name && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.first_name[0]}</p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                {validationErrors.last_name && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.last_name[0]}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                {validationErrors.email && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.email[0]}</p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {validationErrors.phone && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.phone[0]}</p>
-                )}
-              </div>
-
-              {/* Role/Position */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="waiter">Waiter</option>
-                  <option value="cashier">Cashier</option>
-                  <option value="kitchen">Kitchen Staff</option>
-                  <option value="manager">Manager</option>
-                </select>
-                {validationErrors.position && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.position[0]}</p>
-                )}
-              </div>
-
-              {/* Salary */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate (MAD)</label>
-                <input
-                  type="number"
-                  name="salary"
-                  value={formData.salary}
-                  onChange={handleInputChange}
-                  min="20"
-                  max="200"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {validationErrors.hourly_rate && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.hourly_rate[0]}</p>
-                )}
-              </div>
-
-              {/* Hire Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-                <input
-                  type="date"
-                  name="hireDate"
-                  value={formData.hireDate}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {validationErrors.hire_date && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.hire_date[0]}</p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                {validationErrors.password && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.password[0]}</p>
-                )}
-              </div>
-
-              {/* User ID Error */}
-              {validationErrors.user_id && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-700 text-sm">
-                    <strong>User ID Error:</strong> {validationErrors.user_id[0]}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={closeModals}
-                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddStaff}
-                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-                disabled={loading || !formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()}
-              >
-                {loading ? 'Adding...' : 'Add Staff'}
-              </button>
-            </div>
+            <StaffForm
+              loading={loading}
+              onCancel={closeModals}
+              onSubmit={handleSubmitNewStaff}
+              serverErrors={validationErrors}
+            />
           </div>
         </div>
       )}

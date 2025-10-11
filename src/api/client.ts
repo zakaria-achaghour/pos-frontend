@@ -33,26 +33,16 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    console.log('🔍 API Response Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      method: error.config?.method,
-      data: error.response?.data
-    });
-    
     // Handle common errors
     if (error.response?.status === 401) {
       // Token expired or invalid
-      console.log('🚫 401 Unauthorized - Clearing auth data');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       
-      // Only redirect if not already on login page and not during initialization
-      const isInitRequest = error.config?.url?.includes('/me');
+      // Only redirect if not already on login page
       const isOnLoginPage = window.location.pathname === '/login';
       
-      if (!isOnLoginPage && !isInitRequest) {
-        console.log('🔄 Redirecting to login...');
+      if (!isOnLoginPage) {
         window.location.href = '/login';
       }
     }
@@ -67,7 +57,7 @@ apiClient.interceptors.response.use(
       console.error('Validation errors:', error.response.data);
     }
     
-    if (error.response?.status >= 500) {
+    if (error.response && error.response.status >= 500) {
       // Server errors
       console.error('Server error:', error.response.data);
     }

@@ -41,12 +41,9 @@ export const fetchRestaurants = createAsyncThunk(
   'restaurant/fetchRestaurants',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('🔄 Fetching restaurants from API...');
       const response = await restaurantAPI.getRestaurants();
-      console.log('✅ Restaurants API Response:', response);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching restaurants:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch restaurants');
     }
   }
@@ -56,12 +53,9 @@ export const fetchRestaurant = createAsyncThunk(
   'restaurant/fetchRestaurant',
   async (id: number, { rejectWithValue }) => {
     try {
-      console.log('🔍 Fetching restaurant details for ID:', id);
       const restaurant = await restaurantAPI.getRestaurant(id);
-      console.log('✅ Restaurant details:', restaurant);
       return restaurant;
     } catch (error: any) {
-      console.error('❌ Error fetching restaurant:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch restaurant');
     }
   }
@@ -71,12 +65,9 @@ export const createRestaurant = createAsyncThunk(
   'restaurant/createRestaurant',
   async (restaurantData: any, { rejectWithValue }) => {
     try {
-      console.log('➕ Creating new restaurant:', restaurantData);
       const restaurant = await restaurantAPI.createRestaurant(restaurantData);
-      console.log('✅ Restaurant created:', restaurant);
       return restaurant;
     } catch (error: any) {
-      console.error('❌ Error creating restaurant:', error);
       if (error.response?.data?.errors) {
         return rejectWithValue({ 
           errors: error.response.data.errors, 
@@ -94,12 +85,9 @@ export const updateRestaurant = createAsyncThunk(
   'restaurant/updateRestaurant',
   async ({ id, data }: { id: number; data: any }, { rejectWithValue }) => {
     try {
-      console.log('🔄 Updating restaurant:', id, data);
       const restaurant = await restaurantAPI.updateRestaurant(id, data);
-      console.log('✅ Restaurant updated:', restaurant);
       return restaurant;
     } catch (error: any) {
-      console.error('❌ Error updating restaurant:', error);
       if (error.response?.data?.errors) {
         return rejectWithValue({ 
           errors: error.response.data.errors, 
@@ -117,11 +105,9 @@ export const deleteRestaurant = createAsyncThunk(
   'restaurant/deleteRestaurant',
   async (id: number, { rejectWithValue }) => {
     try {
-      console.log('🗑️ Deleting restaurant:', id);
       await restaurantAPI.deleteRestaurant(id);
       return id;
     } catch (error: any) {
-      console.error('❌ Error deleting restaurant:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to delete restaurant');
     }
   }

@@ -3,9 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import NotFound from "./pages/OtherPage/NotFound";
 
-// Debug component (temporary)
-import AuthDebugPanel from "./components/debug/AuthDebugPanel";
-
 // Layouts
 import AppLayout from "./layout/AppLayout";
 
@@ -23,7 +20,6 @@ import EnhancedTableManagement from "./pages/POS/EnhancedTableManagement";
 import StaffManagement from "./pages/POS/StaffManagement";
 import Categories from "./pages/POS/Categories";
 import Items from "./pages/POS/Items";
-import OrdersList from "./pages/POS/OrdersList";
 import OrderCreate from "./pages/POS/OrderCreate";
 import OrderDetails from "./pages/POS/OrderDetails";
 import DailySummary from "./pages/POS/DailySummary";
@@ -182,11 +178,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-      
-      {/* Temporary Debug Panel */}
-      <div id="auth-debug">
-        <AuthDebugPanel />
-      </div>
     </>
   );
 }

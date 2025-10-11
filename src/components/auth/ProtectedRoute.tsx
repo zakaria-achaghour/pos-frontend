@@ -11,16 +11,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  console.log('🛡️ ProtectedRoute Check:', {
-    isLoading,
-    isAuthenticated,
-    user: user ? { id: user.id, role: user.role, email: user.email } : null,
-    allowedRoles,
-    path: window.location.pathname
-  });
-
   if (isLoading) {
-    console.log('⏳ Auth still loading...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -32,16 +23,13 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    console.log('❌ Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    console.log('🚫 User role not allowed:', { userRole: user.role, allowedRoles });
     return <Navigate to="/unauthorized" replace />;
   }
 
-  console.log('✅ Access granted');
   return <>{children}</>;
 };
 
