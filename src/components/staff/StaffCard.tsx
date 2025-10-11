@@ -7,6 +7,8 @@ interface StaffCardProps {
   onToggleClock: (memberId: number) => void;
   onShowDetails: (member: StaffMember) => void;
   onChangeStatus: (memberId: number, status: StaffStatus) => void;
+  onEdit?: (member: StaffMember) => void;
+  onDelete?: (memberId: number) => void;
 }
 
 const getRoleColor = (role: string) => {
@@ -45,6 +47,8 @@ export default function StaffCard({
   onToggleClock,
   onShowDetails,
   onChangeStatus,
+  onEdit,
+  onDelete,
 }: StaffCardProps) {
   return (
     <div className="bg-white rounded-lg shadow border">
@@ -130,10 +134,10 @@ export default function StaffCard({
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <button
               onClick={() => onToggleClock(member.id)}
-              className={`flex-1 px-3 py-2 rounded text-sm font-medium ${
+              className={`px-3 py-2 rounded text-sm font-medium ${
                 member.currentShift?.isActive
                   ? 'bg-red-100 text-red-700 hover:bg-red-200'
                   : 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -144,10 +148,27 @@ export default function StaffCard({
             </button>
             <button
               onClick={() => onShowDetails(member)}
-              className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200"
+              className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200"
             >
               👁️ Details
             </button>
+            {onEdit && (
+              <button
+                onClick={() => onEdit(member)}
+                className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded text-sm hover:bg-yellow-200"
+              >
+                ✏️ Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(member.id)}
+                className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200"
+                disabled={loading}
+              >
+                🗑️ Delete
+              </button>
+            )}
           </div>
 
           <select
