@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse, PaginatedResponse } from './client';
+import type { ApiResponse } from './client';
 
 // Dashboard types
 export interface DashboardMetrics {

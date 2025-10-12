@@ -3,6 +3,11 @@ import { menuAPI } from '../../api/menu';
 import type { Category, MenuItem, CreateCategoryData, UpdateCategoryData, CreateMenuItemData, UpdateMenuItemData } from '../../api/menu';
 import type { ListState, DetailState, ApiError } from '../types/common';
 import { parseApiError, formatValidationErrors } from '../utils/errorUtils';
+// Import centralized types
+import type { 
+  Category as CentralCategory, 
+  MenuItem as CentralMenuItem 
+} from '../../types/menu';
 
 // Extended types for menu state
 interface MenuListState extends ListState<MenuItem> {

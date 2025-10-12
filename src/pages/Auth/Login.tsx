@@ -6,8 +6,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { login, getRoleBasedRedirect, user, isLoading } = useAuth();
+  const { login, getRoleBasedRedirect, user, isLoading, loginError } = useAuth();
   const navigate = useNavigate();
 
   // Check if user is already authenticated when component mounts
@@ -27,7 +26,6 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       console.log('🚀 Starting login process...');
@@ -45,13 +43,10 @@ const Login = () => {
         console.log('🔀 Redirect path from context:', redirectPath);
         console.log('🧭 Navigating to:', redirectPath);
         navigate(redirectPath);
-      } else {
-        console.log('❌ Login failed:', result.error);
-        setError(result.error || 'Invalid credentials');
       }
+      // If login fails, the error will be handled by Redux and displayed via loginError
     } catch (err) {
       console.error('💥 Login exception:', err);
-      setError('Login failed');
     } finally {
       setLoading(false);
     }
@@ -89,9 +84,9 @@ const Login = () => {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {loginError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+              {loginError}
             </div>
           )}
           

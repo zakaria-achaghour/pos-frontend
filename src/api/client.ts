@@ -90,6 +90,12 @@ export interface PaginatedResponse<T = any> {
 
 // Error handler utility
 export const handleApiError = (error: AxiosError): string => {
+  // First check if there's a specific error message from the backend
+  const backendMessage = (error.response?.data as any)?.message;
+  if (backendMessage) {
+    return backendMessage;
+  }
+  
   if (error.response?.status === 401) {
     return 'Your session has expired. Please log in again.';
   }
@@ -110,7 +116,7 @@ export const handleApiError = (error: AxiosError): string => {
     return 'The requested resource was not found.';
   }
   
-  if (error.response?.status >= 500) {
+  if (error.response?.status && error.response.status >= 500) {
     return 'A server error occurred. Please try again later.';
   }
   

@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function FaqsThree() {
   return (
     <div className="grid gird-cols-1 gap-x-8 xl:grid-cols-2">

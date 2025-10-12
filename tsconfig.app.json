@@ -28,7 +28,11 @@
     "useUnknownInCatchVariables": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src", "src/types/**/*"],
   "exclude": ["dist", "build", "node_modules"]

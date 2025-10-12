@@ -1,3 +1,5 @@
+import { type FC } from 'react';
+
 interface FaqTwoProps {
   title: string;
   content: string;
@@ -5,7 +7,7 @@ interface FaqTwoProps {
   toggleAccordionTwo: () => void;
 }
 
-const FaqTwo: React.FC<FaqTwoProps> = ({
+const FaqTwo: FC<FaqTwoProps> = ({
   title,
   content,
   isOpen,
