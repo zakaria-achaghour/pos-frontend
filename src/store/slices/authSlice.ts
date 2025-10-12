@@ -33,8 +33,10 @@ const getRedirectPathForUser = (user: ApiUser): string => {
       redirectPath = '/admin/tenants';
       break;
     case 'owner':
-    case 'manager':
       redirectPath = '/owner/dashboard';
+      break;
+    case 'manager':
+      redirectPath = '/dashboard';
       break;
     case 'cashier':
       redirectPath = '/cashier/dashboard';
@@ -220,8 +222,10 @@ export const selectGetRoleBasedRedirect = (state: { auth: AuthState }): string =
       redirectPath = '/admin/tenants';
       break;
     case 'owner':
-    case 'manager':
       redirectPath = '/owner/dashboard';
+      break;
+    case 'manager':
+      redirectPath = '/dashboard';
       break;
     case 'cashier':
       redirectPath = '/cashier/dashboard';

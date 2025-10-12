@@ -50,21 +50,24 @@ export default function StaffCard({
   onEdit,
   onDelete,
 }: StaffCardProps) {
+  const displayName = member.name || 'Unknown';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase())
+    .join('');
+
   return (
     <div className="bg-white rounded-lg shadow border">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-600">
-                {member.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
-              </span>
+              <span className="text-sm font-medium text-gray-600">{initials || 'U'}</span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{member.name}</h3>
+              <h3 className="font-semibold text-gray-900">{displayName}</h3>
               <p className="text-sm text-gray-600">{member.email}</p>
             </div>
           </div>
@@ -187,4 +190,3 @@ export default function StaffCard({
     </div>
   );
 }
-

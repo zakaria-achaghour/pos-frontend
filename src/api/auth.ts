@@ -58,7 +58,10 @@ export const authAPI = {
       };
       user.role = roleMapping[user.roles[0]] || 'waiter';
     }
-    
+    if (user.role && typeof user.role === 'string') {
+      user.role = user.role.toLowerCase();
+    }
+
     return {
       user: user,
       token: response.data.access_token,
@@ -79,8 +82,32 @@ export const authAPI = {
    * Get current user information
    */
   me: async (): Promise<User> => {
-    const response = await apiClient.get<ApiResponse<User>>('/me');
-    return response.data.data;
+    const response = await apiClient.get<ApiResponse<User> | User>('/me');
+    const payload: any = response.data;
+
+    // Support multiple backend response shapes
+    const user: any = payload?.data ?? payload?.user ?? payload;
+
+    if (!user) {
+      throw new Error('Invalid response from /me endpoint');
+    }
+
+    // Harmonize role field if backend returns roles array or capitalized role
+    if (!user.role && Array.isArray(user.roles) && user.roles.length > 0) {
+      const roleMapping: { [key: string]: string } = {
+        SuperAdmin: 'superadmin',
+        Owner: 'owner',
+        Manager: 'manager',
+        Cashier: 'cashier',
+        Waiter: 'waiter',
+        Kitchen: 'kitchen'
+      };
+      user.role = roleMapping[user.roles[0]] || user.roles[0]?.toLowerCase() || 'waiter';
+    } else if (typeof user.role === 'string') {
+      user.role = user.role.toLowerCase();
+    }
+
+    return user as User;
   },
 
   /**

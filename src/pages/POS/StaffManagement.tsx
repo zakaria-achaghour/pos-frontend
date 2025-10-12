@@ -12,10 +12,12 @@ import StaffScheduleView from '../../components/staff/StaffScheduleView';
 import StaffModal from '../../components/staff/StaffModal';
 import StaffForm from '../../components/staff/StaffForm';
 import StaffEditForm from '../../components/staff/StaffEditForm';
+import type { StaffMember } from '../../types/staff';
 
 export default function StaffManagement() {
   const {
     // Data
+    staff,
     filteredStaff,
     selectedMember,
     editingMember,
@@ -27,13 +29,15 @@ export default function StaffManagement() {
     error,
     successMessage,
     validationErrors,
-    
+    pagination,
+
     // Actions
     createStaff,
     updateStaff,
     deleteStaff,
     updateStaffStatus,
     clockInOut,
+    goToPage,
     
     // UI Actions
     setViewMode,
@@ -48,6 +52,7 @@ export default function StaffManagement() {
 
   // Local modal states
   const [showAddModal, setShowAddModal] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<StaffMember | null>(null);
 
   // Handle form submissions
   const handleAddStaff = async (values: any) => {
@@ -68,11 +73,49 @@ export default function StaffManagement() {
     }
   };
 
+  const handleDeleteRequest = (memberId: number) => {
+    const member = staff.find((s) => s.id === memberId);
+    if (member) {
+      setMemberToDelete(member);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!memberToDelete) return;
+    try {
+      await deleteStaff(memberToDelete.id);
+      setMemberToDelete(null);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.currentPage > 1) {
+      goToPage(pagination.currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.currentPage < pagination.lastPage) {
+      goToPage(pagination.currentPage + 1);
+    }
+  };
+
+  const paginationSummary = (() => {
+    const from = pagination.total === 0
+      ? 0
+      : (pagination.currentPage - 1) * pagination.perPage + 1;
+    const to = Math.min(pagination.currentPage * pagination.perPage, pagination.total);
+    return { from, to };
+  })();
+
   // Close all modals
   const closeModals = () => {
     setShowAddModal(false);
     setSelectedMember(null);
     setEditingMember(null);
+    setMemberToDelete(null);
     clearError();
   };
 
@@ -148,7 +191,12 @@ export default function StaffManagement() {
         viewMode={viewMode}
         roleFilter={roleFilter}
         onViewModeChange={setViewMode}
-        onRoleFilterChange={setRoleFilter}
+        onRoleFilterChange={(filter) => {
+          setRoleFilter(filter);
+          if (pagination.currentPage !== 1) {
+            goToPage(1);
+          }
+        }}
         onAddStaff={() => setShowAddModal(true)}
       />
 
@@ -161,7 +209,7 @@ export default function StaffManagement() {
           onViewDetails={setSelectedMember}
           onStatusChange={updateStaffStatus}
           onEdit={setEditingMember}
-          onDelete={deleteStaff}
+          onDelete={handleDeleteRequest}
         />
       )}
 
@@ -171,6 +219,36 @@ export default function StaffManagement() {
 
       {viewMode === 'schedule' && (
         <StaffScheduleView staff={filteredStaff} />
+      )}
+
+      {pagination.lastPage > 1 && (
+        <div className="bg-white p-4 rounded-lg shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-medium text-gray-900">{paginationSummary.from}</span> to{' '}
+            <span className="font-medium text-gray-900">{paginationSummary.to}</span> of{' '}
+            <span className="font-medium text-gray-900">{pagination.total}</span> staff members
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviousPage}
+              disabled={pagination.currentPage === 1 || loading}
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ◀ Previous
+            </button>
+            <span className="text-sm text-gray-700">
+              Page <span className="font-semibold">{pagination.currentPage}</span> of{' '}
+              <span className="font-semibold">{pagination.lastPage}</span>
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={pagination.currentPage === pagination.lastPage || loading}
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next ▶
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Add Staff Modal */}
@@ -204,6 +282,38 @@ export default function StaffManagement() {
             serverErrors={validationErrors}
           />
         )}
+      </StaffModal>
+
+      {/* Delete Confirmation Modal */}
+      <StaffModal
+        isOpen={!!memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+        title="Confirm Deletion"
+        size="sm"
+      >
+        <div className="space-y-6">
+          <p className="text-gray-700">
+            Are you sure you want to delete{' '}
+            <span className="font-semibold">{memberToDelete?.name}</span>? This action
+            cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setMemberToDelete(null)}
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
       </StaffModal>
 
       {/* Staff Details Modal */}

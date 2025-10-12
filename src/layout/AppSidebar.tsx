@@ -22,7 +22,7 @@ const navItems: NavItem[] = [
     icon: "👑",
     name: "Owner Dashboard",
     path: "/owner/dashboard",
-    allowedRoles: ['owner', 'manager']
+    allowedRoles: ['owner']
   },
   {
     icon: "👥",

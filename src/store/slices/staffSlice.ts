@@ -47,17 +47,45 @@ interface StaffState {
 
 // Map API Staff to local StaffMember format
 const mapApiStaffToLocal = (apiStaff: any): StaffMember => {
+  const fullName = apiStaff.first_name && apiStaff.last_name
+    ? `${apiStaff.first_name} ${apiStaff.last_name}`
+    : apiStaff.name || 'Unknown';
+
+  const rawRole: string | undefined = apiStaff.role || apiStaff.position;
+  const normalizedRole = (() => {
+    if (!rawRole) return 'waiter';
+    const r = String(rawRole).toLowerCase();
+    if (r.includes('manager')) return 'manager';
+    if (r.includes('cashier')) return 'cashier';
+    if (r.includes('cook') || r.includes('chef') || r.includes('kitchen')) return 'kitchen';
+    // Front of house equivalents -> waiter
+    if (r.includes('server') || r.includes('host') || r.includes('busser') || r.includes('bartender')) return 'waiter';
+    return 'waiter';
+  })();
+
+  const normalizedStatus = (() => {
+    const s = apiStaff.status ? String(apiStaff.status).toLowerCase() : undefined;
+    if (s === 'active' || s === 'inactive' || s === 'on-break' || s === 'vacation') return s as StaffMember['status'];
+    if (typeof apiStaff.is_active === 'boolean') return apiStaff.is_active ? 'active' : 'inactive';
+    return 'inactive';
+  })();
+
+  const hireDateRaw = apiStaff.hire_date || apiStaff.created_at;
+  const hireDate = hireDateRaw ? String(hireDateRaw).split('T')[0] : new Date().toISOString().split('T')[0];
+
+  const salary = typeof apiStaff.hourly_rate === 'string'
+    ? parseFloat(apiStaff.hourly_rate)
+    : (apiStaff.hourly_rate || 0);
+
   return {
     id: apiStaff.id,
-    name: apiStaff.first_name && apiStaff.last_name 
-      ? `${apiStaff.first_name} ${apiStaff.last_name}` 
-      : apiStaff.name || 'Unknown',
+    name: fullName,
     email: apiStaff.email || '',
     phone: apiStaff.phone || '',
-    role: apiStaff.role || 'waiter',
-    status: apiStaff.is_active ? 'active' : 'inactive',
-    hireDate: apiStaff.hire_date || apiStaff.created_at || new Date().toISOString().split('T')[0],
-    salary: apiStaff.hourly_rate || 0,
+    role: normalizedRole,
+    status: normalizedStatus,
+    hireDate,
+    salary,
     // Set default values for complex fields not provided by API
     shiftSchedule: {
       monday: { start: '09:00', end: '17:00', isWorking: true },

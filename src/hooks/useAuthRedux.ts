@@ -30,8 +30,10 @@ export const useAuth = () => {
         redirectPath = '/admin/tenants';
         break;
       case 'owner':
-      case 'manager':
         redirectPath = '/owner/dashboard';
+        break;
+      case 'manager':
+        redirectPath = '/dashboard';
         break;
       case 'cashier':
         redirectPath = '/pos/cashier-dashboard';
