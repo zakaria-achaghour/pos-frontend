@@ -5,15 +5,25 @@ WORKDIR /app
 
 # Install deps for caching. We don't copy source here; compose mounts it.
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN if [ -f package-lock.json ]; then npm ci; \
-    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm i; \
-    elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-    else npm i; fi
+# Enable Corepack for modern package managers and speed up installs
+RUN corepack enable \
+ && if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; \
+    elif [ -f pnpm-lock.yaml ]; then pnpm i --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then yarn install --frozen-lockfile --non-interactive --no-progress; \
+    else npm i --no-audit --no-fund; fi
 
-# Improve file watching on Windows/WSL/VMs
-ENV CHOKIDAR_USEPOLLING=true
+# Improve file watching on Windows/WSL/VMs (polling with a higher interval reduces CPU on bind mounts)
+ENV CHOKIDAR_USEPOLLING=true \
+    CHOKIDAR_INTERVAL=500 \
+    NODE_ENV=development
+
+# Better defaults when calling backend from inside Docker
+# Use host.docker.internal to reach the host machine (Windows/macOS). On Linux, set this via compose to your backend service.
+ENV VITE_PROXY_TARGET=http://host.docker.internal:8080 \
+    VITE_API_TIMEOUT=60000
 
 EXPOSE 5173
 
 # By default, Vite binds to 0.0.0.0 for Docker
-CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]
+# strictPort avoids incremental port bumps that break HMR with mapped ports
+CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173", "--strictPort" ]

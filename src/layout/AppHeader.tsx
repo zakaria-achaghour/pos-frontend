@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Link } from "react-router";
-import { useSidebar } from "../context/SidebarContext";
+import { useSidebar } from "../hooks/useSidebarRedux";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";

@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { apiConfig } from '../config';
 
 // Create axios instance with environment configuration
@@ -37,7 +38,13 @@ apiClient.interceptors.response.use(
       // Token expired or invalid
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Only redirect if not already on login page
+      const isOnLoginPage = window.location.pathname === '/login';
+      
+      if (!isOnLoginPage) {
+        window.location.href = '/login';
+      }
     }
     
     if (error.response?.status === 403) {
@@ -50,7 +57,7 @@ apiClient.interceptors.response.use(
       console.error('Validation errors:', error.response.data);
     }
     
-    if (error.response?.status >= 500) {
+    if (error.response && error.response.status >= 500) {
       // Server errors
       console.error('Server error:', error.response.data);
     }
@@ -83,6 +90,12 @@ export interface PaginatedResponse<T = any> {
 
 // Error handler utility
 export const handleApiError = (error: AxiosError): string => {
+  // First check if there's a specific error message from the backend
+  const backendMessage = (error.response?.data as any)?.message;
+  if (backendMessage) {
+    return backendMessage;
+  }
+  
   if (error.response?.status === 401) {
     return 'Your session has expired. Please log in again.';
   }
@@ -103,7 +116,7 @@ export const handleApiError = (error: AxiosError): string => {
     return 'The requested resource was not found.';
   }
   
-  if (error.response?.status >= 500) {
+  if (error.response?.status && error.response.status >= 500) {
     return 'A server error occurred. Please try again later.';
   }
   

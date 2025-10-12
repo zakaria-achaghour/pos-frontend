@@ -1,30 +1,52 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuthRedux';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { login, getRoleBasedRedirect } = useAuth();
+  const { login, getRoleBasedRedirect, user, isLoading, loginError } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user is already authenticated when component mounts
+  useEffect(() => {
+    console.log('🔍 Login component mounted, checking existing auth...');
+    console.log('👤 Current user:', user);
+    console.log('⏳ Is loading:', isLoading);
+    
+    if (!isLoading && user) {
+      console.log('✅ User already authenticated, redirecting...');
+      const redirectPath = getRoleBasedRedirect();
+      console.log('🧭 Redirect path:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, isLoading, navigate, getRoleBasedRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
+      console.log('🚀 Starting login process...');
       const result = await login(email, password);
-      if (result.success) {
+      console.log('📨 Login result:', result);
+      
+      if (result.success && result.redirectPath) {
+        console.log('✅ Login successful, redirect path provided:', result.redirectPath);
+        console.log('🧭 Navigating to:', result.redirectPath);
+        navigate(result.redirectPath);
+      } else if (result.success) {
+        // Fallback to getRoleBasedRedirect if no redirectPath provided
+        console.log('✅ Login successful, getting redirect path from context...');
         const redirectPath = getRoleBasedRedirect();
+        console.log('🔀 Redirect path from context:', redirectPath);
+        console.log('🧭 Navigating to:', redirectPath);
         navigate(redirectPath);
-      } else {
-        setError(result.error || 'Invalid credentials');
       }
+      // If login fails, the error will be handled by Redux and displayed via loginError
     } catch (err) {
-      setError('Login failed');
+      console.error('💥 Login exception:', err);
     } finally {
       setLoading(false);
     }
@@ -34,6 +56,20 @@ const Login = () => {
     setEmail(userEmail);
     setPassword('password123');
   };
+
+  // Show loading state while checking existing authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -48,9 +84,9 @@ const Login = () => {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {loginError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+              {loginError}
             </div>
           )}
           

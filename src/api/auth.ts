@@ -1,4 +1,5 @@
-import apiClient, { ApiResponse } from './client';
+import apiClient from './client';
+import type { ApiResponse } from './client';
 
 // Authentication types
 export interface LoginCredentials {
@@ -11,14 +12,15 @@ export interface User {
   name: string;
   email: string;
   role: 'superadmin' | 'owner' | 'manager' | 'cashier' | 'waiter' | 'kitchen';
+  roles?: string[]; // Backend uses roles array
   restaurant_id?: number;
   restaurant?: {
     id: number;
     name: string;
     slug: string;
   };
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthResponse {
@@ -40,8 +42,32 @@ export const authAPI = {
    * Login user with email and password
    */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post<ApiResponse<AuthResponse>>('/login', credentials);
-    return response.data.data;
+    const response = await apiClient.post<any>('/login', credentials);
+    // Handle direct response format from Laravel backend
+    const user = response.data.user;
+    
+    // Convert roles array to single role for frontend compatibility
+    if (user.roles && user.roles.length > 0) {
+      const roleMapping: { [key: string]: string } = {
+        'SuperAdmin': 'superadmin',
+        'Owner': 'owner',
+        'Manager': 'manager',
+        'Cashier': 'cashier',
+        'Waiter': 'waiter',
+        'Kitchen': 'kitchen'
+      };
+      user.role = roleMapping[user.roles[0]] || 'waiter';
+    }
+    if (user.role && typeof user.role === 'string') {
+      user.role = user.role.toLowerCase();
+    }
+
+    return {
+      user: user,
+      token: response.data.access_token,
+      token_type: response.data.token_type,
+      expires_in: response.data.expires_in
+    };
   },
 
   /**
@@ -56,8 +82,32 @@ export const authAPI = {
    * Get current user information
    */
   me: async (): Promise<User> => {
-    const response = await apiClient.get<ApiResponse<User>>('/me');
-    return response.data.data;
+    const response = await apiClient.get<ApiResponse<User> | User>('/me');
+    const payload: any = response.data;
+
+    // Support multiple backend response shapes
+    const user: any = payload?.data ?? payload?.user ?? payload;
+
+    if (!user) {
+      throw new Error('Invalid response from /me endpoint');
+    }
+
+    // Harmonize role field if backend returns roles array or capitalized role
+    if (!user.role && Array.isArray(user.roles) && user.roles.length > 0) {
+      const roleMapping: { [key: string]: string } = {
+        SuperAdmin: 'superadmin',
+        Owner: 'owner',
+        Manager: 'manager',
+        Cashier: 'cashier',
+        Waiter: 'waiter',
+        Kitchen: 'kitchen'
+      };
+      user.role = roleMapping[user.roles[0]] || user.roles[0]?.toLowerCase() || 'waiter';
+    } else if (typeof user.role === 'string') {
+      user.role = user.role.toLowerCase();
+    }
+
+    return user as User;
   },
 
   /**
@@ -123,7 +173,29 @@ export const authAPI = {
     if (!user) return false;
 
     const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
-    return roles.includes(user.role);
+    
+    // Check both role property and roles array
+    if (user.role && roles.includes(user.role)) {
+      return true;
+    }
+    
+    if (user.roles) {
+      const roleMapping: { [key: string]: string } = {
+        'SuperAdmin': 'superadmin',
+        'Owner': 'owner',
+        'Manager': 'manager',
+        'Cashier': 'cashier',
+        'Waiter': 'waiter',
+        'Kitchen': 'kitchen'
+      };
+      
+      return user.roles.some(backendRole => {
+        const frontendRole = roleMapping[backendRole];
+        return frontendRole && roles.includes(frontendRole);
+      });
+    }
+    
+    return false;
   },
 
   /**

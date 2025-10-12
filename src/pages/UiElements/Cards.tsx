@@ -1,3 +1,4 @@
+import React from 'react';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CardWithImage from "../../components/cards/card-with-image/CardWithImage";
 import HorizontalCardWithImage from "../../components/cards/horizontal-card/HorizontalCardWithImage";

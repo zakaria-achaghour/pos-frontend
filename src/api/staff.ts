@@ -1,4 +1,5 @@
-import apiClient, { ApiResponse, PaginatedResponse } from './client';
+import apiClient from './client';
+import type { ApiResponse, PaginatedResponse } from './client';
 
 // Staff types
 export interface Staff {
@@ -82,46 +83,104 @@ export const staffAPI = {
     page?: number;
     per_page?: number;
   } = {}): Promise<PaginatedResponse<Staff>> => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
+    try {
+      console.log('🔍 Fetching staff with filters:', filters);
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+      
+      const response = await apiClient.get(`/staff?${params}`);
+      console.log('📡 Staff API response:', response.data);
+      
+      // Handle both direct response and wrapped response
+      if (response.data.data && Array.isArray(response.data.data)) {
+        return response.data as PaginatedResponse<Staff>;
+      } else if (Array.isArray(response.data)) {
+        // Direct array response - create pagination structure
+        return {
+          data: response.data,
+          current_page: 1,
+          last_page: 1,
+          per_page: response.data.length,
+          total: response.data.length,
+          from: 1,
+          to: response.data.length
+        };
       }
-    });
-    
-    const response = await apiClient.get<PaginatedResponse<Staff>>(`/staff?${params}`);
-    return response.data;
+      
+      return response.data as PaginatedResponse<Staff>;
+    } catch (error: any) {
+      console.error('❌ Error fetching staff:', error);
+      throw error;
+    }
   },
 
   /**
    * Get single staff member
    */
   getStaffMember: async (id: number): Promise<Staff> => {
-    const response = await apiClient.get<ApiResponse<Staff>>(`/staff/${id}`);
-    return response.data.data;
+    try {
+      console.log('🔍 Fetching staff member with ID:', id);
+      const response = await apiClient.get(`/staff/${id}`);
+      console.log('📡 Single staff API response:', response.data);
+      
+      // Handle both direct response and wrapped response
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Error fetching staff member:', error);
+      throw error;
+    }
   },
 
   /**
    * Create new staff member
    */
   createStaff: async (staffData: CreateStaffData): Promise<Staff> => {
-    const response = await apiClient.post<ApiResponse<Staff>>('/staff', staffData);
-    return response.data.data;
+    try {
+      console.log('➕ Creating staff member:', staffData);
+      const response = await apiClient.post('/staff', staffData);
+      console.log('📡 Create staff API response:', response.data);
+      
+      // Handle both direct response and wrapped response
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Error creating staff member:', error);
+      throw error;
+    }
   },
 
   /**
    * Update staff member
    */
   updateStaff: async (id: number, updates: UpdateStaffData): Promise<Staff> => {
-    const response = await apiClient.put<ApiResponse<Staff>>(`/staff/${id}`, updates);
-    return response.data.data;
+    try {
+      console.log('🔄 Updating staff member:', id, updates);
+      const response = await apiClient.put(`/staff/${id}`, updates);
+      console.log('📡 Update staff API response:', response.data);
+      
+      // Handle both direct response and wrapped response
+      return response.data.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Error updating staff member:', error);
+      throw error;
+    }
   },
 
   /**
    * Delete staff member
    */
   deleteStaff: async (id: number): Promise<void> => {
-    await apiClient.delete(`/staff/${id}`);
+    try {
+      console.log('🗑️ Deleting staff member:', id);
+      await apiClient.delete(`/staff/${id}`);
+      console.log('✅ Staff member deleted successfully');
+    } catch (error: any) {
+      console.error('❌ Error deleting staff member:', error);
+      throw error;
+    }
   },
 
   /**
