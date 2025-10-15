@@ -1,63 +1,48 @@
 import apiClient from './client';
-import type { ApiResponse } from './client';
-
-// Table types
-export interface Table {
-  id: number;
-  name: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved' | 'maintenance';
-  position_x?: number;
-  position_y?: number;
-  current_order_id?: number;
-  current_order?: {
-    id: number;
-    customer_name?: string;
-    total: number;
-    created_at: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateTableData {
-  name: string;
-  capacity: number;
-  position_x?: number;
-  position_y?: number;
-}
-
-export interface UpdateTableData extends Partial<CreateTableData> {
-  status?: 'available' | 'occupied' | 'reserved' | 'maintenance';
-}
-
-export interface TableAnalytics {
-  table_id: number;
-  table_name: string;
-  total_orders: number;
-  total_revenue: number;
-  average_order_value: number;
-  occupancy_rate: number;
-  average_duration: number; // in minutes
-}
-
-export interface OccupancyData {
-  total_tables: number;
-  occupied_tables: number;
-  available_tables: number;
-  reserved_tables: number;
-  maintenance_tables: number;
-  occupancy_percentage: number;
-}
+import type { ApiResponse, PaginatedResponse } from './client';
+import type { 
+  Table, 
+  TableFormData, 
+  CreateTableRequest, 
+  UpdateTableRequest,
+  TableFilters,
+  TablesResponse,
+  TableAnalytics 
+} from '../types/table';
 
 // Table API service
 export const tableAPI = {
   /**
-   * Get all tables
+   * Get all tables with pagination and filters
    */
-  getTables: async (): Promise<Table[]> => {
-    const response = await apiClient.get<ApiResponse<Table[]>>('/tables');
-    return response.data.data;
+  getTables: async (params?: {
+    page?: number;
+    limit?: number;
+    filters?: TableFilters;
+  }): Promise<TablesResponse> => {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.filters?.status) searchParams.append('status', params.filters.status);
+    if (params?.filters?.capacity) searchParams.append('capacity', params.filters.capacity.toString());
+    if (params?.filters?.minCapacity) searchParams.append('min_capacity', params.filters.minCapacity.toString());
+    if (params?.filters?.maxCapacity) searchParams.append('max_capacity', params.filters.maxCapacity.toString());
+    if (params?.filters?.section) searchParams.append('section', params.filters.section);
+    if (params?.filters?.floor) searchParams.append('floor', params.filters.floor.toString());
+    if (params?.filters?.shape) searchParams.append('shape', params.filters.shape);
+    if (params?.filters?.searchTerm) searchParams.append('search', params.filters.searchTerm);
+
+    const queryString = searchParams.toString();
+    const url = queryString ? `/tables?${queryString}` : '/tables';
+    
+    const response = await apiClient.get<PaginatedResponse<Table>>(url);
+    return {
+      tables: response.data.data,
+      total: response.data.total,
+      page: response.data.page,
+      limit: response.data.limit
+    };
   },
 
   /**
@@ -71,7 +56,7 @@ export const tableAPI = {
   /**
    * Create new table
    */
-  createTable: async (tableData: CreateTableData): Promise<Table> => {
+  createTable: async (tableData: CreateTableRequest): Promise<Table> => {
     const response = await apiClient.post<ApiResponse<Table>>('/tables', tableData);
     return response.data.data;
   },
@@ -79,7 +64,7 @@ export const tableAPI = {
   /**
    * Update table
    */
-  updateTable: async (id: number, updates: UpdateTableData): Promise<Table> => {
+  updateTable: async (id: number, updates: Partial<UpdateTableRequest>): Promise<Table> => {
     const response = await apiClient.put<ApiResponse<Table>>(`/tables/${id}`, updates);
     return response.data.data;
   },
@@ -108,27 +93,31 @@ export const tableAPI = {
   },
 
   /**
-   * Get real-time occupancy data
+   * Update table status
    */
-  getOccupancyRates: async (): Promise<OccupancyData> => {
-    const response = await apiClient.get<ApiResponse<OccupancyData>>('/tables/occupancy-rates');
+  updateTableStatus: async (id: number, status: Table['status']): Promise<Table> => {
+    const response = await apiClient.patch<ApiResponse<Table>>(`/tables/${id}/status`, { status });
     return response.data.data;
   },
 
   /**
-   * Get revenue per table
+   * Bulk update table statuses
    */
-  getRevenuePerTable: async (period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
-    const response = await apiClient.get<ApiResponse<TableAnalytics[]>>(`/tables/revenue-per-table?period=${period}`);
+  bulkUpdateStatus: async (tableIds: number[], status: Table['status']): Promise<Table[]> => {
+    const response = await apiClient.patch<ApiResponse<Table[]>>('/tables/bulk-status', { 
+      table_ids: tableIds, 
+      status 
+    });
     return response.data.data;
   },
 
   /**
    * Update table layout positions
    */
-  updateLayout: async (tables: { id: number; position_x: number; position_y: number }[]): Promise<void> => {
+  updateLayout: async (tables: { id: number; coordinates: { x: number; y: number } }[]): Promise<void> => {
     await apiClient.put('/tables/layout', { tables });
   }
 };
 
 export default tableAPI;
+
