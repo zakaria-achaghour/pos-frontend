@@ -56,6 +56,10 @@ export interface TableFormData {
   floor: number;
   description?: string;
   features: string[];
+  coordinates?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface ReservationFormData {
@@ -109,16 +113,29 @@ export interface ReservationsResponse {
   limit: number;
 }
 
-// Analytics interfaces
+// Analytics interfaces (matching backend response)
 export interface TableAnalytics {
-  totalTables: number;
-  availableTables: number;
-  occupiedTables: number;
-  reservedTables: number;
-  outOfOrderTables: number;
-  averageOccupancy: number;
-  turnaroundTime: number;
-  revenuePerTable: number;
+  table_id: number;
+  table_number: string;
+  capacity: number;
+  total_seatings: number;
+  total_revenue: number;
+  average_revenue_per_seating: number;
+  average_occupancy_rate: number;
+  average_duration: number;
+}
+
+// Aggregate statistics interface
+export interface TableStatistics {
+  total: number;
+  available: number;
+  occupied: number;
+  reserved: number;
+  cleaning: number;
+  maintenance: number;
+  outOfOrder: number;
+  totalCapacity: number;
+  occupancyRate: number;
 }
 
 export interface TableUtilization {
@@ -131,7 +148,23 @@ export interface TableUtilization {
 }
 
 // Create/Update request interfaces
-export interface CreateTableRequest extends Omit<TableFormData, 'id'> {}
+export interface CreateTableRequest {
+  number: string;
+  capacity: number;
+  shape: TableShape;
+  status: TableStatus;
+  location: {
+    section: string;
+    floor: number;
+    coordinates?: {
+      x: number;
+      y: number;
+    };
+  };
+  description?: string;
+  features: string[];
+}
+
 export interface UpdateTableRequest extends Partial<CreateTableRequest> {
   id: number;
 }

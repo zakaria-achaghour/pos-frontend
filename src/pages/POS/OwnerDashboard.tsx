@@ -295,7 +295,7 @@ export default function OwnerDashboard() {
       {/* Quick Actions */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">⚡ Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <button 
             onClick={() => navigate('/reports')}
             className="p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors hover:scale-105 transform duration-200"
@@ -309,6 +309,13 @@ export default function OwnerDashboard() {
           >
             <div className="text-2xl mb-2">🍽️</div>
             <div className="text-sm font-medium">Manage Tables</div>
+          </button>
+          <button 
+            onClick={() => navigate('/owner/tables')}
+            className="p-4 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors hover:scale-105 transform duration-200"
+          >
+            <div className="text-2xl mb-2">📊</div>
+            <div className="text-sm font-medium">Table Analytics</div>
           </button>
           <button 
             onClick={() => navigate('/owner/staff')}

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuthRedux';
+import { useTableManagementBasic } from '../../hooks/useTableManagementBasic';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import EnhancedTableStats from '../../components/tables/EnhancedTableStats';
 
 interface TableWithDetails {
   id: number;
@@ -109,6 +111,8 @@ export default function EnhancedTableManagement() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'occupied' | 'reserved'>('all');
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  
+  // Enhanced analytics are handled by EnhancedTableStats component
 
   useEffect(() => {
     // Simulate API call
@@ -205,6 +209,9 @@ export default function EnhancedTableManagement() {
           </div>
         </div>
       </div>
+
+      {/* Enhanced Table Analytics */}
+      <EnhancedTableStats />
 
       {/* Controls */}
       <div className="bg-white p-4 rounded-lg shadow">

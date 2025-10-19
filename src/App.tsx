@@ -77,9 +77,9 @@ export default function App() {
               </ProtectedRoute>
             } />
             
-            {/* Enhanced Table Management for Owners/Managers */}
+            {/* Enhanced Table Analytics for Owners Only */}
             <Route path="/owner/tables" element={
-              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+              <ProtectedRoute allowedRoles={['owner']}>
                 <EnhancedTableManagement />
               </ProtectedRoute>
             } />

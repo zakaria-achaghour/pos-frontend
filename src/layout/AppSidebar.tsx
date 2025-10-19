@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "View Tables", path: "/tables" },
       { name: "Manage Tables", path: "/tables/manage" },
-      { name: "Analytics", path: "/owner/tables" },
+      { name: "📊 Analytics (Owner)", path: "/owner/tables", allowedRoles: ['owner'] },
     ],
   },
   {
