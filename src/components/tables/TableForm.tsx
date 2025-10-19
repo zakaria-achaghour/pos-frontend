@@ -54,8 +54,8 @@ const TableForm: React.FC<TableFormProps> = ({
     capacity: table?.capacity || 4,
     shape: table?.shape || 'rectangular',
     status: table?.status || 'available',
-    section: table?.location.section || '',
-    floor: table?.location.floor || 1,
+    section: table?.location?.section || '',
+    floor: table?.location?.floor || 1,
     description: table?.description || '',
     features: table?.features || []
   };

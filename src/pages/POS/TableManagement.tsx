@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
-import { useTableManagement } from '../../hooks/useTableManagement';
-import type { Table, TableFormData } from '../../hooks/useTableManagement';
+import { useTableManagementBasic } from '../../hooks/useTableManagementBasic';
+import type { Table, TableFormData } from '../../types/table';
 import TableFilters from '../../components/tables/TableFilters';
 import TableList from '../../components/tables/TableList';
 import TableForm from '../../components/tables/TableForm';
-import TableStats from '../../components/tables/TableStats';
 
 export default function TableManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -17,36 +16,32 @@ export default function TableManagement() {
     loading,
     message,
     filters,
-    tableStats,
+    pagination,
     createTable,
     updateTable,
     deleteTable,
     updateTableStatus,
     updateFilters,
     resetFilters,
-    getTableById,
-    getStatusColor,
-    getShapeIcon,
-  } = useTableManagement();
+    updatePagination,
+  } = useTableManagementBasic();
 
   // Handle create table
-  const handleCreateTable = async (formData: TableFormData): Promise<boolean> => {
+  const handleCreateTable = async (formData: TableFormData): Promise<void> => {
     const success = await createTable(formData);
     if (success) {
       setShowCreateModal(false);
     }
-    return success;
   };
 
   // Handle update table
-  const handleUpdateTable = async (formData: TableFormData): Promise<boolean> => {
-    if (!editingTable) return false;
+  const handleUpdateTable = async (formData: TableFormData): Promise<void> => {
+    if (!editingTable) return;
     
     const success = await updateTable(editingTable.id, formData);
     if (success) {
       setEditingTable(null);
     }
-    return success;
   };
 
   // Handle edit table
@@ -59,6 +54,27 @@ export default function TableManagement() {
     setShowCreateModal(false);
     setEditingTable(null);
   };
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (pagination.page > 1) {
+      updatePagination({ page: pagination.page - 1 });
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.page < Math.ceil(pagination.total / pagination.limit)) {
+      updatePagination({ page: pagination.page + 1 });
+    }
+  };
+
+  const paginationSummary = (() => {
+    const from = pagination.total === 0
+      ? 0
+      : (pagination.page - 1) * pagination.limit + 1;
+    const to = Math.min(pagination.page * pagination.limit, pagination.total);
+    return { from, to };
+  })();
 
   return (
     <div className="space-y-6">
@@ -99,7 +115,7 @@ export default function TableManagement() {
         filters={filters}
         onFiltersChange={updateFilters}
         onReset={resetFilters}
-        totalCount={tableStats.total}
+        totalCount={filteredTables.length}
         filteredCount={filteredTables.length}
       />
 
@@ -110,12 +126,60 @@ export default function TableManagement() {
         onDelete={deleteTable}
         onStatusChange={updateTableStatus}
         isLoading={loading}
-        getStatusColor={getStatusColor}
-        getShapeIcon={getShapeIcon}
       />
 
-      {/* Table Statistics */}
-      <TableStats stats={tableStats} />
+      {/* Pagination */}
+      {Math.ceil(pagination.total / pagination.limit) > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-lg">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={handlePreviousPage}
+              disabled={pagination.page === 1 || loading}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit) || loading}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium text-gray-900">{paginationSummary.from}</span> to{' '}
+                <span className="font-medium text-gray-900">{paginationSummary.to}</span> of{' '}
+                <span className="font-medium text-gray-900">{pagination.total}</span> tables
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={pagination.page === 1 || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Page <span className="font-semibold">{pagination.page}</span> of{' '}
+                  <span className="font-semibold">{Math.ceil(pagination.total / pagination.limit)}</span>
+                </span>
+                <button
+                  onClick={handleNextPage}
+                  disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit) || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (
@@ -129,13 +193,7 @@ export default function TableManagement() {
       {/* Edit Modal */}
       {editingTable && (
         <TableForm
-          initialData={{
-            name: editingTable.name,
-            capacity: editingTable.capacity,
-            shape: editingTable.shape,
-            description: editingTable.description || ''
-          }}
-          isEdit={true}
+          table={editingTable}
           onSubmit={handleUpdateTable}
           onCancel={handleCloseModals}
           isLoading={loading}

@@ -80,12 +80,14 @@ export interface ApiResponse<T = any> {
 
 export interface PaginatedResponse<T = any> {
   data: T[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
+  current_page?: number;
+  last_page?: number;
+  per_page?: number;
+  page?: number;
+  limit?: number;
   total: number;
-  from: number;
-  to: number;
+  from?: number;
+  to?: number;
 }
 
 // Error handler utility

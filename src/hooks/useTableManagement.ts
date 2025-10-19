@@ -1,53 +1,37 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './useAuthRedux';
+import { tableAPI } from '../api/tables';
 import type { 
-  Table as BaseTable, 
-  TableFormData as BaseTableFormData, 
-  TableFilters as BaseTableFilters,
+  Table, 
+  TableFormData, 
+  TableFilters,
   TableStatus,
-  TableShape
+  TableShape,
+  CreateTableRequest,
+  UpdateTableRequest
 } from '../types/table';
 
-// Extended interfaces for backward compatibility with current implementation
-export interface Table extends Omit<BaseTable, 'number' | 'location' | 'features' | 'currentOrder'> {
-  name: string; // Using name instead of number for compatibility
-  currentOrder?: {
-    id: number;
-    total: number;
-    items: number;
-    status: 'preparing' | 'ready' | 'served';
-    time: string;
-  };
-}
-
-export interface TableFormData extends Omit<BaseTableFormData, 'number' | 'section' | 'floor' | 'features'> {
-  name: string; // Using name instead of number for compatibility
-}
-
-export interface TableFilters extends Omit<BaseTableFilters, 'section' | 'floor' | 'assignedWaiter'> {
-  search: string;
-  status: TableStatus | 'all';
-  shape: TableShape | 'all';
-}
-
-// Mock initial data
-const initialTables: Table[] = [
-  { id: 1, name: 'Table 1', capacity: 4, status: 'available', shape: 'square' },
-  { id: 2, name: 'Table 2', capacity: 2, status: 'occupied', shape: 'round' },
-  { id: 3, name: 'Table 3', capacity: 6, status: 'available', shape: 'rectangle' },
-  { id: 4, name: 'Table 4', capacity: 4, status: 'reserved', shape: 'square' },
-  { id: 5, name: 'Table 5', capacity: 8, status: 'maintenance', shape: 'rectangle' },
-  { id: 6, name: 'Table 6', capacity: 2, status: 'available', shape: 'round' },
-];
-
 export const useTableManagement = () => {
-  const [tables, setTables] = useState<Table[]>(initialTables);
+  const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
-  const [filters, setFilters] = useState<TableFilters>({
-    search: '',
-    status: 'all',
-    shape: 'all'
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0
+  });
+  const [filters, setFilters] = useState<TableFilters>({});
+  const [tableStats, setTableStats] = useState({
+    total: 0,
+    available: 0,
+    occupied: 0,
+    reserved: 0,
+    maintenance: 0,
+    totalCapacity: 0,
+    occupancyRate: 0,
   });
 
   const { user } = useAuth();
@@ -63,63 +47,113 @@ export const useTableManagement = () => {
     clearMessage();
   }, [clearMessage]);
 
-  // Filter tables based on current filters
-  const filteredTables = tables.filter(table => {
-    const matchesSearch = table.name.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesStatus = filters.status === 'all' || table.status === filters.status;
-    const matchesShape = filters.shape === 'all' || table.shape === filters.shape;
-    
-    return matchesSearch && matchesStatus && matchesShape;
-  });
-
-  // Get table statistics
-  const tableStats = {
-    total: tables.length,
-    available: tables.filter(t => t.status === 'available').length,
-    occupied: tables.filter(t => t.status === 'occupied').length,
-    reserved: tables.filter(t => t.status === 'reserved').length,
-    maintenance: tables.filter(t => t.status === 'maintenance').length,
-    totalCapacity: tables.reduce((sum, t) => sum + t.capacity, 0),
-    occupancyRate: Math.round((tables.filter(t => t.status === 'occupied').length / tables.length) * 100),
-  };
-
-  // Create new table
-  const createTable = useCallback(async (formData: TableFormData): Promise<boolean> => {
-    if (!formData.name.trim()) {
-      showMessage('Please enter a table name', 'error');
-      return false;
-    }
-
-    // Check for duplicate names
-    if (tables.some(t => t.name.toLowerCase() === formData.name.toLowerCase())) {
-      showMessage('A table with this name already exists', 'error');
-      return false;
-    }
-
+  // Load tables from API with server-side pagination and filtering
+  const fetchTables = useCallback(async (params?: {
+    page?: number;
+    limit?: number;
+    filters?: TableFilters;
+    forceRefresh?: boolean;
+  }) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Use server-side filtering and pagination
+      const response = await tableAPI.getTables({
+        page: params?.page || pagination.page,
+        limit: params?.limit || pagination.limit,
+        filters: params?.filters || filters
+      });
       
-      const newTable: Table = {
-        id: Math.max(...tables.map(t => t.id), 0) + 1,
-        name: formData.name.trim(),
-        capacity: formData.capacity,
-        status: 'available',
-        shape: formData.shape,
-        description: formData.description?.trim() || undefined
-      };
-
-      setTables(prev => [...prev, newTable]);
-      showMessage(`Table "${newTable.name}" created successfully!`, 'success');
-      return true;
+      setTables(response.tables);
+      setPagination({
+        page: response.page,
+        limit: response.limit,
+        total: response.total
+      });
     } catch (error) {
-      showMessage('Failed to create table', 'error');
-      return false;
+      console.error('Error fetching tables:', error);
+      showMessage('Failed to load tables', 'error');
     } finally {
       setLoading(false);
     }
-  }, [tables, showMessage]);
+  }, [showMessage]);
+
+  // Load data when pagination changes
+  useEffect(() => {
+    fetchTables({ page: pagination.page, limit: pagination.limit, filters });
+  }, [pagination.page, pagination.limit, fetchTables]);
+
+  // Debounced effect for filter changes to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Reset to first page when filters change
+      fetchTables({ page: 1, limit: pagination.limit, filters });
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [filters, pagination.limit, fetchTables]);
+
+  // Use server-filtered tables directly (no client-side filtering)
+  const filteredTables = tables;
+
+  // Calculate basic statistics from loaded tables (no API call)
+  const calculateTableStats = useCallback(() => {
+    const currentTables = tables;
+    setTableStats({
+      total: currentTables.length,
+      available: currentTables.filter(t => t.status === 'available').length,
+      occupied: currentTables.filter(t => t.status === 'occupied').length,
+      reserved: currentTables.filter(t => t.status === 'reserved').length,
+      maintenance: currentTables.filter(t => t.status === 'maintenance' || t.status === 'out-of-order' || t.status === 'cleaning').length,
+      totalCapacity: currentTables.reduce((sum, t) => sum + t.capacity, 0),
+      occupancyRate: currentTables.length > 0 ? Math.round((currentTables.filter(t => t.status === 'occupied').length / currentTables.length) * 100) : 0,
+    });
+  }, [tables]);
+
+  // Calculate stats when tables change
+  useEffect(() => {
+    calculateTableStats();
+  }, [calculateTableStats]);
+
+  // Create new table
+  const createTable = useCallback(async (formData: TableFormData): Promise<boolean> => {
+    if (!formData.number.trim()) {
+      showMessage('Please enter a table number', 'error');
+      return false;
+    }
+
+    setCreating(true);
+    try {
+      const createData: CreateTableRequest = {
+        number: formData.number.trim(),
+        capacity: formData.capacity,
+        shape: formData.shape,
+        status: formData.status || 'available',
+        location: {
+          section: formData.section,
+          floor: formData.floor,
+          ...(formData.coordinates && { coordinates: formData.coordinates })
+        },
+        features: formData.features || []
+      };
+
+      if (formData.description?.trim()) {
+        createData.description = formData.description.trim();
+      }
+
+      const newTable = await tableAPI.createTable(createData);
+      // Refresh the table list after creation
+      await fetchTables({ page: pagination.page, limit: pagination.limit, filters });
+      showMessage(`Table "${newTable.number}" created successfully!`, 'success');
+      return true;
+    } catch (error: any) {
+      console.error('Error creating table:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to create table';
+      showMessage(errorMessage, 'error');
+      return false;
+    } finally {
+      setCreating(false);
+    }
+  }, [showMessage, fetchTables, pagination.page, pagination.limit, filters]);
 
   // Update existing table
   const updateTable = useCallback(async (tableId: number, formData: TableFormData): Promise<boolean> => {
@@ -129,43 +163,45 @@ export const useTableManagement = () => {
       return false;
     }
 
-    if (!formData.name.trim()) {
-      showMessage('Please enter a table name', 'error');
+    if (!formData.number.trim()) {
+      showMessage('Please enter a table number', 'error');
       return false;
     }
 
-    // Check for duplicate names (excluding current table)
-    if (tables.some(t => t.id !== tableId && t.name.toLowerCase() === formData.name.toLowerCase())) {
-      showMessage('A table with this name already exists', 'error');
-      return false;
-    }
-
-    setLoading(true);
+    setUpdating(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedTable: Table = {
-        ...existingTable,
-        name: formData.name.trim(),
+      const updateData: Partial<UpdateTableRequest> = {
+        number: formData.number.trim(),
         capacity: formData.capacity,
         shape: formData.shape,
-        description: formData.description?.trim() || undefined
+        status: formData.status,
+        location: {
+          section: formData.section,
+          floor: formData.floor,
+          ...(formData.coordinates && { coordinates: formData.coordinates })
+        },
+        features: formData.features || []
       };
 
-      setTables(prev => prev.map(table => 
-        table.id === tableId ? updatedTable : table
-      ));
+      if (formData.description?.trim()) {
+        updateData.description = formData.description.trim();
+      }
+
+      const updatedTable = await tableAPI.updateTable(tableId, updateData);
+      // Refresh the table list after update
+      await fetchTables({ page: pagination.page, limit: pagination.limit, filters });
       
-      showMessage(`Table "${updatedTable.name}" updated successfully!`, 'success');
+      showMessage(`Table "${updatedTable.number}" updated successfully!`, 'success');
       return true;
-    } catch (error) {
-      showMessage('Failed to update table', 'error');
+    } catch (error: any) {
+      console.error('Error updating table:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update table';
+      showMessage(errorMessage, 'error');
       return false;
     } finally {
-      setLoading(false);
+      setUpdating(false);
     }
-  }, [tables, showMessage]);
+  }, [tables, showMessage, fetchTables]);
 
   // Delete table
   const deleteTable = useCallback(async (tableId: number): Promise<boolean> => {
@@ -180,61 +216,72 @@ export const useTableManagement = () => {
       return false;
     }
 
-    setLoading(true);
+    setDeleting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTables(prev => prev.filter(t => t.id !== tableId));
-      showMessage(`Table "${table.name}" deleted successfully!`, 'success');
+      await tableAPI.deleteTable(tableId);
+      // Refresh the table list after deletion
+      await fetchTables({ page: pagination.page, limit: pagination.limit, filters });
+      showMessage(`Table "${table.number}" deleted successfully!`, 'success');
       return true;
-    } catch (error) {
-      showMessage('Failed to delete table', 'error');
+    } catch (error: any) {
+      console.error('Error deleting table:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete table';
+      showMessage(errorMessage, 'error');
       return false;
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
-  }, [tables, showMessage]);
+  }, [tables, showMessage, fetchTables, pagination.page, pagination.limit, filters]);
 
   // Update table status
-  const updateTableStatus = useCallback(async (tableId: number, newStatus: Table['status']): Promise<boolean> => {
+  const updateTableStatus = useCallback(async (tableId: number, newStatus: TableStatus): Promise<boolean> => {
     const table = tables.find(t => t.id === tableId);
     if (!table) {
       showMessage('Table not found', 'error');
       return false;
     }
 
-    setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await tableAPI.updateTableStatus(tableId, newStatus);
+      // Refresh the table list after status update
+      await fetchTables({ page: pagination.page, limit: pagination.limit, filters });
       
-      setTables(prev => prev.map(t => 
-        t.id === tableId ? { ...t, status: newStatus } : t
-      ));
-      
-      showMessage(`Table "${table.name}" status updated to ${newStatus}`, 'success');
+      showMessage(`Table "${table.number}" status updated to ${newStatus}`, 'success');
       return true;
-    } catch (error) {
-      showMessage('Failed to update table status', 'error');
+    } catch (error: any) {
+      console.error('Error updating table status:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update table status';
+      showMessage(errorMessage, 'error');
       return false;
-    } finally {
-      setLoading(false);
     }
-  }, [tables, showMessage]);
+  }, [tables, showMessage, fetchTables, pagination.page, pagination.limit, filters]);
+
+  // Deactivate table (set to out-of-order)
+  const deactivateTable = useCallback(async (tableId: number): Promise<boolean> => {
+    return updateTableStatus(tableId, 'out-of-order');
+  }, [updateTableStatus]);
+
+  // Activate table (set to available)
+  const activateTable = useCallback(async (tableId: number): Promise<boolean> => {
+    return updateTableStatus(tableId, 'available');
+  }, [updateTableStatus]);
 
   // Update filters
   const updateFilters = useCallback((newFilters: Partial<TableFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+    // Reset to first page when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Reset filters
   const resetFilters = useCallback(() => {
-    setFilters({
-      search: '',
-      status: 'all',
-      shape: 'all'
-    });
+    setFilters({});
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Update pagination
+  const updatePagination = useCallback((newPagination: Partial<typeof pagination>) => {
+    setPagination(prev => ({ ...prev, ...newPagination }));
   }, []);
 
   // Get table by ID
@@ -243,21 +290,24 @@ export const useTableManagement = () => {
   }, [tables]);
 
   // Get status color helper
-  const getStatusColor = useCallback((status: Table['status']) => {
+  const getStatusColor = useCallback((status: TableStatus) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800';
       case 'occupied': return 'bg-red-100 text-red-800';
       case 'reserved': return 'bg-blue-100 text-blue-800';
+      case 'cleaning': return 'bg-purple-100 text-purple-800';
       case 'maintenance': return 'bg-yellow-100 text-yellow-800';
+      case 'out-of-order': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   }, []);
 
   // Get shape icon helper
-  const getShapeIcon = useCallback((shape: Table['shape']) => {
+  const getShapeIcon = useCallback((shape: TableShape) => {
     switch (shape) {
       case 'square': return '⬜';
       case 'round': return '⭕';
+      case 'rectangular': 
       case 'rectangle': return '▭';
       default: return '⬜';
     }
@@ -268,18 +318,26 @@ export const useTableManagement = () => {
     tables,
     filteredTables,
     loading,
+    creating,
+    updating,
+    deleting,
     message,
     filters,
+    pagination,
     tableStats,
     user,
 
     // Actions
+    fetchTables,
     createTable,
     updateTable,
     deleteTable,
     updateTableStatus,
+    deactivateTable,
+    activateTable,
     updateFilters,
     resetFilters,
+    updatePagination,
 
     // Helpers
     getTableById,

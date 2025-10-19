@@ -96,7 +96,7 @@ const TableCard: React.FC<TableCardProps> = ({
                   {table.number}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {table.location.section} • Floor {table.location.floor}
+                  {table.location?.section || 'No Section'} • Floor {table.location?.floor || 0}
                 </p>
               </div>
             </div>

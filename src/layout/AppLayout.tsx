@@ -1,24 +1,41 @@
+import React, { useEffect } from "react";
 import { useSidebar } from "../hooks/useSidebarRedux";
-import { Outlet } from "react-router";
+import { useTheme } from "../hooks/useThemeRedux";
+import { Outlet, useLocation } from "react-router";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
-import type React from "react";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { theme } = useTheme();
+  const location = useLocation();
+
+  // Apply theme class to document root for table components
+  useEffect(() => {
+    document.documentElement.className = theme;
+  }, [theme]);
+
+  // Determine if current page is table-related for enhanced styling
+  const isTablePage = location.pathname.includes('/table');
 
   return (
-    <div className="min-h-screen lg:flex bg-gray-50 dark:bg-gray-900">
+    <div className={`min-h-screen lg:flex transition-colors duration-300 ${
+      theme === 'dark' 
+        ? 'bg-gray-900 text-white' 
+        : 'bg-gray-50 text-gray-900'
+    } ${isTablePage ? 'table-management-layout' : ''}`}>
       <AppSidebar />
       <Backdrop />
       <div
         className={`flex-1 transition-all duration-300 ease-in-out ${
-          isExpanded || isHovered ? "lg:ml-64" : "lg:ml-16"
+          isExpanded || isHovered ? "lg:ml-25" : "lg:ml-16"
         } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <AppHeader />
-        <div className="p-4 mx-auto max-w-7xl md:p-6">
+        <div className={`p-4 mx-auto max-w-7xl md:p-6 ${
+          isTablePage ? 'table-management-content' : ''
+        }`}>
           <Outlet />
         </div>
       </div>

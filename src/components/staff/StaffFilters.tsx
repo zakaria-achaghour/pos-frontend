@@ -11,8 +11,8 @@ interface StaffFiltersProps {
 
 const viewModes = [
   { key: 'grid', label: 'Staff Grid', icon: '👥' },
-  { key: 'performance', label: 'Performance', icon: '📊' },
-  { key: 'schedule', label: 'Schedule', icon: '📅' }
+  // { key: 'performance', label: 'Performance', icon: '📊' },
+  // { key: 'schedule', label: 'Schedule', icon: '📅' }
 ] as const;
 
 const roleFilters = [

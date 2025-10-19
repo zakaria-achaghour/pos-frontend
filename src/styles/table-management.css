@@ -1,0 +1,257 @@
+/* Table Management Theme Integration Styles */
+
+/* Enhanced table management layout */
+.table-management-layout {
+  --table-primary: theme('colors.indigo.600');
+  --table-primary-hover: theme('colors.indigo.700');
+  --table-success: theme('colors.green.600');
+  --table-warning: theme('colors.yellow.500');
+  --table-error: theme('colors.red.600');
+  --table-info: theme('colors.blue.600');
+}
+
+.table-management-layout.dark {
+  --table-primary: theme('colors.indigo.500');
+  --table-primary-hover: theme('colors.indigo.400');
+  --table-success: theme('colors.green.500');
+  --table-warning: theme('colors.yellow.400');
+  --table-error: theme('colors.red.500');
+  --table-info: theme('colors.blue.500');
+}
+
+/* Table management content area enhancements */
+.table-management-content {
+  position: relative;
+}
+
+/* Enhanced table status indicators */
+.table-status-available {
+  @apply bg-green-100 text-green-800 border-green-200;
+}
+
+.dark .table-status-available {
+  @apply bg-green-900/20 text-green-300 border-green-800;
+}
+
+.table-status-occupied {
+  @apply bg-red-100 text-red-800 border-red-200;
+}
+
+.dark .table-status-occupied {
+  @apply bg-red-900/20 text-red-300 border-red-800;
+}
+
+.table-status-reserved {
+  @apply bg-blue-100 text-blue-800 border-blue-200;
+}
+
+.dark .table-status-reserved {
+  @apply bg-blue-900/20 text-blue-300 border-blue-800;
+}
+
+.table-status-cleaning {
+  @apply bg-purple-100 text-purple-800 border-purple-200;
+}
+
+.dark .table-status-cleaning {
+  @apply bg-purple-900/20 text-purple-300 border-purple-800;
+}
+
+.table-status-maintenance {
+  @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+}
+
+.dark .table-status-maintenance {
+  @apply bg-yellow-900/20 text-yellow-300 border-yellow-800;
+}
+
+.table-status-out-of-order {
+  @apply bg-gray-100 text-gray-800 border-gray-200;
+}
+
+.dark .table-status-out-of-order {
+  @apply bg-gray-900/20 text-gray-300 border-gray-800;
+}
+
+/* Enhanced table card styles */
+.table-card {
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200;
+}
+
+.dark .table-card {
+  @apply bg-gray-800 border-gray-700 hover:shadow-gray-900/50;
+}
+
+.table-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Table form enhancements */
+.table-form {
+  @apply bg-white rounded-xl shadow-lg;
+}
+
+.dark .table-form {
+  @apply bg-gray-900 border border-gray-800;
+}
+
+/* Table filters enhancements */
+.table-filters {
+  @apply bg-white border border-gray-200 rounded-lg;
+}
+
+.dark .table-filters {
+  @apply bg-gray-800 border-gray-700;
+}
+
+/* Loading states */
+.table-loading {
+  @apply animate-pulse;
+}
+
+/* Table stats cards */
+.table-stats-card {
+  @apply bg-gradient-to-r p-6 rounded-lg shadow-sm;
+}
+
+.table-stats-card.available {
+  @apply from-green-50 to-green-100 border-green-200;
+}
+
+.dark .table-stats-card.available {
+  @apply from-green-900/20 to-green-800/20 border-green-800;
+}
+
+.table-stats-card.occupied {
+  @apply from-red-50 to-red-100 border-red-200;
+}
+
+.dark .table-stats-card.occupied {
+  @apply from-red-900/20 to-red-800/20 border-red-800;
+}
+
+.table-stats-card.reserved {
+  @apply from-blue-50 to-blue-100 border-blue-200;
+}
+
+.dark .table-stats-card.reserved {
+  @apply from-blue-900/20 to-blue-800/20 border-blue-800;
+}
+
+.table-stats-card.total {
+  @apply from-indigo-50 to-indigo-100 border-indigo-200;
+}
+
+.dark .table-stats-card.total {
+  @apply from-indigo-900/20 to-indigo-800/20 border-indigo-800;
+}
+
+/* Enhanced animations for table operations */
+@keyframes tableSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tableSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.table-enter {
+  animation: tableSlideIn 0.3s ease-out;
+}
+
+.table-exit {
+  animation: tableSlideOut 0.3s ease-out;
+}
+
+/* Success/Error message styling */
+.table-message {
+  @apply rounded-lg p-4 border-l-4 flex items-center gap-3;
+}
+
+.table-message.success {
+  @apply bg-green-50 border-green-400 text-green-800;
+}
+
+.dark .table-message.success {
+  @apply bg-green-900/20 border-green-600 text-green-300;
+}
+
+.table-message.error {
+  @apply bg-red-50 border-red-400 text-red-800;
+}
+
+.dark .table-message.error {
+  @apply bg-red-900/20 border-red-600 text-red-300;
+}
+
+.table-message.info {
+  @apply bg-blue-50 border-blue-400 text-blue-800;
+}
+
+.dark .table-message.info {
+  @apply bg-blue-900/20 border-blue-600 text-blue-300;
+}
+
+/* Responsive table grid */
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .table-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+  .table-management-content {
+    padding: 1rem;
+  }
+  
+  .table-card {
+    margin-bottom: 1rem;
+  }
+  
+  .table-filters {
+    padding: 1rem;
+  }
+}
+
+/* Print styles for table reports */
+@media print {
+  .table-management-layout {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .table-card {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  .table-actions,
+  .table-form,
+  .table-filters {
+    display: none !important;
+  }
+}

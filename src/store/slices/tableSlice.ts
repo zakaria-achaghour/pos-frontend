@@ -330,7 +330,7 @@ const tableSlice = createSlice({
     // Optimistic updates for drag & drop
     updateTablePosition: (state, action: PayloadAction<{ id: number; x: number; y: number }>) => {
       const table = state.tables.find(t => t.id === action.payload.id);
-      if (table && table.location.coordinates) {
+      if (table && table.location?.coordinates) {
         table.location.coordinates.x = action.payload.x;
         table.location.coordinates.y = action.payload.y;
       }
