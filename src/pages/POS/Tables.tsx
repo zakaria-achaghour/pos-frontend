@@ -1,8 +1,23 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuthRedux';
+import { tableAPI } from '../../api/tables';
+import type { Table, TableFilters } from '../../types/table';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+
+// Extended types for tables with order details
+interface OrderDetails {
+  id: number;
+  status: string;
+  time: string;
+  items: number;
+  total: number;
+}
+
+interface ExtendedTable extends Omit<Table, 'currentOrder'> {
+  currentOrder?: OrderDetails;
+}
 
 // Toast notification function
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -19,37 +34,25 @@ const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info')
 };
 
 // Mock data - replace with actual API call
-const mockTables = [
-  { id: 1, name: 'Table 1', capacity: 4, status: 'available' },
-  { id: 2, name: 'Table 2', capacity: 2, status: 'occupied' },
-  { id: 3, name: 'Table 3', capacity: 6, status: 'available' },
-  { id: 4, name: 'Table 4', capacity: 4, status: 'occupied' },
-  { id: 5, name: 'Table 5', capacity: 8, status: 'available' },
-  { id: 6, name: 'Table 6', capacity: 2, status: 'available' },
-];
-
-interface Table {
-  id: number;
-  name: string;
-  capacity: number;
-  status: 'available' | 'occupied';
-  currentOrder?: {
-    id: number;
-    total: number;
-    items: number;
-    status: 'preparing' | 'ready' | 'served';
-    time: string;
-  };
-}
+const mockOrders = {
+  1: { id: 101, total: 245.50, items: 3, status: 'preparing' as const, time: '14:30' },
+  3: { id: 102, total: 189.00, items: 2, status: 'ready' as const, time: '15:15' },
+  6: { id: 103, total: 156.25, items: 4, status: 'served' as const, time: '13:45' },
+};
 
 export default function Tables() {
-  const [tables, setTables] = useState<Table[]>([]);
+  const [tables, setTables] = useState<ExtendedTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'occupied'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'occupied' | 'reserved'>('all');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 100, // Increased limit to fetch more tables per page
+    total: 0
+  });
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,14 +84,68 @@ export default function Tables() {
   // Initial data fetch
   useEffect(() => {
     fetchTables();
-  }, []);
+  }, [statusFilter, searchTerm, pagination.page]);
 
-  // Filter tables based on search and status
-  const filteredTables = tables.filter((table) => {
-    const matchesSearch = table.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || table.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch tables from API with filters
+  const fetchTables = async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      
+      // Build filters object
+      const filters: TableFilters = {};
+      if (statusFilter !== 'all') {
+        filters.status = statusFilter;
+      }
+      if (searchTerm) {
+        filters.searchTerm = searchTerm;
+      }
+      
+      console.log('Fetching tables with params:', {
+        page: pagination.page,
+        limit: pagination.limit,
+        filters
+      });
+      
+      // Fetch from API
+      const response = await tableAPI.getTables({
+        page: pagination.page,
+        limit: pagination.limit,
+        filters
+      });
+      
+      console.log('API Response:', {
+        tables: response.tables.length,
+        page: response.page,
+        limit: response.limit,
+        total: response.total
+      });
+      
+      // Add mock order data for occupied tables (until orders API is integrated)
+      const tablesWithOrders = response.tables.map(table => ({
+        ...table,
+        currentOrder: (table.status === 'occupied' && mockOrders[table.id as keyof typeof mockOrders]) 
+          ? mockOrders[table.id as keyof typeof mockOrders]
+          : undefined
+      })) as any;
+      
+      setTables(tablesWithOrders);
+      setPagination({
+        page: response.page,
+        limit: response.limit,
+        total: response.total
+      });
+      setLastRefresh(new Date());
+      setError(null);
+      if (!silent) setLoading(false);
+    } catch (err: any) {
+      console.error('Error fetching tables:', err);
+      setError('Failed to load tables. Please try again.');
+      if (!silent) setLoading(false);
+    }
+  };
+
+  // Filter tables based on search and status (client-side for additional filtering)
+  const filteredTables = tables;
 
   // Get order status color styling
   const getOrderStatusColor = (status: string) => {
@@ -106,55 +163,23 @@ export default function Tables() {
 
   // Manual refresh handler
   const handleManualRefresh = () => {
-    setLoading(true);
     fetchTables();
   };
 
-  const fetchTables = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await api.get('/tables');
-      // setTables(response.data);
-      
-      // Simulate API delay
-      setTimeout(() => {
-        // Enhanced mock data with order information
-        const enhancedMockTables = [
-          { id: 1, name: 'Table 1', capacity: 4, status: 'occupied', 
-            currentOrder: { id: 101, total: 245.50, items: 3, status: 'preparing', time: '14:30' } },
-          { id: 2, name: 'Table 2', capacity: 2, status: 'available' },
-          { id: 3, name: 'Table 3', capacity: 6, status: 'occupied',
-            currentOrder: { id: 102, total: 189.00, items: 2, status: 'ready', time: '15:15' } },
-          { id: 4, name: 'Table 4', capacity: 4, status: 'available' },
-          { id: 5, name: 'Table 5', capacity: 8, status: 'available' },
-          { id: 6, name: 'Table 6', capacity: 2, status: 'occupied',
-            currentOrder: { id: 103, total: 156.25, items: 4, status: 'served', time: '13:45' } },
-        ];
-        setTables(enhancedMockTables);
-        setLastRefresh(new Date());
-        if (!silent) setLoading(false);
-      }, silent ? 200 : 800);
-    } catch (err) {
-      setError('Failed to load tables');
-      if (!silent) setLoading(false);
-    }
-  };
-
-  const handleTableClick = (table: Table) => {
+  const handleTableClick = (table: ExtendedTable) => {
     if (user?.role === 'waiter') {
       if (table.status === 'available') {
         // For waiters, go directly to order creation for available tables
-        showToast(`Creating order for ${table.name} 🍽️`, 'info');
-        navigate(`/orders/new?table=${table.id}&tableName=${encodeURIComponent(table.name)}`);
+        showToast(`Creating order for Table ${table.number} 🍽️`, 'info');
+        navigate(`/orders/new?table=${table.id}&tableName=${encodeURIComponent(`Table ${table.number}`)}`);
       } else if (table.status === 'occupied' && table.currentOrder) {
         // For occupied tables, view existing order
-        showToast(`Viewing order #${table.currentOrder.id} for ${table.name}`, 'info');
+        showToast(`Viewing order #${table.currentOrder.id} for Table ${table.number}`, 'info');
         navigate(`/orders/${table.currentOrder.id}`);
       }
     } else {
       // For managers/owners, might go to table management or order creation
-      navigate(`/orders/new?table=${table.id}&tableName=${encodeURIComponent(table.name)}`);
+      navigate(`/orders/new?table=${table.id}&tableName=${encodeURIComponent(`Table ${table.number}`)}`);
     }
   };
 
@@ -314,7 +339,7 @@ export default function Tables() {
               table.status === 'occupied' ? 'bg-red-50' : 'bg-green-50'
             }`}>
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">{table.name}</h3>
+                <h3 className="font-semibold text-gray-900">Table {table.number}</h3>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   table.status === 'occupied' 
                     ? 'bg-red-100 text-red-800' 
@@ -386,6 +411,67 @@ export default function Tables() {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {Math.ceil(pagination.total / pagination.limit) > 1 && (
+        <div className="mt-6 bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-lg shadow">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+              disabled={pagination.page === 1 || loading}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit) || loading}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing{' '}
+                <span className="font-medium">
+                  {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}
+                </span>
+                {' '}-{' '}
+                <span className="font-medium">
+                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                </span>
+                {' '}of{' '}
+                <span className="font-medium">{pagination.total}</span> tables
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  disabled={pagination.page === 1 || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Previous</span>
+                  ‹
+                </button>
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+                </span>
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit) || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Next</span>
+                  ›
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
