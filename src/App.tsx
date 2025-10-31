@@ -1,40 +1,39 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import NotFound from "./pages/OtherPage/NotFound";
+import { ScrollToTop } from "@/components/common/ScrollToTop";
+import NotFound from "@/pages/OtherPage/NotFound";
 
 // Layouts
-import AppLayout from "./layout/AppLayout";
+import AppLayout from "@/layout/AppLayout";
 
 // Auth Pages
-import Login from "./pages/Auth/Login";
-import Unauthorized from "./pages/Auth/Unauthorized";
-import RoleBasedRedirect from "./components/auth/RoleBasedRedirect";
+import Login from "@/pages/Auth/Login";
+import Unauthorized from "@/pages/Auth/Unauthorized";
+import RoleBasedRedirect from "@/components/auth/RoleBasedRedirect";
 
 // POS Pages
-import Dashboard from "./pages/POS/Dashboard";
-import OwnerDashboard from "./pages/POS/OwnerDashboard";
-import Tables from "./pages/POS/Tables";
-import TableManagement from "./pages/POS/TableManagement";
-import EnhancedTableManagement from "./pages/POS/EnhancedTableManagement";
-import StaffManagement from "./pages/POS/StaffManagement";
-import CategoriesManagement from "./pages/POS/CategoriesManagement";
-import Items from "./pages/POS/Items";
-import MenuItemsManagement from "./pages/POS/MenuItemsManagement";
-import OrderCreate from "./pages/POS/OrderCreate";
-import OrderDetails from "./pages/POS/OrderDetails";
-import DailySummary from "./pages/POS/DailySummary";
-import AdminTenants from "./pages/POS/AdminTenants";
-import AdminTenantOverview from "./pages/POS/AdminTenantOverview";
-import CreateRestaurant from "./pages/POS/CreateRestaurant";
-import EditRestaurant from "./pages/POS/EditRestaurant";
-import RestaurantDetails from "./pages/POS/RestaurantDetails";
-import KitchenTickets from "./pages/POS/KitchenTickets";
-import CashierDashboard from "./pages/POS/CashierDashboard";
-import EnhancedOrdersList from "./pages/POS/EnhancedOrdersList";
+import Dashboard from "@/pages/Dashboard/Dashboard";
+import OwnerDashboard from "@/pages/Dashboard/OwnerDashboard";
+import CashierDashboard from "@/pages/Dashboard/CashierDashboard";
+import DailySummary from "@/pages/Dashboard/DailySummary";
+import Tables from "@/pages/Tables/Tables";
+import TableManagement from "@/pages/Tables/TableManagement";
+import EnhancedTableManagement from "@/pages/Tables/EnhancedTableManagement";
+import StaffManagement from "@/pages/Staff/StaffManagement";
+import CategoriesManagement from "@/pages/Menu/CategoriesManagement";
+import MenuItemsManagement from "@/pages/Menu/MenuItemsManagement";
+import OrderCreate from "@/pages/Orders/OrderCreate";
+import OrderDetails from "@/pages/Orders/OrderDetails";
+import EnhancedOrdersList from "@/pages/Orders/EnhancedOrdersList";
+import AdminTenants from "@/pages/Restaurant/AdminTenants";
+import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
+import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
+import EditRestaurant from "@/pages/Restaurant/EditRestaurant";
+import RestaurantDetails from "@/pages/Restaurant/RestaurantDetails";
+import KitchenTickets from "@/pages/Kitchen/KitchenTickets";
 
 // Protected Route Component
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function App() {
   return (
@@ -101,12 +100,6 @@ export default function App() {
             <Route path="/items" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
                 <MenuItemsManagement />
-              </ProtectedRoute>
-            } />
-            {/* Legacy Items page (keep for reference) */}
-            <Route path="/items-old" element={
-              <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <Items />
               </ProtectedRoute>
             } />
             
