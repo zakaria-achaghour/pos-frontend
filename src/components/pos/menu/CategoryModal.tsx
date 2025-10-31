@@ -1,15 +1,9 @@
 import React from 'react';
 import type { Category, CreateCategoryData } from '@/api/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
+import type { CategoryModalProps } from '@/types/menu';
 import * as Yup from 'yup';
 
-interface CategoryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateCategoryData) => Promise<void>;
-  category?: Category | null;
-  isSubmitting: boolean;
-}
 
 const categorySchema = Yup.object().shape({
   name: Yup.string()

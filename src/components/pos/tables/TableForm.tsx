@@ -1,16 +1,9 @@
 import React from 'react';
+import type { TableFormProps } from '@/types/table';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { Table, TableFormData, TableStatus, TableShape } from '@/types/table';
 import Button from '@/components/ui/button/Button';
-
-interface TableFormProps {
-  table?: Table;
-  onSubmit: (data: TableFormData) => Promise<void>;
-  onCancel?: () => void;
-  isLoading?: boolean;
-  serverErrors?: Record<string, string[]>;
-}
 
 const tableValidationSchema = Yup.object().shape({
   number: Yup.string()

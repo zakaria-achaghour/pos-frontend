@@ -1,14 +1,5 @@
 import React from 'react';
-import type { Category } from '@/hooks/useMenuManagement';
-
-interface CategoryCardProps {
-  category: Category;
-  onEdit: (category: Category) => void;
-  onDelete: (categoryId: number) => void;
-  onToggleStatus: (categoryId: number) => void;
-  isLoading?: boolean;
-  itemCount?: number;
-}
+import type { CategoryCardProps } from '@/types/menu';
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
   category,
@@ -16,116 +7,99 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
   onDelete,
   onToggleStatus,
   isLoading = false,
-  itemCount = 0
+  itemCount = 0,
 }) => {
   const handleDelete = () => {
-    if (itemCount > 0) {
-      alert(`Cannot delete category with ${itemCount} menu items. Remove all items first.`);
-      return;
-    }
-    
     if (window.confirm(`Are you sure you want to delete "${category.name}"?`)) {
       onDelete(category.id);
     }
   };
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  const handleToggleStatus = () => {
+    if (onToggleStatus) {
+      onToggleStatus(category.id);
+    }
   };
 
+  const isActive = category.status === 'active' || category.is_active;
+
   return (
-    <div className="bg-white rounded-lg shadow border hover:shadow-md transition-shadow">
-      {/* Category Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📂</span>
-            <h3 className="font-semibold text-gray-900">{category.name}</h3>
-          </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(category.is_active !== false)}`}>
-            {category.is_active !== false ? 'Active' : 'Inactive'}
+    <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+      {/* Image */}
+      {category.image && (
+        <div className="h-40 overflow-hidden bg-gray-100">
+          <img
+            src={category.image}
+            alt={category.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-gray-900 text-lg">{category.name}</h3>
+          <span
+            className={`px-2 py-1 text-xs font-medium rounded-full border ${
+              isActive
+                ? 'bg-green-100 text-green-800 border-green-200'
+                : 'bg-gray-100 text-gray-800 border-gray-200'
+            }`}
+          >
+            {isActive ? 'Active' : 'Inactive'}
           </span>
         </div>
-        
-        {/* Item Count */}
-        <div className="text-sm text-gray-600 mt-1">
-          📄 {itemCount} menu item{itemCount !== 1 ? 's' : ''}
-        </div>
-      </div>
 
-      {/* Category Body */}
-      <div className="p-4">
         {/* Description */}
         {category.description && (
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">{category.description}</p>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {category.description}
+          </p>
         )}
 
-        {/* Category Stats */}
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Menu Items:</span>
-            <span className="font-medium text-gray-900">{itemCount}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm mt-1">
-            <span className="text-gray-600">Status:</span>
-            <span className={`font-medium ${category.is_active !== false ? 'text-green-600' : 'text-red-600'}`}>
-              {category.is_active !== false ? 'Active' : 'Inactive'}
-            </span>
-          </div>
+        {/* Item Count */}
+        <div className="mb-3">
+          <span className="text-sm text-gray-500">
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+          </span>
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-2">
-          {/* Status Toggle */}
-          <button
-            onClick={() => onToggleStatus(category.id)}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              category.is_active !== false
-                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
-            }`}
-            disabled={isLoading}
-          >
-            {category.is_active !== false ? '❌ Deactivate' : '✅ Activate'}
-          </button>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
+        {/* Actions */}
+        <div className="flex gap-2 pt-3 border-t border-gray-100">
+          {onToggleStatus && (
             <button
-              onClick={() => onEdit(category)}
-              className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleToggleStatus}
               disabled={isLoading}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                isActive
+                  ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
+                  : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              ✏️ Edit
+              {isActive ? 'Deactivate' : 'Activate'}
             </button>
-            <button
-              onClick={handleDelete}
-              className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading || itemCount > 0}
-              title={itemCount > 0 ? `Cannot delete category with ${itemCount} menu items` : 'Delete category'}
-            >
-              🗑️ Delete
-            </button>
-          </div>
+          )}
+          <button
+            onClick={() => onEdit(category)}
+            disabled={isLoading}
+            className={`flex-1 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={isLoading}
+            className={`flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            Delete
+          </button>
         </div>
-
-        {/* Warning for categories with items */}
-        {itemCount > 0 && (
-          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="text-xs text-yellow-800">
-              ⚠️ Remove all menu items before deleting this category
-            </div>
-          </div>
-        )}
-
-        {/* Inactive Warning */}
-        {category.is_active === false && (
-          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-xs text-red-800">
-              🚫 This category is inactive and won't appear in the POS
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

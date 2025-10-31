@@ -1,16 +1,6 @@
 import React from 'react';
+import type { StaffListProps } from '@/types/staff';
 import StaffCard from './StaffCard';
-import type { StaffMember, StaffStatus } from '@/types/staff';
-
-interface StaffListProps {
-  staff: StaffMember[];
-  loading: boolean;
-  onClockInOut: (id: number) => void;
-  onViewDetails: (member: StaffMember) => void;
-  onStatusChange: (id: number, status: StaffStatus) => void;
-  onEdit: (member: StaffMember) => void;
-  onDelete: (id: number) => void;
-}
 
 export default function StaffList({
   staff,

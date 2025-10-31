@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
+import type { EnhancedTableStatsProps } from '@/types/table';
 import { useTableAnalytics } from '@/hooks/useTableAnalytics';
 
-interface EnhancedTableStatsProps {
-  className?: string;
-}
 
 export default function EnhancedTableStats({ className = '' }: EnhancedTableStatsProps) {
   const {

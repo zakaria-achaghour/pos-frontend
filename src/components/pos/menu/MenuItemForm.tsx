@@ -1,4 +1,5 @@
 import React from 'react';
+import type { MenuItemFormProps } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { MenuItemFormData, Category } from '@/types/menu';

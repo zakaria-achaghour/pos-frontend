@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { dashboardAPI } from '../../api/dashboard';
-import type { DashboardMetrics, SalesChart, TopItem, StaffPerformance } from '../../api/dashboard';
+import type { DashboardMetrics, SalesChart, TopItem, StaffPerformance, DashboardPeriod } from '@/types/dashboard';
 import { parseApiError } from '../utils/errorUtils';
 import type { ApiError } from '../types/common';
 
@@ -24,7 +24,7 @@ interface DashboardState {
   lastError: ApiError | null;
   
   // UI state
-  selectedPeriod: 'today' | 'week' | 'month';
+  selectedPeriod: DashboardPeriod;
   lastUpdated: string | null;
   autoRefresh: boolean;
   refreshInterval: number; // in seconds
@@ -50,7 +50,7 @@ const initialState: DashboardState = {
 // Async thunks
 export const fetchMetrics = createAsyncThunk<
   DashboardMetrics,
-  'today' | 'week' | 'month',
+  DashboardPeriod,
   { rejectValue: ApiError }
 >(
   'dashboard/fetchMetrics',
@@ -65,7 +65,7 @@ export const fetchMetrics = createAsyncThunk<
 
 export const fetchCharts = createAsyncThunk<
   SalesChart,
-  'today' | 'week' | 'month',
+  DashboardPeriod,
   { rejectValue: ApiError }
 >(
   'dashboard/fetchCharts',
@@ -80,7 +80,7 @@ export const fetchCharts = createAsyncThunk<
 
 export const fetchTopItems = createAsyncThunk<
   TopItem[],
-  { period: 'today' | 'week' | 'month'; limit?: number },
+  { period: DashboardPeriod; limit?: number },
   { rejectValue: ApiError }
 >(
   'dashboard/fetchTopItems',
@@ -95,7 +95,7 @@ export const fetchTopItems = createAsyncThunk<
 
 export const fetchStaffPerformance = createAsyncThunk<
   StaffPerformance[],
-  'today' | 'week' | 'month',
+  DashboardPeriod,
   { rejectValue: ApiError }
 >(
   'dashboard/fetchStaffPerformance',
@@ -111,7 +111,7 @@ export const fetchStaffPerformance = createAsyncThunk<
 // Combined thunk to fetch all dashboard data
 export const fetchAllDashboardData = createAsyncThunk<
   void,
-  'today' | 'week' | 'month',
+  DashboardPeriod,
   { rejectValue: ApiError }
 >(
   'dashboard/fetchAllData',
@@ -137,7 +137,7 @@ const dashboardSlice = createSlice({
     },
 
     // Period management
-    setPeriod: (state, action: PayloadAction<'today' | 'week' | 'month'>) => {
+    setPeriod: (state, action: PayloadAction<DashboardPeriod>) => {
       state.selectedPeriod = action.payload;
     },
 

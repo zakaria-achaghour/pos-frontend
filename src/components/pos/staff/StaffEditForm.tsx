@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StaffEditFormProps } from '@/types/staff';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { StaffFormData, StaffRole, StaffMember } from '@/types/staff';

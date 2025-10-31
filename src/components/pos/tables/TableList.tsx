@@ -1,4 +1,5 @@
 import React from 'react';
+import type { TableListProps } from '@/types/table';
 import type { Table, TableStatus } from '@/types/table';
 import TableCard from './TableCard';
 

@@ -1,76 +1,15 @@
 import apiClient from './client';
 import type { ApiResponse, PaginatedResponse } from './client';
-
-// Staff types
-export interface Staff {
-  id: number;
-  name: string;
-  email: string;
-  role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
-  phone?: string;
-  address?: string;
-  hire_date: string;
-  hourly_rate?: number;
-  photo_url?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateStaffData {
-  name: string;
-  email: string;
-  role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
-  phone?: string;
-  address?: string;
-  hire_date: string;
-  hourly_rate?: number;
-  password: string;
-}
-
-export interface UpdateStaffData extends Partial<Omit<CreateStaffData, 'password'>> {
-  password?: string;
-  is_active?: boolean;
-}
-
-export interface StaffPerformance {
-  staff_id: number;
-  staff_name: string;
-  orders_completed: number;
-  revenue_generated: number;
-  hours_worked: number;
-  performance_score: number;
-  productivity_rate: number;
-  period: string;
-}
-
-export interface AttendanceRecord {
-  id: number;
-  staff_id: number;
-  staff_name: string;
-  clock_in: string;
-  clock_out?: string;
-  hours_worked?: number;
-  date: string;
-  status: 'present' | 'absent' | 'late' | 'early_leave';
-}
-
-export interface ClockInData {
-  staff_id: number;
-}
-
-export interface ClockOutData {
-  staff_id: number;
-}
-
-export interface AttendanceSummary {
-  total_staff: number;
-  present_today: number;
-  absent_today: number;
-  late_today: number;
-  total_hours_today: number;
-  average_hours_per_staff: number;
-}
+import type {
+  Staff,
+  CreateStaffData,
+  UpdateStaffData,
+  StaffPerformance,
+  AttendanceRecord,
+  ClockInData,
+  ClockOutData,
+  AttendanceSummary
+} from '../types/staff';
 
 // Staff API service
 export const staffAPI = {

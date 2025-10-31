@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StaffPerformanceViewProps } from '@/types/staff';
 import type { StaffMember } from '@/types/staff';
 
 interface StaffPerformanceViewProps {

@@ -1,4 +1,5 @@
 import React from 'react';
+import type { CategoryFormProps } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { CategoryFormData } from '@/types/menu';

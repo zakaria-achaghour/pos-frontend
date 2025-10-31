@@ -1,4 +1,5 @@
 import React from 'react';
+import type { MenuFiltersProps } from '@/types/menu';
 import type { MenuFilters as MenuFiltersType } from '@/hooks/useMenuManagement';
 
 interface MenuFiltersProps {

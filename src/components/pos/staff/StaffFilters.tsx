@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StaffFiltersProps } from '@/types/staff';
 import type { ViewMode, StaffFilter } from '../../hooks/useStaffManagement';
 
 interface StaffFiltersProps {

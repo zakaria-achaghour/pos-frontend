@@ -1,182 +1,105 @@
 import React from 'react';
-import type { MenuItem } from '@/hooks/useMenuManagement';
+import type { ItemCardProps } from '@/types/menu';
 
-interface ItemCardProps {
-  item: MenuItem;
-  onEdit: (item: MenuItem) => void;
-  onDelete: (itemId: number) => void;
-  onToggleStatus: (itemId: number) => void;
-  isLoading?: boolean;
-}
-
-const ItemCard: React.FC<ItemCardProps> = ({
-  item,
-  onEdit,
-  onDelete,
-  onToggleStatus,
-  isLoading = false
-}) => {
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      onDelete(item.id);
+const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'unavailable':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'out-of-stock':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-  };
-
-  const getPriceColor = (price: number) => {
-    if (price < 50) return 'text-green-600';
-    if (price < 150) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const formatPrice = (price: number | string) => {
-    return `${Number(price).toFixed(2)} MAD`;
-  };
-
-  const formatTime = (minutes?: number) => {
-    if (!minutes) return 'N/A';
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
   return (
-    <div className="bg-white rounded-lg shadow border hover:shadow-md transition-shadow">
-      {/* Item Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🍽️</span>
-            <div>
-              <h3 className="font-semibold text-gray-900">{item.name}</h3>
-              <p className="text-sm text-gray-600">{item.category_name}</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className={`text-lg font-bold ${getPriceColor(Number(item.price))}`}>
-              {formatPrice(item.price)}
-            </div>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.is_active)}`}>
-              {item.is_active ? 'Active' : 'Inactive'}
-            </span>
-          </div>
+    <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+      {/* Image */}
+      {item.image && (
+        <div className="h-48 overflow-hidden bg-gray-100">
+          <img
+            src={item.image}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
         </div>
-      </div>
+      )}
 
-      {/* Item Body */}
+      {/* Content */}
       <div className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-gray-900 text-lg">{item.name}</h3>
+          <span
+            className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+              item.status
+            )}`}
+          >
+            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          </span>
+        </div>
+
         {/* Description */}
         {item.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {item.description}
+          </p>
         )}
 
-        {/* Item Details */}
-        <div className="mb-4 space-y-2">
-          {/* Preparation Time */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">⏱️ Prep Time:</span>
-            <span className="font-medium text-gray-900">{formatTime(item.preparation_time)}</span>
-          </div>
-
-          {/* Ingredients */}
-          {item.ingredients && item.ingredients.length > 0 && (
-            <div className="text-sm">
-              <span className="text-gray-600">🥘 Ingredients:</span>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {item.ingredients.slice(0, 3).map((ingredient, index) => (
-                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {ingredient}
-                  </span>
-                ))}
-                {item.ingredients.length > 3 && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                    +{item.ingredients.length - 3} more
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Allergens */}
-          {item.allergens && item.allergens.length > 0 && (
-            <div className="text-sm">
-              <span className="text-gray-600">⚠️ Allergens:</span>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {item.allergens.map((allergen, index) => (
-                  <span key={index} className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                    {allergen}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-2">
-          {/* Status Toggle */}
-          <button
-            onClick={() => onToggleStatus(item.id)}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              item.is_active
-                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
-            }`}
-            disabled={isLoading}
-          >
-            {item.is_active ? '❌ Deactivate' : '✅ Activate'}
-          </button>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => onEdit(item)}
-              className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              ✏️ Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              🗑️ Delete
-            </button>
-          </div>
-        </div>
-
-        {/* Price Analysis */}
-        <div className="mt-3 p-2 bg-gray-50 rounded-lg">
-          <div className="text-xs text-gray-600 text-center">
-            Price Category: {' '}
-            <span className={`font-medium ${getPriceColor(item.price)}`}>
-              {item.price < 50 ? '💰 Budget' : item.price < 150 ? '💰💰 Standard' : '💰💰💰 Premium'}
+        {/* Price and Details */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xl font-bold text-indigo-600">
+            ${item.price.toFixed(2)}
+          </span>
+          {item.preparationTime && (
+            <span className="text-sm text-gray-500">
+              ⏱️ {item.preparationTime} min
             </span>
-          </div>
+          )}
         </div>
 
-        {/* Status Warnings */}
-        {!item.is_active && (
-          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-xs text-red-800">
-              🚫 This item is inactive and won't appear in the POS
-            </div>
-          </div>
-        )}
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {item.isVegetarian && (
+            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+              🌱 Vegetarian
+            </span>
+          )}
+          {item.isVegan && (
+            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+              🥗 Vegan
+            </span>
+          )}
+          {item.isGlutenFree && (
+            <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+              🌾 Gluten-Free
+            </span>
+          )}
+          {item.isSpicy && (
+            <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">
+              🌶️ Spicy
+            </span>
+          )}
+        </div>
 
-        {/* Allergen Warning */}
-        {item.allergens && item.allergens.length > 0 && (
-          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="text-xs text-yellow-800">
-              ⚠️ Contains allergens - staff should inform customers
-            </div>
-          </div>
-        )}
+        {/* Actions */}
+        <div className="flex gap-2 pt-3 border-t border-gray-100">
+          <button
+            onClick={() => onEdit(item)}
+            className="flex-1 px-3 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(item.id)}
+            className="flex-1 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

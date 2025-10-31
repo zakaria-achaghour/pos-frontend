@@ -1,4 +1,5 @@
 import React from 'react';
+import type { TableStatsData,TableStatsProps } from '@/types/table';
 
 interface TableStatsData {
   total: number;

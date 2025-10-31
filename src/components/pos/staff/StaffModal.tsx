@@ -1,4 +1,5 @@
 import React from 'react';
+import type { StaffModalProps } from '@/types/staff';
 
 interface StaffModalProps {
   isOpen: boolean;

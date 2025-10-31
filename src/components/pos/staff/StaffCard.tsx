@@ -1,15 +1,6 @@
 import React from 'react';
 import type { StaffMember, StaffStatus } from '@/types/staff';
 
-interface StaffCardProps {
-  member: StaffMember;
-  loading?: boolean;
-  onToggleClock: (memberId: number) => void;
-  onShowDetails: (member: StaffMember) => void;
-  onChangeStatus: (memberId: number, status: StaffStatus) => void;
-  onEdit?: (member: StaffMember) => void;
-  onDelete?: (memberId: number) => void;
-}
 
 const getRoleColor = (role: string) => {
   switch (role) {

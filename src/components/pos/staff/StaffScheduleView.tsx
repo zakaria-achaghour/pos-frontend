@@ -1,9 +1,6 @@
 import React from 'react';
+import type { StaffScheduleViewProps } from '@/types/staff';
 import type { StaffMember } from '@/types/staff';
-
-interface StaffScheduleViewProps {
-  staff: StaffMember[];
-}
 
 const days = [
   { key: 'monday', label: 'Monday' },

@@ -1,94 +1,17 @@
 import apiClient from './client';
 import type { ApiResponse } from './client';
-
-// Menu types
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  is_active: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MenuItem {
-  id: number;
-  category_id: number;
-  category: Category;
-  name: string;
-  description?: string;
-  price: number;
-  cost?: number;
-  is_active: boolean;
-  is_available: boolean;
-  image_url?: string;
-  preparation_time?: number; // in minutes
-  allergens?: string[];
-  ingredients?: string[];
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateCategoryData {
-  name: string;
-  description?: string;
-  is_active?: boolean;
-  sort_order?: number;
-}
-
-export interface UpdateCategoryData extends Partial<CreateCategoryData> {}
-
-export interface CreateMenuItemData {
-  category_id: number;
-  name: string;
-  description?: string;
-  price: number;
-  cost?: number;
-  is_active?: boolean;
-  is_available?: boolean;
-  preparation_time?: number;
-  allergens?: string[];
-  ingredients?: string[];
-  sort_order?: number;
-}
-
-export interface UpdateMenuItemData extends Partial<CreateMenuItemData> {}
-
-// API Filter interfaces
-export interface CategoryFilters {
-  searchTerm?: string;
-  is_active?: boolean;
-  page?: number;
-  limit?: number;
-}
-
-export interface MenuItemFilters {
-  category_id?: number;
-  is_active?: boolean;
-  is_available?: boolean;
-  searchTerm?: string;
-  page?: number;
-  limit?: number;
-}
-
-// API Response interfaces
-export interface CategoriesResponse {
-  data: Category[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-export interface MenuItemsResponse {
-  data: MenuItem[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+import type {
+  Category,
+  MenuItem,
+  CreateCategoryData,
+  UpdateCategoryData,
+  CreateMenuItemData,
+  UpdateMenuItemData,
+  CategoryFilters,
+  MenuItemFilters,
+  CategoriesResponse,
+  MenuItemsResponse
+} from '../types/menu';
 
 // Menu API service
 export const menuAPI = {

@@ -1,23 +1,5 @@
 import React from 'react';
-import type { Category } from '@/api/menu';
-
-export interface MenuItemFilterOptions {
-  searchTerm: string;
-  categoryFilter: number | 'all';
-  statusFilter: 'all' | 'active' | 'inactive';
-  availabilityFilter: 'all' | 'available' | 'unavailable';
-}
-
-interface MenuItemFiltersProps {
-  filters: MenuItemFilterOptions;
-  onFiltersChange: (filters: MenuItemFilterOptions) => void;
-  onReset: () => void;
-  onAddItem: () => void;
-  categories: Category[];
-  totalCount: number;
-  filteredCount: number;
-  loading?: boolean;
-}
+import type { MenuItemFiltersProps } from '@/types/menu';
 
 const MenuItemFilters: React.FC<MenuItemFiltersProps> = ({
   filters,

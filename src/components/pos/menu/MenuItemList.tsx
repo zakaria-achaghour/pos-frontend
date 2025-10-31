@@ -1,16 +1,5 @@
 import React from 'react';
-import type { MenuItem } from '@/api/menu';
-
-interface MenuItemListProps {
-  items: MenuItem[];
-  loading: boolean;
-  onEdit: (item: MenuItem) => void;
-  onDelete: (id: number, name: string) => void;
-  onToggleStatus: (id: number, isActive: boolean, name: string) => void;
-  onToggleAvailability: (id: number, isAvailable: boolean, name: string) => void;
-  onUploadImage: (id: number) => void;
-  hasFilters: boolean;
-}
+import type { MenuItemListProps } from '@/types/menu';
 
 const MenuItemList: React.FC<MenuItemListProps> = ({
   items,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../hooks/useAuthRedux';
 import { dashboardAPI } from '../../api/dashboard';
-import type { DashboardMetrics } from '../../api/dashboard';
+import type { DashboardMetrics, DashboardPeriod } from '@/types/dashboard';
 import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
@@ -61,7 +61,7 @@ const extendedMockData = {
 export default function OwnerDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | 'week' | 'month'>('today');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<DashboardPeriod>('today');
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -133,13 +133,13 @@ export default function OwnerDashboard() {
       {/* Timeframe Selector */}
       <div className="flex gap-2">
         {[
-          { key: 'today', label: 'Today' },
-          { key: 'week', label: 'This Week' },
-          { key: 'month', label: 'This Month' }
+          { key: 'today' as DashboardPeriod, label: 'Today' },
+          { key: 'week' as DashboardPeriod, label: 'This Week' },
+          { key: 'month' as DashboardPeriod, label: 'This Month' }
         ].map((timeframe) => (
           <button
             key={timeframe.key}
-            onClick={() => setSelectedTimeframe(timeframe.key as 'today' | 'week' | 'month')}
+            onClick={() => setSelectedTimeframe(timeframe.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${
               selectedTimeframe === timeframe.key
                 ? 'bg-blue-500 text-white'

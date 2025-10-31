@@ -1,14 +1,7 @@
 import React from 'react';
+import type { CategoryListProps } from '@/types/menu';
 import type { Category } from '@/api/menu';
 
-interface CategoryListProps {
-  categories: Category[];
-  loading: boolean;
-  onEdit: (category: Category) => void;
-  onDelete: (id: number) => void;
-  onToggleStatus: (id: number, isActive: boolean) => void;
-  hasFilters?: boolean;
-}
 
 const CategoryList: React.FC<CategoryListProps> = ({
   categories,

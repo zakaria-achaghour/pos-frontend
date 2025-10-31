@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
+import type { MenuItemModalProps } from '@/types/menu';
 import type { FormikProps } from 'formik';
 import * as Yup from 'yup';
 import type { MenuItem, CreateMenuItemData, Category } from '@/api/menu';
@@ -16,14 +17,6 @@ interface FormValues {
   sort_order: number | string;
 }
 
-interface MenuItemModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateMenuItemData) => Promise<void>;
-  editingItem?: MenuItem | null;
-  categories: Category[];
-  loading?: boolean;
-}
 
 const validationSchema = Yup.object({
   name: Yup.string()

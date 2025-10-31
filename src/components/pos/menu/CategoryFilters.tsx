@@ -1,18 +1,7 @@
+import type { CategoryFiltersProps } from '@/types/menu';
 import React from 'react';
 
-export interface CategoryFilterOptions {
-  searchTerm: string;
-  statusFilter: 'all' | 'active' | 'inactive';
-}
 
-interface CategoryFiltersProps {
-  filters: CategoryFilterOptions;
-  onFilterChange: (filters: CategoryFilterOptions) => void;
-  onReset: () => void;
-  totalCount: number;
-  filteredCount: number;
-  loading?: boolean;
-}
 
 const CategoryFilters: React.FC<CategoryFiltersProps> = ({
   filters,

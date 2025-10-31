@@ -1,15 +1,9 @@
 import React from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import type { StaffFormProps } from '@/types/staff';
 import type { StaffFormData, StaffRole } from '@/types/staff';
 
-interface StaffFormProps {
-  initialValues?: StaffFormData;
-  loading?: boolean;
-  onCancel: () => void;
-  onSubmit: (values: StaffFormData) => Promise<void> | void;
-  serverErrors?: Record<string, string[]>;
-}
 
 const roles: StaffRole[] = ['manager', 'cashier', 'waiter', 'kitchen'];
 
