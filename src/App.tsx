@@ -18,8 +18,9 @@ import Tables from "./pages/POS/Tables";
 import TableManagement from "./pages/POS/TableManagement";
 import EnhancedTableManagement from "./pages/POS/EnhancedTableManagement";
 import StaffManagement from "./pages/POS/StaffManagement";
-import Categories from "./pages/POS/Categories";
+import CategoriesManagement from "./pages/POS/CategoriesManagement";
 import Items from "./pages/POS/Items";
+import MenuItemsManagement from "./pages/POS/MenuItemsManagement";
 import OrderCreate from "./pages/POS/OrderCreate";
 import OrderDetails from "./pages/POS/OrderDetails";
 import DailySummary from "./pages/POS/DailySummary";
@@ -94,10 +95,16 @@ export default function App() {
             {/* Menu Management - accessible by owner, manager only */}
             <Route path="/categories" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <Categories />
+                <CategoriesManagement />
               </ProtectedRoute>
             } />
             <Route path="/items" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <MenuItemsManagement />
+              </ProtectedRoute>
+            } />
+            {/* Legacy Items page (keep for reference) */}
+            <Route path="/items-old" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
                 <Items />
               </ProtectedRoute>

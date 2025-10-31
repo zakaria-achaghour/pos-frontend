@@ -155,7 +155,9 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
                   <div className="text-sm font-medium text-gray-700 mb-2">Preview:</div>
                   <div className="text-sm text-gray-600">
                     <div>📂 <strong>{values.name || 'Category Name'}</strong></div>
-                    <div>✅ {values.is_active !== false ? 'Active' : 'Inactive'}</div>
+                    <div className={values.is_active !== false ? 'text-green-600' : 'text-red-600'}>
+                      {values.is_active !== false ? '✅ Active' : '❌ Inactive'}
+                    </div>
                     {values.description && (
                       <div>📝 {values.description}</div>
                     )}

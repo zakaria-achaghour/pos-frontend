@@ -32,8 +32,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
     return 'text-red-600';
   };
 
-  const formatPrice = (price: number) => {
-    return `${price.toFixed(2)} MAD`;
+  const formatPrice = (price: number | string) => {
+    return `${Number(price).toFixed(2)} MAD`;
   };
 
   const formatTime = (minutes?: number) => {
@@ -57,7 +57,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
             </div>
           </div>
           <div className="text-right">
-            <div className={`text-lg font-bold ${getPriceColor(item.price)}`}>
+            <div className={`text-lg font-bold ${getPriceColor(Number(item.price))}`}>
               {formatPrice(item.price)}
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.is_active)}`}>

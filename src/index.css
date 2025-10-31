@@ -860,3 +860,19 @@ pre[class*="language-"] {
 pre[class*="language-"].line-numbers {
   padding-left: 2.8em !important;
 }
+
+/* Toast Animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
