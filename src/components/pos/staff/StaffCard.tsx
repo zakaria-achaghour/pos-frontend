@@ -173,7 +173,6 @@ export default function StaffCard({
           >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="on-break">On Break</option>
             <option value="vacation">Vacation</option>
           </select>
         </div>

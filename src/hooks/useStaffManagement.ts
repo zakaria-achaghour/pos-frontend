@@ -173,7 +173,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     lastPage: 1,
-    perPage: 15,
+    perPage: 9,
     total: 0,
   });
 
@@ -198,10 +198,21 @@ export function useStaffManagement(): UseStaffManagementReturn {
     setError(null);
     
     try {
-      const response = await staffAPI.getStaff({
+      const filters: {
+        page: number;
+        per_page: number;
+        role?: string;
+      } = {
         page,
         per_page: pagination.perPage,
-      });
+      };
+      
+      // Add role filter if not 'all'
+      if (roleFilter !== 'all') {
+        filters.role = roleFilter;
+      }
+      
+      const response = await staffAPI.getStaff(filters);
       const mappedStaff = response.data.map(mapApiStaffToLocal);
       setStaff(mappedStaff);
       setPagination({
@@ -242,6 +253,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
         email: formData.email,
         phone: formData.phone,
         position: formData.role,
+        role: formData.role.charAt(0).toUpperCase() + formData.role.slice(1),
         department: roleToDepartment(formData.role),
         hire_date: formData.hireDate,
         hourly_rate: formData.salary,
@@ -449,10 +461,14 @@ export function useStaffManagement(): UseStaffManagementReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter staff by role
-  const filteredStaff = staff.filter(member => 
-    roleFilter === 'all' || member.role === roleFilter
-  );
+  // Refetch staff when role filter changes
+  useEffect(() => {
+    fetchStaff(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleFilter]);
+
+  // Since filtering is now done server-side, filteredStaff is just the staff array
+  const filteredStaff = staff;
 
   // Computed staff stats
   const staffStats = {
