@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './useAuthRedux';
 import { staffAPI } from '../api/staff';
 import type { Staff } from '../api/staff';
@@ -158,6 +158,9 @@ interface UseStaffManagementReturn {
 export function useStaffManagement(): UseStaffManagementReturn {
   const { user } = useAuth();
   
+  // Track if we're currently fetching to prevent duplicate calls
+  const isFetchingRef = useRef(false);
+  
   // Data state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<StaffMember | null>(null);
@@ -194,6 +197,14 @@ export function useStaffManagement(): UseStaffManagementReturn {
 
   // Fetch staff data from API
   const fetchStaff = async (page: number = pagination.currentPage) => {
+    // Prevent duplicate simultaneous fetches
+    if (isFetchingRef.current) {
+      console.log('⏭️ Skipping duplicate fetchStaff call');
+      return;
+    }
+    
+    console.log('🔄 fetchStaff called with page:', page, 'roleFilter:', roleFilter);
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     
@@ -212,6 +223,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
         filters.role = roleFilter;
       }
       
+      console.log('📤 Sending API request with filters:', filters);
       const response = await staffAPI.getStaff(filters);
       const mappedStaff = response.data.map(mapApiStaffToLocal);
       setStaff(mappedStaff);
@@ -225,6 +237,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
       setError(error.response?.data?.message || 'Failed to fetch staff data');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -455,13 +468,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
     setSuccessMessage(null);
   };
 
-  // Load staff data on mount
-  useEffect(() => {
-    fetchStaff(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Refetch staff when role filter changes
+  // Load staff data on mount and when role filter changes
   useEffect(() => {
     fetchStaff(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
