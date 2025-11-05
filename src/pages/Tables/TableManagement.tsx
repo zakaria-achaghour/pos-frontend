@@ -56,7 +56,7 @@ export default function TableManagement() {
     
     // Computed values
     tableStats = { total: 0, available: 0, occupied: 0, reserved: 0 },
-  } = useTableManagement() as any; // Cast to any temporarily until hook is updated
+  } = useTableManagement(5) as any; // 5 tables per page for management
 
   // Local modal states
   const [showAddModal, setShowAddModal] = useState(false);

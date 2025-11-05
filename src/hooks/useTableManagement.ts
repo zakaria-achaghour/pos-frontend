@@ -51,9 +51,10 @@ interface UseTableManagementReturn extends UseResourceManagementReturn<
   deleteTable: (id: number) => Promise<void>;
   updateTableStatus: (id: number, status: TableStatus) => Promise<void>;
   tableStats: TableStats;
+  setPerPage: (perPage: number) => void;
 }
 
-export const useTableManagement = (): UseTableManagementReturn => {
+export const useTableManagement = (initialPerPage: number = 5): UseTableManagementReturn => {
   const [tables, setTables] = useState<Table[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
@@ -73,7 +74,7 @@ export const useTableManagement = (): UseTableManagementReturn => {
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     lastPage: 1,
-    perPage: 5,
+    perPage: initialPerPage,
     total: 0,
   });
   const [tableStats, setTableStats] = useState<TableStats>({
@@ -184,6 +185,12 @@ export const useTableManagement = (): UseTableManagementReturn => {
   const goToPage = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }));
     fetchTables(page);
+  };
+
+  // Set items per page
+  const setPerPage = (perPage: number) => {
+    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
+    // Will trigger refetch via useEffect
   };
 
   // Create new table
@@ -407,6 +414,7 @@ export const useTableManagement = (): UseTableManagementReturn => {
     clearSuccessMessage,
     toggleItemSelection,
     clearSelection,
+    setPerPage,
     
     // UI Actions - aliases
     setStatusFilter,
