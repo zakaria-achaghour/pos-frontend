@@ -1,9 +1,8 @@
 import React from 'react';
-import type { TableListProps } from '@/types/table';
 import type { Table, TableStatus } from '@/types/table';
 import TableCard from './TableCard';
 
-interface TableListProps {
+interface TableListComponentProps {
   tables: Table[];
   onEdit: (table: Table) => void;
   onDelete: (tableId: number) => void;
@@ -15,7 +14,7 @@ interface TableListProps {
   className?: string;
 }
 
-const TableList: React.FC<TableListProps> = ({
+const TableList: React.FC<TableListComponentProps> = ({
   tables,
   onEdit,
   onDelete,
@@ -58,11 +57,9 @@ const TableList: React.FC<TableListProps> = ({
           table={table}
           onEdit={onEdit}
           onDelete={onDelete}
-          onStatusChange={onStatusChange}
-          {...(onSelectTable && { onSelect: onSelectTable })}
+          onStatusChange={(status) => onStatusChange(table.id, status)}
+          {...(onSelectTable && { onSelect: () => onSelectTable(table.id) })}
           isSelected={selectedTables.includes(table.id)}
-          isLoading={isLoading}
-          className={viewMode === 'list' ? 'lg:col-span-1' : ''}
         />
       ))}
     </div>

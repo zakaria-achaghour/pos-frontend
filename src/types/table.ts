@@ -22,15 +22,23 @@ export interface Table {
   capacity: number;
   shape: TableShape;
   status: TableStatus;
-  location: TableLocation;
+  section?: string; // Direct from API
+  floor?: number; // Direct from API
+  grid_x?: number; // Direct from API
+  grid_y?: number; // Direct from API
+  location?: TableLocation; // Legacy/optional nested structure
   description?: string;
-  features: string[];
+  features?: string[];
   currentOrder?: number;
   assignedWaiter?: number;
   lastCleaned?: string;
   reservations?: TableReservation[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_at?: string; // API uses snake_case
+  updated_at?: string; // API uses snake_case
+  restaurant_id?: number;
+  qr_code?: string;
 }
 
 export interface TableReservation {

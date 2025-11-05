@@ -25,6 +25,67 @@ export interface PaginationProps {
   className?: string;
 }
 
+export interface PaginationInfo {
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+}
+
+// ============================================
+// RESOURCE MANAGEMENT HOOK INTERFACE
+// ============================================
+
+/**
+ * Generic interface for resource management hooks (staff, tables, menu items, etc.)
+ * Provides a consistent structure for CRUD operations and UI state management
+ */
+export interface UseResourceManagementReturn<
+  TResource,
+  TFormData,
+  TStatus,
+  TFilter,
+  TStats
+> {
+  // Data
+  items: TResource[];
+  filteredItems: TResource[];
+  selectedItem: TResource | null;
+  editingItem: TResource | null;
+
+  // UI State
+  viewMode: 'grid' | 'list';
+  filter: TFilter;
+  loading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  validationErrors: Record<string, string[]>;
+  pagination: PaginationInfo;
+  selectedItems: number[];
+
+  // Actions
+  fetchItems: (page?: number) => Promise<void>;
+  createItem: (data: TFormData) => Promise<void>;
+  updateItem: (id: number, data: Partial<TFormData>) => Promise<void>;
+  deleteItem: (id: number) => Promise<void>;
+  updateItemStatus: (id: number, status: TStatus) => Promise<void>;
+  bulkUpdateStatus: (ids: number[], status: TStatus) => Promise<void>;
+  goToPage: (page: number) => void;
+
+  // UI Actions
+  setViewMode: (mode: 'grid' | 'list') => void;
+  setFilter: (filter: TFilter) => void;
+  setSelectedItem: (item: TResource | null) => void;
+  setEditingItem: (item: TResource | null) => void;
+  clearError: () => void;
+  clearSuccessMessage: () => void;
+  toggleItemSelection: (id: number) => void;
+  clearSelection: () => void;
+
+  // Computed values
+  stats: TStats;
+}
+
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;

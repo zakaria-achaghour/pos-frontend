@@ -9,7 +9,6 @@ const TableFilters: React.FC<TableFiltersProps> = ({
     { value: 'available', label: 'Available' },
     { value: 'occupied', label: 'Occupied' },
     { value: 'reserved', label: 'Reserved' },
-    { value: 'cleaning', label: 'Cleaning' },
     { value: 'out-of-order', label: 'Out of Order' },
     { value: 'maintenance', label: 'Maintenance' },
   ],

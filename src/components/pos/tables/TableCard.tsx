@@ -64,11 +64,11 @@ const TableCard: React.FC<TableCardProps> = ({
         </span>
       </div>
 
-      {/* Location */}
-      {table.location && (
+      {/* Section/Location */}
+      {table.section && (
         <div className="mb-3 text-sm text-gray-600">
-          <span className="font-medium">Location:</span> {table.location.section}
-          {table.location.floor && ` (Floor ${table.location.floor})`}
+          <span className="font-medium">Section:</span> {table.section}
+          {table.floor && ` • Floor ${table.floor}`}
         </div>
       )}
 
@@ -84,14 +84,18 @@ const TableCard: React.FC<TableCardProps> = ({
         {onStatusChange && (
           <select
             value={table.status}
-            onChange={(e) => onStatusChange(e.target.value as any)}
+            onChange={(e) => {
+              e.stopPropagation();
+              onStatusChange(e.target.value as any);
+            }}
             onClick={(e) => e.stopPropagation()}
             className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="available">Available</option>
             <option value="occupied">Occupied</option>
             <option value="reserved">Reserved</option>
-            <option value="cleaning">Cleaning</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="out-of-order">Out of Order</option>
           </select>
         )}
         <button

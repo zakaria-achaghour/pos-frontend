@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface PaginationProps {
   totalPages: number;
@@ -12,6 +12,11 @@ export default function PaginationWithText({
   onPageChange,
 }: PaginationProps) {
   const [currentPage, setCurrentPage] = useState(initialPage);
+
+  // Sync internal state with prop changes
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;

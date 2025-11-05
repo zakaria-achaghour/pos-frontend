@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
+import Modal from '@/components/common/Modal';
 import { useStaffManagement } from '@/hooks/useStaffManagement';
 import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
 
@@ -10,7 +11,6 @@ import StaffFilters from '@/components/pos/staff/StaffFilters';
 import StaffList from '@/components/pos/staff/StaffList';
 import StaffPerformanceView from '@/components/pos/staff/StaffPerformanceView';
 import StaffScheduleView from '@/components/pos/staff/StaffScheduleView';
-import StaffModal from '@/components/pos/staff/StaffModal';
 import StaffForm from '@/components/pos/staff/StaffForm';
 import StaffEditForm from '@/components/pos/staff/StaffEditForm';
 import type { StaffMember } from '@/types/staff';
@@ -213,7 +213,7 @@ export default function StaffManagement() {
       )}
 
       {/* Add Staff Modal */}
-      <StaffModal
+      <Modal
         isOpen={showAddModal}
         onClose={closeModals}
         title="Add New Staff Member"
@@ -225,10 +225,10 @@ export default function StaffManagement() {
           onSubmit={handleAddStaff}
           serverErrors={validationErrors}
         />
-      </StaffModal>
+      </Modal>
 
       {/* Edit Staff Modal */}
-      <StaffModal
+      <Modal
         isOpen={!!editingMember}
         onClose={closeModals}
         title={`Edit ${editingMember?.name || 'Staff Member'}`}
@@ -243,10 +243,10 @@ export default function StaffManagement() {
             serverErrors={validationErrors}
           />
         )}
-      </StaffModal>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      <StaffModal
+      <Modal
         isOpen={!!memberToDelete}
         onClose={() => setMemberToDelete(null)}
         title="Confirm Deletion"
@@ -275,10 +275,10 @@ export default function StaffManagement() {
             </button>
           </div>
         </div>
-      </StaffModal>
+      </Modal>
 
       {/* Staff Details Modal */}
-      <StaffModal
+      <Modal
         isOpen={!!selectedMember}
         onClose={closeModals}
         title={`${selectedMember?.name || 'Staff Member'} - Details`}
@@ -381,7 +381,7 @@ export default function StaffManagement() {
             )}
           </div>
         )}
-      </StaffModal>
+      </Modal>
     </div>
   );
 }

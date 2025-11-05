@@ -1,300 +1,208 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch } from '@/store';
-import {
-  fetchTables,
-  createTable,
-  updateTable,
-  deleteTable,
-  updateTableStatusAsync,
-  bulkUpdateStatus,
-  setCurrentPage,
-  setItemsPerPage,
-  setCurrentTable,
-  setStatusFilter,
-  setSearchTerm,
-  setCapacityFilter,
-  setCapacityRange,
-  setSectionFilter,
-  setFloorFilter,
-  setShapeFilter,
-  clearFilters,
-  toggleTableSelection,
-  clearSelection,
-  clearCurrentTable,
-  selectTablesAction,
-  selectTables,
-  selectTablesList,
-  selectCurrentTable,
-  selectTablesLoading,
-  selectTablesCreating,
-  selectTablesUpdating,
-  selectTablesDeleting,
-  selectTablesError,
-  selectTablesValidationErrors,
-  selectSelectedTables,
-  selectTablesFilters,
-  selectFilteredTables
-} from '@/store/slices/tableSlice';
-import type { Table, TableFormData, TableFilters as TableFiltersType, TableStatus } from '@/types/table';
-import TableForm from '@/components/pos/tables/TableForm';
+import React, { useState } from 'react';
+import PageMeta from '@/components/common/PageMeta';
+import PageBreadcrumb from '@/components/common/PageBreadCrumb';
+import Alert from '@/components/ui/alert/Alert';
+import Modal from '@/components/common/Modal';
+import { useTableManagement } from '@/hooks/useTableManagement';
+import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
+
+// Import table components
 import TableFilters from '@/components/pos/tables/TableFilters';
 import TableList from '@/components/pos/tables/TableList';
-import Pagination from '@/components/common/Pagination';
-import Button from '@/components/ui/button/Button';
-import { useModal } from '@/hooks/useModal';
+import TableForm from '@/components/pos/tables/TableForm';
+import type { Table } from '@/types/table';
 
-const TableManagement: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const tablesState = useSelector(selectTables);
-  const tables = useSelector(selectTablesList);
-  const isLoading = useSelector(selectTablesLoading);
-  const isCreating = useSelector(selectTablesCreating);
-  const isUpdating = useSelector(selectTablesUpdating);
-  const isDeleting = useSelector(selectTablesDeleting);
-  const error = useSelector(selectTablesError);
-  const validationErrors = useSelector(selectTablesValidationErrors);
-  const selectedTables = useSelector(selectSelectedTables);
-  const filters = useSelector(selectTablesFilters);
-  const filteredTables = useSelector(selectFilteredTables);
-
+export default function TableManagement() {
+  // Destructure all data and actions from the useTableManagement hook
   const {
-    totalTables,
-    currentPage,
-    itemsPerPage
-  } = tablesState;
-  
-  const { isOpen: isFormOpen, openModal: openForm, closeModal: closeForm } = useModal();
-  const [editingTable, setEditingTable] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [bulkAction, setBulkAction] = useState<TableStatus | null>(null);
+    // Data
+    tables = [],
+    filteredTables = [],
+    selectedTable,
+    editingTable,
+    
+    // UI State
+    statusFilter = 'all',
+    shapeFilter = 'all',
+    sectionFilter = '',
+    minCapacityFilter = null,
+    maxCapacityFilter = null,
+    loading = false,
+    error,
+    successMessage,
+    validationErrors = {}, // Provide default empty object
+    pagination = { currentPage: 1, lastPage: 1, total: 0 },
+    selectedTables = [],
+    
+    // Actions
+    createTable,
+    updateTable,
+    deleteTable,
+    updateTableStatus,
+    bulkUpdateStatus,
+    goToPage = () => {},
+    
+    // UI Actions
+    setStatusFilter = () => {},
+    setShapeFilter = () => {},
+    setSectionFilter = () => {},
+    setMinCapacityFilter = () => {},
+    setMaxCapacityFilter = () => {},
+    setSelectedTable = () => {},
+    setEditingTable = () => {},
+    clearError = () => {},
+    toggleTableSelection = () => {},
+    clearSelection = () => {},
+    
+    // Computed values
+    tableStats = { total: 0, available: 0, occupied: 0, reserved: 0 },
+  } = useTableManagement() as any; // Cast to any temporarily until hook is updated
 
-  // Load tables on component mount and when filters change
-  useEffect(() => {
-    dispatch(fetchTables({ page: currentPage, limit: itemsPerPage, filters }));
-  }, [dispatch, currentPage, itemsPerPage, filters]);
+  // Local modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [tableToDelete, setTableToDelete] = useState<Table | null>(null);
+  const [bulkAction, setBulkAction] = useState<string>('');
 
-  // Filter handlers
-  const handleFiltersChange = useCallback((newFilters: Partial<TableFiltersType>) => {
-    Object.entries(newFilters).forEach(([key, value]) => {
-      switch (key) {
-        case 'status':
-          dispatch(
-            setStatusFilter(typeof value === 'string' ? (value as TableStatus) : undefined)
-          );
-          break;
-        case 'searchTerm':
-          dispatch(setSearchTerm(typeof value === 'string' ? value : undefined));
-          break;
-        case 'capacity':
-          dispatch(setCapacityFilter(value as number | undefined));
-          break;
-        case 'minCapacity':
-        case 'maxCapacity':
-          dispatch(setCapacityRange({ 
-            min: key === 'minCapacity' ? value as number | undefined : filters.minCapacity,
-            max: key === 'maxCapacity' ? value as number | undefined : filters.maxCapacity
-          }));
-          break;
-        case 'section':
-          dispatch(setSectionFilter(value as string | undefined));
-          break;
-        case 'floor':
-          dispatch(setFloorFilter(value as number | undefined));
-          break;
-        case 'shape':
-          dispatch(
-            setShapeFilter(
-              typeof value === 'string' ? (value as TableFiltersType['shape']) : undefined
-            )
-          );
-          break;
-      }
-    });
-    // Reset to first page when filters change
-    if (currentPage > 1) {
-      dispatch(setCurrentPage(1));
+  // Handle form submissions
+  const handleAddTable = async (values: any) => {
+    try {
+      await createTable(values);
+      setShowAddModal(false);
+    } catch (error) {
+      // Error handled in hook
     }
-  }, [dispatch, currentPage, filters]);
+  };
 
-  const handleResetFilters = useCallback(() => {
-    dispatch(clearFilters());
-    dispatch(setCurrentPage(1));
-  }, [dispatch]);
-
-  // Table CRUD handlers
-  const handleCreateTable = useCallback(async (data: TableFormData) => {
-    const result = await dispatch(createTable({
-      number: data.number,
-      capacity: data.capacity,
-      shape: data.shape,
-      status: data.status,
-      section: data.section,
-      floor: data.floor,
-      description: data.description,
-      features: data.features
-    }));
-
-    if (createTable.fulfilled.match(result)) {
-      closeForm();
-      setEditingTable(null);
-    }
-  }, [dispatch, closeForm]);
-
-  const handleUpdateTable = useCallback(async (data: TableFormData) => {
+  const handleEditTable = async (values: any) => {
     if (!editingTable) return;
-
-    const result = await dispatch(updateTable({
-      id: editingTable,
-      data: {
-        number: data.number,
-        capacity: data.capacity,
-        shape: data.shape,
-        status: data.status,
-        section: data.section,
-        floor: data.floor,
-        description: data.description,
-        features: data.features
-      }
-    }));
-
-    if (updateTable.fulfilled.match(result)) {
-      closeForm();
-      setEditingTable(null);
+    try {
+      await updateTable(editingTable.id, values);
+      setEditingTable(null); // Close the modal after successful update
+    } catch (error) {
+      // Error handled in hook
     }
-  }, [dispatch, editingTable, closeForm]);
+  };
 
-  const handleDeleteTable = useCallback(async (tableId: number) => {
-    if (window.confirm('Are you sure you want to delete this table?')) {
-      await dispatch(deleteTable(tableId));
+  const handleDeleteRequest = (tableId: number) => {
+    const table = tables.find((t: Table) => t.id === tableId);
+    if (table) {
+      setTableToDelete(table);
     }
-  }, [dispatch]);
+  };
 
-  const handleStatusChange = useCallback(async (tableId: number, status: TableStatus) => {
-    await dispatch(updateTableStatusAsync({ id: tableId, status }));
-  }, [dispatch]);
-
-  // Form handlers
-  const handleOpenCreateForm = useCallback(() => {
-    dispatch(clearCurrentTable());
-    setEditingTable(null);
-    openForm();
-  }, [dispatch, openForm]);
-
-  const handleOpenEditForm = useCallback((table: Table) => {
-    setEditingTable(table.id);
-    dispatch(setCurrentTable(table));
-    openForm();
-  }, [dispatch, openForm]);
-
-  const handleCloseForm = useCallback(() => {
-    closeForm();
-    setEditingTable(null);
-    dispatch(clearCurrentTable());
-  }, [closeForm, dispatch]);
-
-  // Selection handlers
-  const handleSelectTable = useCallback((tableId: number) => {
-    dispatch(toggleTableSelection(tableId));
-  }, [dispatch]);
-
-  const handleSelectAll = useCallback(() => {
-    if (selectedTables.length === filteredTables.length && filteredTables.length > 0) {
-      dispatch(clearSelection());
-    } else {
-      dispatch(selectTablesAction(filteredTables.map((table) => table.id)));
+  const handleConfirmDelete = async () => {
+    if (!tableToDelete) return;
+    try {
+      await deleteTable(tableToDelete.id);
+      setTableToDelete(null);
+    } catch (error) {
+      // Error handled in hook
     }
-  }, [dispatch, filteredTables, selectedTables.length]);
+  };
 
-  // Bulk actions
-  const handleBulkStatusChange = useCallback(async () => {
+  // Handle bulk status change
+  const handleBulkStatusChange = async () => {
     if (selectedTables.length === 0 || !bulkAction) return;
-
-    const result = await dispatch(bulkUpdateStatus({
-      tableIds: selectedTables,
-      status: bulkAction
-    }));
-
-    if (bulkUpdateStatus.fulfilled.match(result)) {
-      dispatch(clearSelection());
-      setBulkAction(null);
+    try {
+      await bulkUpdateStatus(selectedTables, bulkAction as any);
+      setBulkAction('');
+    } catch (error) {
+      // Error handled in hook
     }
-  }, [dispatch, selectedTables, bulkAction]);
+  };
 
-  // Pagination handlers
-  const handlePageChange = useCallback((page: number) => {
-    dispatch(setCurrentPage(page));
-  }, [dispatch]);
-
-  const handleItemsPerPageChange = useCallback((items: number) => {
-    dispatch(setItemsPerPage(items));
-    dispatch(setCurrentPage(1));
-  }, [dispatch]);
-
-  const totalPages = Math.ceil(totalTables / itemsPerPage);
-  const isAnyLoading = isLoading || isCreating || isUpdating || isDeleting;
-
-  const currentTable = editingTable ? tables.find(t => t.id === editingTable) : undefined;
+  // Close all modals
+  const closeModals = () => {
+    setShowAddModal(false);
+    setSelectedTable(null);
+    setEditingTable(null);
+    setTableToDelete(null);
+    clearError();
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Table Management
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your restaurant tables, seating arrangements, and availability
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {/* View mode toggle */}
-          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-2 text-sm font-medium rounded-l-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-2 text-sm font-medium rounded-r-lg transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+      {/* Page Meta and Breadcrumb */}
+      <PageMeta title="Table Management | POS System" description="Manage restaurant tables and seating" />
+      <PageBreadcrumb pageTitle="Table Management" />
+      
+      {/* Success Message */}
+      {successMessage && (
+        <Alert
+          variant="success"
+          title="Success!"
+          message={successMessage}
+        />
+      )}
 
-          <Button onClick={handleOpenCreateForm} disabled={isAnyLoading}>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Error Message */}
+      {error && (
+        <Alert
+          variant="error"
+          title="Error"
+          message={error}
+        />
+      )}
+
+      {/* Validation Errors */}
+      {Object.keys(validationErrors).length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-800">
+          <h4 className="text-red-800 font-medium mb-2 dark:text-red-200">Please fix the following errors:</h4>
+          <ul className="list-disc list-inside text-red-700 text-sm space-y-1 dark:text-red-300">
+            {Object.entries(validationErrors).map(([field, errors]) => {
+              const errorMessage = Array.isArray(errors) ? errors[0] : String(errors);
+              return (
+                <li key={field}>
+                  <strong>{field.replace('_', ' ')}:</strong> {errorMessage}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      
+      {/* Header with Stats */}
+      <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-900">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Table Management</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage your restaurant tables and seating</p>
+          </div>
+          
+          {/* Add Table Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Table
-          </Button>
+            Add New Table
+          </button>
+        </div>
+          
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-lg font-bold text-gray-900 dark:text-white">{tableStats.total}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Total Tables</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-green-600">{tableStats.available}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Available</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-red-600">{tableStats.occupied}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Occupied</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-600">{tableStats.totalCapacity}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Total Capacity</div>
+          </div>
         </div>
       </div>
 
-      {/* Error display */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg dark:bg-red-900/20 dark:border-red-800 dark:text-red-200">
-          {error}
-        </div>
-      )}
-
-      {/* Bulk actions */}
+      {/* Bulk Actions */}
       {selectedTables.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -303,131 +211,282 @@ const TableManagement: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <select
-                value={bulkAction || ''}
-                onChange={(e) => setBulkAction(e.target.value as TableStatus)}
-                className="px-3 py-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-600 dark:bg-blue-900/20"
+                value={bulkAction}
+                onChange={(e) => setBulkAction(e.target.value)}
+                className="px-3 py-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-600 dark:bg-blue-900/20 dark:text-white"
               >
                 <option value="">Select action...</option>
                 <option value="available">Mark Available</option>
+                <option value="occupied">Mark Occupied</option>
+                <option value="reserved">Mark Reserved</option>
                 <option value="maintenance">Mark for Maintenance</option>
-                <option value="cleaning">Mark for Cleaning</option>
-                <option value="out-of-order">Mark Out of Order</option>
               </select>
-              <Button
+              <button
                 onClick={handleBulkStatusChange}
-                disabled={!bulkAction || isUpdating}
-                size="sm"
+                disabled={!bulkAction || loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Apply
-              </Button>
-              <Button
-                onClick={() => dispatch(clearSelection())}
-                variant="secondary"
-                size="sm"
+              </button>
+              <button
+                onClick={() => clearSelection()}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               >
-                Clear Selection
-              </Button>
+                Clear
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Filters and Controls */}
       <TableFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onReset={handleResetFilters}
-        totalCount={totalTables}
-        filteredCount={filteredTables.length}
+        filters={{
+          search: '',
+          status: statusFilter,
+          shape: shapeFilter,
+          location: sectionFilter,
+          minCapacity: minCapacityFilter || undefined,
+          maxCapacity: maxCapacityFilter || undefined,
+        }}
+        onFilterChange={(key: string, value: any) => {
+          if (key === 'status') {
+            setStatusFilter(value);
+            if (pagination.currentPage !== 1) {
+              goToPage(1);
+            }
+          } else if (key === 'shape') {
+            setShapeFilter(value);
+            if (pagination.currentPage !== 1) {
+              goToPage(1);
+            }
+          } else if (key === 'location') {
+            setSectionFilter(value);
+            if (pagination.currentPage !== 1) {
+              goToPage(1);
+            }
+          } else if (key === 'minCapacity') {
+            setMinCapacityFilter(value || null);
+            if (pagination.currentPage !== 1) {
+              goToPage(1);
+            }
+          } else if (key === 'maxCapacity') {
+            setMaxCapacityFilter(value || null);
+            if (pagination.currentPage !== 1) {
+              goToPage(1);
+            }
+          }
+        }}
+        onClearFilters={() => {
+          setStatusFilter('all');
+          setShapeFilter('all');
+          setSectionFilter('');
+          setMinCapacityFilter(null);
+          setMaxCapacityFilter(null);
+          if (pagination.currentPage !== 1) {
+            goToPage(1);
+          }
+        }}
       />
 
-      {/* Table List */}
-      {isLoading && currentPage === 1 ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading tables...</span>
-        </div>
-      ) : (
-        <>
-          {/* Selection controls */}
-          {tables.length > 0 && (
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={selectedTables.length === filteredTables.length && filteredTables.length > 0}
-                  onChange={handleSelectAll}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                Select all visible tables
-              </label>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {filteredTables.length} of {totalTables} tables
-              </div>
-            </div>
-          )}
+      {/* Main Content - Table List */}
+      <TableList
+        tables={filteredTables}
+        isLoading={loading}
+        onEdit={setEditingTable}
+        onDelete={(id: number) => handleDeleteRequest(id)}
+        onStatusChange={(id: number, status: string) => updateTableStatus(id, status)}
+        onSelectTable={(id: number) => toggleTableSelection(id)}
+        selectedTables={selectedTables}
+      />
 
-          <TableList
-            tables={filteredTables}
-            onEdit={handleOpenEditForm}
-            onDelete={handleDeleteTable}
-            onStatusChange={handleStatusChange}
-            onSelectTable={handleSelectTable}
-            selectedTables={selectedTables}
-            isLoading={isAnyLoading}
-            viewMode={viewMode}
+      {/* Pagination */}
+      {pagination.lastPage > 1 && (
+        <div className="bg-white rounded-lg shadow dark:bg-gray-900">
+          <PaginationWithText
+            totalPages={pagination.lastPage}
+            initialPage={pagination.currentPage}
+            onPageChange={goToPage}
           />
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalTables}
-              itemsPerPage={itemsPerPage}
-              onPageChange={handlePageChange}
-              onItemsPerPageChange={handleItemsPerPageChange}
-              className="mt-6"
-            />
-          )}
-        </>
+        </div>
       )}
 
-      {/* Form Modal */}
-      {isFormOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto dark:bg-gray-900">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 dark:bg-gray-900 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingTable ? 'Edit Table' : 'Create New Table'}
-                </h2>
-                <button
-                  onClick={handleCloseForm}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  disabled={isCreating || isUpdating}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <TableForm
-                table={currentTable}
-                onSubmit={editingTable ? handleUpdateTable : handleCreateTable}
-                onCancel={handleCloseForm}
-                isLoading={isCreating || isUpdating}
-                serverErrors={validationErrors}
-              />
-            </div>
+      {/* Add Table Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={closeModals}
+        title="Add New Table"
+        size="md"
+      >
+        <TableForm
+          isLoading={loading}
+          onCancel={closeModals}
+          onSubmit={handleAddTable}
+          serverErrors={validationErrors}
+        />
+      </Modal>
+
+      {/* Edit Table Modal */}
+      <Modal
+        isOpen={!!editingTable}
+        onClose={closeModals}
+        title={`Edit Table ${editingTable?.number || ''}`}
+        size="md"
+      >
+        {editingTable && (
+          <TableForm
+            table={editingTable}
+            isLoading={loading}
+            onCancel={closeModals}
+            onSubmit={handleEditTable}
+            serverErrors={validationErrors}
+          />
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!tableToDelete}
+        onClose={() => setTableToDelete(null)}
+        title="Confirm Deletion"
+        size="sm"
+      >
+        <div className="space-y-6">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to delete{' '}
+            <span className="font-semibold">Table {tableToDelete?.number}</span>? This action
+            cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setTableToDelete(null)}
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? 'Deleting...' : 'Delete'}
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
+
+      {/* Table Details Modal */}
+      <Modal
+        isOpen={!!selectedTable}
+        onClose={closeModals}
+        title={`Table ${selectedTable?.number || ''} - Details`}
+        size="lg"
+      >
+        {selectedTable && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Table Information */}
+            <div>
+              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+                📋 Table Information
+              </h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Table Number:</span> 
+                  <span className="font-medium dark:text-white">{selectedTable.number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Capacity:</span> 
+                  <span className="font-medium dark:text-white">{selectedTable.capacity} seats</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Shape:</span> 
+                  <span className="font-medium capitalize dark:text-white">{selectedTable.shape || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Section:</span> 
+                  <span className="font-medium dark:text-white">{selectedTable.section || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Floor:</span> 
+                  <span className="font-medium dark:text-white">{selectedTable.floor || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Status:</span> 
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    selectedTable.status === 'available' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                    selectedTable.status === 'occupied' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                    selectedTable.status === 'reserved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {selectedTable.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Details */}
+            <div>
+              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+                ℹ️ Additional Details
+              </h4>
+              <div className="space-y-3 text-sm">
+                {selectedTable.description && (
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Description:</span>
+                    <p className="mt-1 text-gray-900 dark:text-white">{selectedTable.description}</p>
+                  </div>
+                )}
+                {selectedTable.features && selectedTable.features.length > 0 && (
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Features:</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedTable.features.map((feature: string, index: number) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs dark:bg-blue-900/30 dark:text-blue-300">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Created:</span> 
+                  <span className="font-medium dark:text-white">
+                    {selectedTable.created_at ? new Date(selectedTable.created_at).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Last Updated:</span> 
+                  <span className="font-medium dark:text-white">
+                    {selectedTable.updated_at ? new Date(selectedTable.updated_at).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Reservation/Occupancy */}
+            {(selectedTable.status === 'occupied' || selectedTable.status === 'reserved') && (
+              <div className="md:col-span-2">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+                  {selectedTable.status === 'occupied' ? '👥 Current Occupancy' : '📅 Reservation'}
+                </h4>
+                <div className={`${
+                  selectedTable.status === 'occupied' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'
+                } rounded-lg p-4`}>
+                  <div className="flex items-center justify-between">
+                    <span className={selectedTable.status === 'occupied' ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}>
+                      {selectedTable.status === 'occupied' ? '🔴 Currently occupied' : '🔵 Reserved'}
+                    </span>
+                    {selectedTable.current_order_id && (
+                      <span className="font-medium dark:text-white">Order #{selectedTable.current_order_id}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
-};
-
-export default TableManagement;
+}
