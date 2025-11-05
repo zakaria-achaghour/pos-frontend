@@ -1,6 +1,5 @@
 import React from 'react';
 import type { CategoryListProps } from '@/types/menu';
-import type { Category } from '@/api/menu';
 
 
 const CategoryList: React.FC<CategoryListProps> = ({
@@ -84,16 +83,18 @@ const CategoryList: React.FC<CategoryListProps> = ({
           {/* Actions */}
           <div className="flex flex-col gap-2">
             {/* Toggle Status */}
-            <button
-              onClick={() => onToggleStatus(category.id, !category.is_active)}
-              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-                category.is_active
-                  ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                  : 'bg-green-50 text-green-700 hover:bg-green-100'
-              }`}
-            >
-              {category.is_active ? '✗ Deactivate' : '✓ Activate'}
-            </button>
+            {onToggleStatus && (
+              <button
+                onClick={() => onToggleStatus(category.id)}
+                className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                  category.is_active
+                    ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                    : 'bg-green-50 text-green-700 hover:bg-green-100'
+                }`}
+              >
+                {category.is_active ? '✗ Deactivate' : '✓ Activate'}
+              </button>
+            )}
 
             {/* Edit & Delete */}
             <div className="flex gap-2">
@@ -104,11 +105,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
                 ✏️ Edit
               </button>
               <button
-                onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete "${category.name}"?`)) {
-                    onDelete(category.id);
-                  }
-                }}
+                onClick={() => onDelete(category.id)}
                 className="flex-1 px-4 py-2 bg-gray-50 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
               >
                 🗑️ Delete

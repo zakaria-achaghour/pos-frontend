@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Category, CreateCategoryData } from '@/api/menu';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import type { CreateCategoryData } from '@/types/menu';
+import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik';
 import type { CategoryModalProps } from '@/types/menu';
 import * as Yup from 'yup';
 
@@ -22,18 +22,18 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  category,
-  isSubmitting,
+  editingCategory,
+  loading,
 }) => {
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const initialValues: CreateCategoryData = {
-    name: category?.name || '',
-    description: category?.description || '',
-    is_active: category?.is_active ?? true,
-    sort_order: category?.sort_order || 0,
+    name: editingCategory?.name || '',
+    description: editingCategory?.description || '',
+    is_active: editingCategory?.is_active ?? true,
+    sort_order: editingCategory?.sort_order || 0,
   };
 
   const handleSubmit = async (values: CreateCategoryData, { setSubmitting }: any) => {
@@ -53,12 +53,12 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">
-              {category ? 'Edit Category' : 'Create New Category'}
+              {editingCategory ? 'Edit Category' : 'Create New Category'}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
-              disabled={isSubmitting}
+              disabled={loading}
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -72,7 +72,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ values, errors, touched }) => (
+            {({ values, errors, touched, isSubmitting }) => (
               <Form className="space-y-4">
                 {/* Submit Error Display */}
                 {submitError && (
@@ -190,7 +190,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Saving...' : category ? 'Update Category' : 'Create Category'}
+                    {isSubmitting ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category'}
                   </button>
                 </div>
 

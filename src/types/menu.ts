@@ -232,8 +232,9 @@ export interface CategoryListProps {
   categories: Category[];
   loading?: boolean;
   onEdit: (category: Category) => void;
-  onDelete: (id: number, name: string) => void;
-  onToggleStatus?: (id: number, currentStatus: boolean) => void;
+  onDelete: (id: number) => void;
+  onToggleStatus?: (id: number) => void;
+  hasFilters?: boolean;
 }
 
 export interface CategoryCardProps {
@@ -312,4 +313,131 @@ export interface MenuFiltersProps {
   categories: Array<{ id: number; name: string; is_active?: boolean }>;
   viewMode?: 'items' | 'categories';
   onViewModeChange?: (mode: 'items' | 'categories') => void;
+}
+
+// ============================================
+// MENU MANAGEMENT HOOK TYPES
+// ============================================
+
+export type CategoryFilter = 'all' | 'active' | 'inactive';
+export type MenuItemFilter = 'all' | 'active' | 'inactive';
+
+export interface CategoryStats {
+  total: number;
+  active: number;
+  inactive: number;
+}
+
+export interface MenuItemStats {
+  total: number;
+  active: number;
+  inactive: number;
+  available: number;
+  unavailable: number;
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+}
+
+// Category Management Hook Return Type
+export interface UseCategoryManagementReturn {
+  // Data
+  categories: Category[];
+  filteredCategories: Category[];
+  selectedCategory: Category | null;
+  editingCategory: Category | null;
+  selectedItems: number[];
+
+  // UI State
+  viewMode: 'grid' | 'list';
+  statusFilter: CategoryFilter;
+  searchTerm: string;
+  loading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  validationErrors: Record<string, string[]>;
+  pagination: PaginationInfo;
+  categoryStats: CategoryStats;
+
+  // CRUD Actions
+  fetchCategories: () => Promise<void>;
+  createCategory: (data: CreateCategoryData) => Promise<void>;
+  updateCategory: (id: number, data: UpdateCategoryData) => Promise<void>;
+  deleteCategory: (id: number) => Promise<void>;
+  updateCategoryStatus: (id: number, isActive: boolean) => Promise<void>;
+
+  // Selection Actions
+  setSelectedCategory: (category: Category | null) => void;
+  setEditingCategory: (category: Category | null) => void;
+  toggleItemSelection: (id: number) => void;
+  selectAllItems: () => void;
+  clearSelection: () => void;
+
+  // Pagination Actions
+  goToPage: (page: number) => void;
+  setPerPage: (perPage: number) => void;
+
+  // Filter Actions
+  setViewMode: (mode: 'grid' | 'list') => void;
+  setStatusFilter: (filter: CategoryFilter) => void;
+  setSearchTerm: (term: string) => void;
+  clearError: () => void;
+  clearSuccessMessage: () => void;
+}
+
+// Menu Item Management Hook Return Type
+export interface UseMenuItemManagementReturn {
+  // Data
+  menuItems: MenuItem[];
+  filteredMenuItems: MenuItem[];
+  categories: Category[];
+  selectedMenuItem: MenuItem | null;
+  editingMenuItem: MenuItem | null;
+  selectedItems: number[];
+
+  // UI State
+  viewMode: 'grid' | 'list';
+  statusFilter: MenuItemFilter;
+  categoryFilter: number | 'all';
+  availabilityFilter: 'all' | 'available' | 'unavailable';
+  searchTerm: string;
+  loading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  validationErrors: Record<string, string[]>;
+  pagination: PaginationInfo;
+  menuItemStats: MenuItemStats;
+
+  // CRUD Actions
+  fetchMenuItems: () => Promise<void>;
+  createMenuItem: (data: CreateMenuItemData) => Promise<void>;
+  updateMenuItem: (id: number, data: UpdateMenuItemData) => Promise<void>;
+  deleteMenuItem: (id: number) => Promise<void>;
+  updateMenuItemStatus: (id: number, isActive: boolean) => Promise<void>;
+  updateMenuItemAvailability: (id: number, isAvailable: boolean) => Promise<void>;
+  uploadMenuItemImage: (id: number, file: File) => Promise<void>;
+
+  // Selection Actions
+  setSelectedMenuItem: (item: MenuItem | null) => void;
+  setEditingMenuItem: (item: MenuItem | null) => void;
+  toggleItemSelection: (id: number) => void;
+  selectAllItems: () => void;
+  clearSelection: () => void;
+
+  // Pagination Actions
+  goToPage: (page: number) => void;
+  setPerPage: (perPage: number) => void;
+
+  // Filter Actions
+  setViewMode: (mode: 'grid' | 'list') => void;
+  setStatusFilter: (filter: MenuItemFilter) => void;
+  setCategoryFilter: (categoryId: number | 'all') => void;
+  setAvailabilityFilter: (filter: 'all' | 'available' | 'unavailable') => void;
+  setSearchTerm: (term: string) => void;
+  clearError: () => void;
+  clearSuccessMessage: () => void;
 }

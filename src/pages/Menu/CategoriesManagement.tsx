@@ -1,119 +1,116 @@
 import React, { useState } from 'react';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
-import CategoryFilters from '@/components/pos/menu/CategoryFilters';
-import type { CategoryFilterOptions } from '@/components/pos/menu/CategoryFilters';
+import Alert from '@/components/ui/alert/Alert';
+import Modal from '@/components/common/Modal';
+import { useCategoryManagement } from '@/hooks/useCategoryManagement';
+import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
 import CategoryList from '@/components/pos/menu/CategoryList';
 import CategoryModal from '@/components/pos/menu/CategoryModal';
-import Pagination from '@/components/common/Pagination';
-import Toast from '@/components/common/Toast';
-import { useCategoryManagement } from '@/hooks/useCategoryManagement';
-import type { Category, CreateCategoryData } from '@/api/menu';
-
-interface ToastState {
-  show: boolean;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-}
+import type { Category } from '@/types/menu';
 
 export default function CategoriesManagement() {
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [toast, setToast] = useState<ToastState>({
-    show: false,
-    message: '',
-    type: 'info'
-  });
-
   const {
+    // Data
+    categories,
     filteredCategories,
+    editingCategory,
+
+    // UI State
+    statusFilter,
+    searchTerm,
     loading,
     error,
+    successMessage,
     pagination,
-    filters,
+    categoryStats,
+
+    // Actions
     createCategory,
     updateCategory,
     deleteCategory,
-    toggleCategoryStatus,
-    setFilters,
-    resetFilters,
-    setPage,
-    setLimit,
-  } = useCategoryManagement();
+    updateCategoryStatus,
+    goToPage,
 
-  // Show toast notification
-  const showToast = (message: string, type: ToastState['type']) => {
-    setToast({ show: true, message, type });
-  };
+    // UI Actions
+    setStatusFilter,
+    setSearchTerm,
+    setEditingCategory,
+    clearError,
+  } = useCategoryManagement(10); // 10 categories per page
 
-  // Close toast
-  const closeToast = () => {
-    setToast({ ...toast, show: false });
-  };
+  // Local modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToToggle, setCategoryToToggle] = useState<Category | null>(null);
 
-  // Handle filter changes
-  const handleFilterChange = (newFilters: CategoryFilterOptions) => {
-    setFilters(newFilters);
-  };
-
-  // Handle create category
-  const handleCreateCategory = async (data: CreateCategoryData) => {
+  // Handle form submissions
+  const handleAddCategory = async (data: any) => {
     try {
       await createCategory(data);
-      setShowCreateModal(false);
-      showToast(`Category "${data.name}" created successfully! 🎉`, 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Failed to create category', 'error');
+      setShowAddModal(false);
+    } catch (error) {
+      // Error handled in hook
     }
   };
 
-  // Handle update category
-  const handleUpdateCategory = async (data: CreateCategoryData) => {
+  const handleEditCategory = async (data: any) => {
     if (!editingCategory) return;
-
     try {
       await updateCategory(editingCategory.id, data);
       setEditingCategory(null);
-      showToast(`Category "${data.name}" updated successfully! ✓`, 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Failed to update category', 'error');
+    } catch (error) {
+      // Error handled in hook
     }
   };
 
-  // Handle edit category
-  const handleEditCategory = (category: Category) => {
+    // Handler for delete request (opens confirmation modal)
+  const handleDeleteRequest = (id: number) => {
+    const category = categories.find(c => c.id === id);
+    if (category) {
+      setCategoryToDelete(category);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+    try {
+      await deleteCategory(categoryToDelete.id);
+      setCategoryToDelete(null);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const handleToggleStatusRequest = (id: number) => {
+    const category = categories.find((c) => c.id === id);
+    if (category) {
+      setCategoryToToggle(category);
+    }
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!categoryToToggle) return;
+    try {
+      const newStatus = !categoryToToggle.is_active;
+      await updateCategoryStatus(categoryToToggle.id, newStatus);
+      setCategoryToToggle(null);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const handleEdit = (category: Category) => {
     setEditingCategory(category);
   };
 
-  // Handle close modals
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
+  // Close all modals
+  const closeModals = () => {
+    setShowAddModal(false);
     setEditingCategory(null);
-  };
-
-  // Handle delete
-  const handleDeleteCategory = async (id: number) => {
-    const category = filteredCategories.find(c => c.id === id);
-    try {
-      await deleteCategory(id);
-      showToast(`Category "${category?.name || ''}" deleted successfully`, 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Failed to delete category', 'error');
-    }
-  };
-
-  // Handle toggle status
-  const handleToggleStatus = async (id: number, isActive: boolean) => {
-    const category = filteredCategories.find(c => c.id === id);
-    try {
-      await toggleCategoryStatus(id, isActive);
-      showToast(
-        `Category "${category?.name || ''}" ${isActive ? 'activated' : 'deactivated'} successfully`,
-        'success'
-      );
-    } catch (error: any) {
-      showToast(error.message || 'Failed to update category status', 'error');
-    }
+    setCategoryToDelete(null);
+    setCategoryToToggle(null);
+    clearError();
   };
 
   return (
@@ -121,115 +118,177 @@ export default function CategoriesManagement() {
       <PageMeta title="Categories | POS System" description="Manage menu categories" />
       <PageBreadcrumb pageTitle="Categories" />
 
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Menu Categories</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Organize your menu items into categories
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
-            >
-              ➕ Add New Category
-            </button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <CategoryFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onReset={resetFilters}
-          totalCount={pagination.total}
-          filteredCount={pagination.total}
-          loading={loading}
-        />
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <svg className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-red-800 mb-1">Error</h3>
-                <p className="text-sm text-red-700">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-2 text-xs text-red-600 hover:text-red-800 underline"
-                >
-                  Refresh page
-                </button>
-              </div>
-              <button
-                onClick={() => setFilters(filters)}
-                className="text-red-400 hover:text-red-600 transition-colors"
-                aria-label="Dismiss error"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Categories List */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <CategoryList
-            categories={filteredCategories}
-            loading={loading}
-            onEdit={handleEditCategory}
-            onDelete={handleDeleteCategory}
-            onToggleStatus={handleToggleStatus}
-            hasFilters={filters.searchTerm !== '' || filters.statusFilter !== 'all'}
+      {/* Success Alert */}
+      {successMessage && (
+        <div className="mb-6">
+          <Alert
+            variant="success"
+            title="Success!"
+            message={successMessage}
           />
+        </div>
+      )}
 
-          {/* Pagination */}
-          {!loading && pagination.total > 0 && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.total}
-              itemsPerPage={pagination.limit}
-              onPageChange={setPage}
-              onItemsPerPageChange={setLimit}
-              className="mt-6"
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6">
+          <Alert
+            variant="error"
+            title="Error"
+            message={error}
+          />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Menu Categories</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Organize your menu items into categories • {categoryStats.total} total
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
+          + Add Category
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6 bg-white rounded-lg shadow p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              placeholder="Search categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-          )}
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All ({categoryStats.total})</option>
+              <option value="active">Active ({categoryStats.active})</option>
+              <option value="inactive">Inactive ({categoryStats.inactive})</option>
+            </select>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-end">
+            <div className="text-sm text-gray-600">
+              Showing {filteredCategories.length} of {categoryStats.total} categories
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Create Modal */}
-      <CategoryModal
-        isOpen={showCreateModal}
-        onClose={handleCloseModal}
-        onSubmit={handleCreateCategory}
-        isSubmitting={loading}
-      />
-
-      {/* Edit Modal */}
-      <CategoryModal
-        isOpen={!!editingCategory}
-        onClose={handleCloseModal}
-        onSubmit={handleUpdateCategory}
-        category={editingCategory}
-        isSubmitting={loading}
-      />
-
-      {/* Toast Notification */}
-      {toast.show && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
+      {/* Categories List */}
+      <div className="bg-white rounded-lg shadow">
+        <CategoryList
+          categories={filteredCategories}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDeleteRequest}
+          onToggleStatus={handleToggleStatusRequest}
+          hasFilters={searchTerm !== '' || statusFilter !== 'all'}
         />
+      </div>
+
+      {/* Pagination */}
+      {!loading && pagination.total > 0 && (
+        <div className="mt-6">
+          <PaginationWithText
+            totalPages={pagination.lastPage}
+            initialPage={pagination.currentPage}
+            onPageChange={goToPage}
+          />
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      <CategoryModal
+        isOpen={showAddModal || !!editingCategory}
+        onClose={closeModals}
+        onSubmit={editingCategory ? handleEditCategory : handleAddCategory}
+        editingCategory={editingCategory}
+        loading={loading}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {categoryToDelete && (
+        <Modal
+          isOpen={true}
+          onClose={() => setCategoryToDelete(null)}
+          title="Delete Category"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Are you sure you want to delete <strong>{categoryToDelete.name}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setCategoryToDelete(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Toggle Status Confirmation Modal */}
+      {categoryToToggle && (
+        <Modal
+          isOpen={true}
+          onClose={() => setCategoryToToggle(null)}
+          title={`${categoryToToggle.is_active ? 'Deactivate' : 'Activate'} Category`}
+        >
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              Are you sure you want to {categoryToToggle.is_active ? 'deactivate' : 'activate'}{' '}
+              <strong>{categoryToToggle.name}</strong>?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setCategoryToToggle(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmToggleStatus}
+                disabled={loading}
+                className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
+                  categoryToToggle.is_active
+                    ? 'bg-orange-600 hover:bg-orange-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {loading ? 'Processing...' : categoryToToggle.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
