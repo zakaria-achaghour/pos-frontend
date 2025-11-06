@@ -208,7 +208,7 @@ export default function CategoriesManagement() {
 
       {/* Pagination */}
       {!loading && pagination.total > 0 && (
-        <div className="mt-6">
+        <div className="bg-white rounded-lg shadow dark:bg-gray-900">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}

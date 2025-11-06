@@ -3,6 +3,7 @@ import type { MenuItemListProps } from '@/types/menu';
 
 const MenuItemList: React.FC<MenuItemListProps> = ({
   items,
+  menuItems,
   loading,
   onEdit,
   onDelete,
@@ -11,6 +12,9 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
   onUploadImage,
   hasFilters,
 }) => {
+  // Use menuItems or items, whichever is provided
+  const itemsToDisplay = menuItems || items || [];
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -28,7 +32,7 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
     );
   }
 
-  if (items.length === 0) {
+  if (itemsToDisplay.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">🍽️</div>
@@ -46,7 +50,7 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {items.map((item) => (
+      {itemsToDisplay.map((item) => (
         <div
           key={item.id}
           className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden dark:bg-gray-800"
@@ -72,15 +76,17 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
               </div>
             )}
             {/* Upload Image Button */}
-            <button
-              onClick={() => onUploadImage(item.id)}
-              className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              title="Upload image"
-            >
-              <svg className="w-4 h-4 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-            </button>
+            {onUploadImage && (
+              <button
+                onClick={() => onUploadImage(item.id)}
+                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title="Upload image"
+              >
+                <svg className="w-4 h-4 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </button>
+            )}
             
             {/* Status Badges */}
             <div className="absolute bottom-2 left-2 flex gap-2">
@@ -110,7 +116,7 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
                   {item.name}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {item.category.name}
+                  {item.category?.name || 'No category'}
                 </p>
               </div>
               <div className="text-right ml-2">
@@ -156,28 +162,35 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
             <div className="space-y-2">
               {/* Toggle Buttons Row */}
               <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => onToggleStatus(item.id, !item.is_active, item.name)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    item.is_active
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800'
-                  }`}
-                  title={item.is_active ? 'Deactivate item' : 'Activate item'}
-                >
-                  {item.is_active ? '🚫 Deactivate' : '✅ Activate'}
-                </button>
-                <button
-                  onClick={() => onToggleAvailability(item.id, !item.is_available, item.name)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    item.is_available
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
-                  }`}
-                  title={item.is_available ? 'Mark as out of stock' : 'Mark as available'}
-                >
-                  {item.is_available ? '📦 Out' : '✅ Stock'}
-                </button>
+                {/* Active/Inactive Button */}
+                {onToggleStatus && (
+                  <button
+                    onClick={() => onToggleStatus(item.id, item.is_active, item.name)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      item.is_active
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                    title={item.is_active ? 'Deactivate item' : 'Activate item'}
+                  >
+                    {item.is_active ? '🟢 Active' : '⚫ Inactive'}
+                  </button>
+                )}
+                
+                {/* Available/Unavailable Button */}
+                {onToggleAvailability && (
+                  <button
+                    onClick={() => onToggleAvailability(item.id, item.is_available)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      item.is_available
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800'
+                        : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
+                    }`}
+                    title={item.is_available ? 'Mark as unavailable' : 'Mark as available'}
+                  >
+                    {item.is_available ? '✅ Available' : '🚫 Unavailable'}
+                  </button>
+                )}
               </div>
 
               {/* Edit and Delete Row */}

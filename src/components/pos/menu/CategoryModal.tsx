@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CreateCategoryData } from '@/types/menu';
-import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik';
+import { Formik, Form, Field, ErrorMessage, type FormikHelpers } from 'formik';
 import type { CategoryModalProps } from '@/types/menu';
 import * as Yup from 'yup';
 

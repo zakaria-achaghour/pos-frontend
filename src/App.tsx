@@ -22,6 +22,7 @@ import EnhancedTableManagement from "@/pages/Tables/EnhancedTableManagement";
 import StaffManagement from "@/pages/Staff/StaffManagement";
 import CategoriesManagement from "@/pages/Menu/CategoriesManagement";
 import MenuItemsManagement from "@/pages/Menu/MenuItemsManagement";
+import MenuItemForm from "@/pages/Menu/MenuItemForm";
 import OrderCreate from "@/pages/Orders/OrderCreate";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import EnhancedOrdersList from "@/pages/Orders/EnhancedOrdersList";
@@ -97,7 +98,18 @@ export default function App() {
                 <CategoriesManagement />
               </ProtectedRoute>
             } />
-            <Route path="/items" element={
+            {/* Menu Items - specific routes must come before general route */}
+            <Route path="/menu/items/add" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <MenuItemForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/menu/items/edit/:id" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <MenuItemForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/menu/items" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
                 <MenuItemsManagement />
               </ProtectedRoute>

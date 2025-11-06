@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
     allowedRoles: ['owner', 'manager'],
     subItems: [
       { name: "Categories", path: "/categories" },
-      { name: "Items", path: "/items" },
+      { name: "Items", path: "/menu/items" },
     ],
   },
   {

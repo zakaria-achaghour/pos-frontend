@@ -78,7 +78,7 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
     description: editingItem?.description || '',
     price: editingItem?.price ? Number(editingItem.price) : 0,
     cost: editingItem?.cost ? Number(editingItem.cost) : '',
-    category_id: editingItem?.category_id || (categories[0]?.id || 1),
+    category_id: editingItem?.category_id || (categories && categories.length > 0 ? categories[0]?.id : 0) || 0,
     preparation_time: editingItem?.preparation_time || '',
     is_active: editingItem?.is_active ?? true,
     is_available: editingItem?.is_available ?? true,
@@ -99,7 +99,7 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
     }
   };
 
-  const activeCategories = categories.filter(cat => cat.is_active);
+  const activeCategories = categories ? categories.filter(cat => cat.is_active) : [];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
