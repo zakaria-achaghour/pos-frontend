@@ -64,12 +64,12 @@ const navItems: NavItem[] = [
       { name: "New Order", path: "/orders/new" },
     ],
   },
-  {
-    icon: "📈",
-    name: "Reports",
-    path: "/reports",
-    allowedRoles: ['owner', 'manager']
-  },
+  // {
+  //   icon: "📈",
+  //   name: "Reports",
+  //   path: "/reports",
+  //   allowedRoles: ['owner', 'manager']
+  // },
   {
     icon: "🍳",
     name: "Kitchen",

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { TableCardProps } from '@/types/table';
 
 const TableCard: React.FC<TableCardProps> = ({
@@ -9,6 +10,8 @@ const TableCard: React.FC<TableCardProps> = ({
   isSelected = false,
   onSelect,
 }) => {
+  const navigate = useNavigate();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
@@ -35,6 +38,11 @@ const TableCard: React.FC<TableCardProps> = ({
       default:
         return '⬜';
     }
+  };
+
+  const handleCreateOrder = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate('/orders/new', { state: { tableId: table.id } });
   };
 
   return (
@@ -80,24 +88,39 @@ const TableCard: React.FC<TableCardProps> = ({
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
-        {onStatusChange && (
-          <select
-            value={table.status}
-            onChange={(e) => {
-              e.stopPropagation();
-              onStatusChange(e.target.value as any);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+      <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-100">
+        {/* Create Order Button (only for available or occupied tables) */}
+        {(table.status === 'available' || table.status === 'occupied') && (
+          <button
+            onClick={handleCreateOrder}
+            className="w-full px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all flex items-center justify-center gap-2"
           >
-            <option value="available">Available</option>
-            <option value="occupied">Occupied</option>
-            <option value="reserved">Reserved</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="out-of-order">Out of Order</option>
-          </select>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Create Order
+          </button>
         )}
+        
+        {/* Status and Actions Row */}
+        <div className="flex gap-2">
+          {onStatusChange && (
+            <select
+              value={table.status}
+              onChange={(e) => {
+                e.stopPropagation();
+                onStatusChange(e.target.value as any);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="available">Available</option>
+              <option value="occupied">Occupied</option>
+              <option value="reserved">Reserved</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="out-of-order">Out of Order</option>
+            </select>
+          )}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -116,6 +139,7 @@ const TableCard: React.FC<TableCardProps> = ({
         >
           Delete
         </button>
+        </div>
       </div>
     </div>
   );

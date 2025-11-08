@@ -23,9 +23,9 @@ import StaffManagement from "@/pages/Staff/StaffManagement";
 import CategoriesManagement from "@/pages/Menu/CategoriesManagement";
 import MenuItemsManagement from "@/pages/Menu/MenuItemsManagement";
 import MenuItemForm from "@/pages/Menu/MenuItemForm";
-import OrderCreate from "@/pages/Orders/OrderCreate";
+import OrderCreate from "@/pages/Orders/QuickOrderCreate";
 import OrderDetails from "@/pages/Orders/OrderDetails";
-import EnhancedOrdersList from "@/pages/Orders/EnhancedOrdersList";
+import OrdersManagement from "@/pages/Orders/OrdersManagement";
 import AdminTenants from "@/pages/Restaurant/AdminTenants";
 import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
 import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
@@ -35,6 +35,7 @@ import KitchenTickets from "@/pages/Kitchen/KitchenTickets";
 
 // Protected Route Component
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { EnhancedOrdersList } from './pages/Orders';
 
 export default function App() {
   return (
@@ -118,7 +119,7 @@ export default function App() {
             {/* Orders - accessible by owner, manager, cashier, waiter */}
             <Route path="/orders" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
-                <EnhancedOrdersList />
+                <OrdersManagement />
               </ProtectedRoute>
             } />
             <Route path="/orders/new" element={
@@ -140,16 +141,16 @@ export default function App() {
             } />
             <Route path="/cashier/orders" element={
               <ProtectedRoute allowedRoles={['cashier']}>
-                <EnhancedOrdersList />
+                <OrdersManagement />
               </ProtectedRoute>
             } />
             
             {/* Reports - accessible by owner, manager only */}
-            <Route path="/reports" element={
+            {/* <Route path="/reports" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
                 <DailySummary />
               </ProtectedRoute>
-            } />
+            } /> */}
             
             {/* Kitchen - accessible by kitchen, owner, manager */}
             <Route path="/kitchen" element={
