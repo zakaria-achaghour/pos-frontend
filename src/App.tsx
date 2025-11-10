@@ -36,6 +36,7 @@ import KitchenTickets from "@/pages/Kitchen/KitchenTickets";
 // Protected Route Component
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { EnhancedOrdersList } from './pages/Orders';
+import { KitchenManagement } from './components/pos';
 
 export default function App() {
   return (
@@ -155,7 +156,7 @@ export default function App() {
             {/* Kitchen - accessible by kitchen, owner, manager */}
             <Route path="/kitchen" element={
               <ProtectedRoute allowedRoles={['kitchen', 'owner', 'manager']}>
-                <KitchenTickets />
+                <KitchenManagement />
               </ProtectedRoute>
             } />
             

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
@@ -29,6 +29,7 @@ export default function OrdersManagement() {
     orderStats,
 
     // Actions
+    fetchOrders,
     deleteOrder,
     updateOrderStatus,
     goToPage,
@@ -45,6 +46,25 @@ export default function OrdersManagement() {
   const [orderToUpdateStatus, setOrderToUpdateStatus] = useState<{order: Order; newStatus: OrderStatus} | null>(null);
   const [orderToPayment, setOrderToPayment] = useState<Order | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh toggle
+
+  // Auto-refresh when there are preparing orders
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    // Check if there are any preparing orders
+    const hasPreparingOrders = filteredOrders.some(order => order.status === 'preparing');
+    
+    if (hasPreparingOrders) {
+      // Refresh every 30 seconds when there are preparing orders
+      const interval = setInterval(() => {
+        console.log('Auto-refreshing orders (preparing orders detected)');
+        fetchOrders();
+      }, 30000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [filteredOrders, autoRefresh, fetchOrders]);
 
   // Handler for delete request (opens confirmation modal)
   const handleDeleteRequest = (id: number) => {
@@ -153,12 +173,33 @@ export default function OrdersManagement() {
             Manage restaurant orders • {orderStats.total} total
           </p>
         </div>
-        <button
-          onClick={() => navigate('/orders/new')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          + Create New Order
-        </button>
+        <div className="flex gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span>Auto-refresh</span>
+          </label>
+          <button
+            onClick={() => fetchOrders()}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => navigate('/orders/new')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            + Create New Order
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -177,11 +218,11 @@ export default function OrdersManagement() {
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600">Preparing</div>
-          <div className="text-2xl font-bold text-purple-600">{orderStats.preparing}</div>
+          <div className="text-2xl font-bold text-orange-600">{orderStats.preparing}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600">Ready</div>
-          <div className="text-2xl font-bold text-orange-600">{orderStats.ready}</div>
+          <div className="text-2xl font-bold text-emerald-600">{orderStats.ready}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600">Served</div>
