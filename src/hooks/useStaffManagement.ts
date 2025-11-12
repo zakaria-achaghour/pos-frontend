@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './useAuthRedux';
 import { staffAPI } from '../api/staff';
+import { rolesAPI } from '../api/roles';
 import type { Staff } from '../api/staff';
 import type { StaffMember, StaffFormData, StaffStatus, StaffRole } from '../types/staff';
 import type { PaginationInfo, UseResourceManagementReturn } from '@/types/components';
@@ -75,6 +76,25 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & Record<string, any>): Sta
       ? salaryRaw
       : 0;
 
+  // Check if staff has active attendance (clock in without clock out)
+  // Backend returns active_attendance as an array
+  const hasActiveAttendance = apiStaff.active_attendance && Array.isArray(apiStaff.active_attendance) && apiStaff.active_attendance.length > 0;
+  
+  if (apiStaff.active_attendance) {
+    console.log('📋 Active attendance data for staff:', apiStaff.id, apiStaff.active_attendance);
+  }
+  
+  const currentShift = hasActiveAttendance ? {
+    clockIn: new Date(apiStaff.active_attendance[0].clock_in).toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    isActive: true,
+    attendanceId: apiStaff.active_attendance[0].id,
+    ...(normalizedRole === 'waiter' && { tableAssignments: [] })
+  } : undefined;
+
   return {
     id: apiStaff.id ?? Date.now(),
     name: fullName || apiStaff.name || 'Unknown',
@@ -84,6 +104,7 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & Record<string, any>): Sta
     status: normalizedStatus,
     hireDate,
     salary,
+    currentShift,
     // Set default values for complex fields not provided by API
     shiftSchedule: {
       monday: { start: '09:00', end: '17:00', isWorking: true },
@@ -124,6 +145,8 @@ interface UseStaffManagementReturn extends UseResourceManagementReturn<
   // Staff-specific extensions
   viewMode: ViewMode; // Override to include staff-specific view modes
   clockInOut: (id: number) => Promise<void>;
+  availableRoles: Array<{ name: string; label: string }>;
+  fetchAvailableRoles: () => Promise<void>;
   
   // Aliases for consistency with existing code
   staff: StaffMember[];
@@ -152,6 +175,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<StaffMember | null>(null);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<Array<{ name: string; label: string }>>([]);
   
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -387,6 +411,31 @@ export function useStaffManagement(): UseStaffManagementReturn {
     });
   };
 
+  // Fetch available roles from API
+  const fetchAvailableRoles = async () => {
+    try {
+      console.log('🔍 Fetching available roles from API...');
+      const response = await rolesAPI.getRoles({ per_page: 100 }); // Get all roles without pagination
+      
+      const roles = response.data.map((role) => ({
+        name: role.name.toLowerCase(),
+        label: role.name,
+      }));
+      
+      console.log('📡 Available roles:', roles);
+      setAvailableRoles(roles);
+    } catch (error: any) {
+      console.error('❌ Error fetching available roles:', error);
+      // Fallback to default roles if API fails
+      setAvailableRoles([
+        { name: 'waiter', label: 'Waiter' },
+        { name: 'cashier', label: 'Cashier' },
+        { name: 'manager', label: 'Manager' },
+        { name: 'kitchen', label: 'Kitchen' },
+      ]);
+    }
+  };
+
   const clockInOut = async (id: number) => {
     const member = staff.find(s => s.id === id);
     if (!member) return;
@@ -396,7 +445,9 @@ export function useStaffManagement(): UseStaffManagementReturn {
     try {
       const isClockingIn = !member.currentShift?.isActive;
       if (isClockingIn) {
+        console.log('🕐 Clocking in staff member:', id);
         const record = await staffAPI.clockIn({ staff_id: id });
+        console.log('✅ Clock in response:', record);
         const clockInTime = formatTime(record?.clock_in);
 
         setStaff(prev =>
@@ -407,6 +458,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
                   currentShift: {
                     clockIn: clockInTime,
                     isActive: true,
+                    attendanceId: record?.id,
                     ...(s.role === 'waiter' && { tableAssignments: [] }),
                   },
                 }
@@ -416,18 +468,19 @@ export function useStaffManagement(): UseStaffManagementReturn {
 
         setSuccessMessage(`${member.name} clocked in at ${clockInTime}`);
       } else {
+        console.log('🕐 Clocking out staff member:', id);
         const record = await staffAPI.clockOut({ staff_id: id });
+        console.log('✅ Clock out response:', record);
         const clockOutTime = formatTime(record?.clock_out);
 
         setStaff(prev =>
-          prev.map(s =>
-            s.id === id
-              ? {
-                  ...s,
-                  currentShift: undefined,
-                }
-              : s
-          )
+          prev.map(s => {
+            if (s.id === id) {
+              const { currentShift, ...rest } = s;
+              return rest;
+            }
+            return s;
+          })
         );
 
         setSuccessMessage(`${member.name} clocked out${clockOutTime ? ` at ${clockOutTime}` : ''}`);
@@ -513,6 +566,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
     filteredStaff,
     selectedMember,
     editingMember,
+    availableRoles,
     
     // UI State
     viewMode,
@@ -541,6 +595,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
     deleteStaff,
     updateStaffStatus,
     clockInOut,
+    fetchAvailableRoles,
     
     // UI Actions - base
     setViewMode: (mode: 'grid' | 'list') => setViewMode(mode as ViewMode),

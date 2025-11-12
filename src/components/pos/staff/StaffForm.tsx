@@ -37,7 +37,13 @@ export default function StaffForm({
   onCancel,
   onSubmit,
   serverErrors,
+  availableRoles,
 }: StaffFormProps) {
+  // Use API roles if available, otherwise fall back to hardcoded roles
+  const roleOptions = availableRoles && availableRoles.length > 0 
+    ? availableRoles 
+    : roles.map(r => ({ name: r, label: r.charAt(0).toUpperCase() + r.slice(1) }));
+
   return (
     <Formik
       initialValues={initialValues}
@@ -123,9 +129,9 @@ export default function StaffForm({
               name="role"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              {roles.map((r) => (
-                <option value={r} key={r}>
-                  {r}
+              {roleOptions.map((r) => (
+                <option value={r.name} key={r.name}>
+                  {r.label}
                 </option>
               ))}
             </Field>

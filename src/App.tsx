@@ -32,6 +32,10 @@ import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
 import EditRestaurant from "@/pages/Restaurant/EditRestaurant";
 import RestaurantDetails from "@/pages/Restaurant/RestaurantDetails";
 import KitchenTickets from "@/pages/Kitchen/KitchenTickets";
+import RoleManagement from "@/pages/Admin/Roles/RoleManagement";
+import CreateRole from "@/pages/Admin/Roles/CreateRole";
+import EditRole from "@/pages/Admin/Roles/EditRole";
+import PermissionManagement from "@/pages/Admin/Permissions/PermissionManagement";
 
 // Protected Route Component
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -184,6 +188,30 @@ export default function App() {
             <Route path="/admin/tenants/:id" element={
               <ProtectedRoute allowedRoles={['superadmin']}>
                 <AdminTenantOverview />
+              </ProtectedRoute>
+            } />
+            
+            {/* Role Management Routes */}
+            <Route path="/admin/roles" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <RoleManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/roles/create" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <CreateRole />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/roles/:id/edit" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <EditRole />
+              </ProtectedRoute>
+            } />
+            
+            {/* Permission Management Routes */}
+            <Route path="/admin/permissions" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <PermissionManagement />
               </ProtectedRoute>
             } />
           </Route>

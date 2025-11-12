@@ -8,6 +8,7 @@ interface StaffFiltersProps {
   onViewModeChange: (mode: ViewMode) => void;
   onRoleFilterChange: (filter: StaffFilter) => void;
   onAddStaff: () => void;
+  availableRoles?: Array<{ name: string; label: string }>;
 }
 
 const viewModes = [
@@ -16,7 +17,7 @@ const viewModes = [
   // { key: 'schedule', label: 'Schedule', icon: '📅' }
 ] as const;
 
-const roleFilters = [
+const defaultRoleFilters = [
   { value: 'all', label: 'All Roles' },
   { value: 'manager', label: 'Managers' },
   { value: 'cashier', label: 'Cashiers' },
@@ -29,8 +30,17 @@ export default function StaffFilters({
   roleFilter,
   onViewModeChange,
   onRoleFilterChange,
-  onAddStaff
+  onAddStaff,
+  availableRoles
 }: StaffFiltersProps) {
+  // Use API roles if available, otherwise fall back to default
+  const roleFilters = availableRoles && availableRoles.length > 0
+    ? [
+        { value: 'all', label: 'All Roles' },
+        ...availableRoles.map(r => ({ value: r.name, label: r.label }))
+      ]
+    : defaultRoleFilters;
+
   return (
     <div className="bg-white p-4 rounded-lg shadow">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">

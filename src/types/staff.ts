@@ -156,6 +156,7 @@ export interface StaffFormProps {
   isLoading?: boolean;
   loading?: boolean; // Alias for backward compatibility
   serverErrors?: Record<string, string | string[]>;
+  availableRoles?: Array<{ name: string; label: string }>; // Optional: roles from API
 }
 
 export interface StaffEditFormProps {

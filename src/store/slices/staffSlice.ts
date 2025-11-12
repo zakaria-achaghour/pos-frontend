@@ -31,6 +31,7 @@ interface StaffMember {
     clockIn: string;
     isActive: boolean;
     tableAssignments?: number[];
+    attendanceId?: number;
   };
 }
 
@@ -77,6 +78,25 @@ const mapApiStaffToLocal = (apiStaff: any): StaffMember => {
     ? parseFloat(apiStaff.hourly_rate)
     : (apiStaff.hourly_rate || 0);
 
+  // Check if staff has active attendance (clock in without clock out)
+  // Backend returns active_attendance as an array
+  const hasActiveAttendance = apiStaff.active_attendance && Array.isArray(apiStaff.active_attendance) && apiStaff.active_attendance.length > 0;
+  
+  if (apiStaff.active_attendance) {
+    console.log('📋 Active attendance data for staff:', apiStaff.id, apiStaff.active_attendance);
+  }
+  
+  const currentShift = hasActiveAttendance ? {
+    clockIn: new Date(apiStaff.active_attendance[0].clock_in).toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    isActive: true,
+    attendanceId: apiStaff.active_attendance[0].id,
+    ...(normalizedRole === 'waiter' && { tableAssignments: [] })
+  } : undefined;
+
   return {
     id: apiStaff.id,
     name: fullName,
@@ -86,6 +106,7 @@ const mapApiStaffToLocal = (apiStaff: any): StaffMember => {
     status: normalizedStatus,
     hireDate,
     salary,
+    currentShift,
     // Set default values for complex fields not provided by API
     shiftSchedule: {
       monday: { start: '09:00', end: '17:00', isWorking: true },
@@ -207,6 +228,40 @@ export const deleteStaffMember = createAsyncThunk(
   }
 );
 
+// Clock in staff member
+export const clockInStaffMember = createAsyncThunk(
+  'staff/clockIn',
+  async (staffId: number, { rejectWithValue }) => {
+    try {
+      console.log('🕐 Clocking in staff member:', staffId);
+      const response = await staffAPI.clockIn({ staff_id: staffId });
+      console.log('✅ Clock in successful:', response);
+      return { staffId, attendance: response };
+    } catch (error: any) {
+      console.error('❌ Error clocking in:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to clock in';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Clock out staff member
+export const clockOutStaffMember = createAsyncThunk(
+  'staff/clockOut',
+  async (staffId: number, { rejectWithValue }) => {
+    try {
+      console.log('🕐 Clocking out staff member:', staffId);
+      const response = await staffAPI.clockOut({ staff_id: staffId });
+      console.log('✅ Clock out successful:', response);
+      return { staffId, attendance: response };
+    } catch (error: any) {
+      console.error('❌ Error clocking out:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to clock out';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const staffSlice = createSlice({
   name: 'staff',
   initialState,
@@ -232,28 +287,6 @@ const staffSlice = createSlice({
       const staff = state.staff.find(s => s.id === memberId);
       if (staff) {
         staff.status = status;
-      }
-    },
-    clockInOut: (state, action: PayloadAction<number>) => {
-      const memberId = action.payload;
-      const member = state.staff.find(s => s.id === memberId);
-      if (member) {
-        const isClockingIn = !member.currentShift?.isActive;
-        const currentTime = new Date().toLocaleTimeString('en-US', { 
-          hour12: false, 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        });
-
-        if (isClockingIn) {
-          member.currentShift = {
-            clockIn: currentTime,
-            isActive: true,
-            ...(member.role === 'waiter' && { tableAssignments: [] })
-          };
-        } else {
-          delete member.currentShift;
-        }
       }
     },
   },
@@ -308,6 +341,51 @@ const staffSlice = createSlice({
       .addCase(deleteStaffMember.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Clock in staff
+      .addCase(clockInStaffMember.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(clockInStaffMember.fulfilled, (state, action) => {
+        state.loading = false;
+        const { staffId, attendance } = action.payload;
+        const member = state.staff.find(s => s.id === staffId);
+        if (member) {
+          member.currentShift = {
+            clockIn: new Date(attendance.clock_in).toLocaleTimeString('en-US', { 
+              hour12: false, 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            isActive: true,
+            attendanceId: attendance.id,
+            ...(member.role === 'waiter' && { tableAssignments: [] })
+          };
+        }
+        state.successMessage = 'Clocked in successfully!';
+      })
+      .addCase(clockInStaffMember.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Clock out staff
+      .addCase(clockOutStaffMember.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(clockOutStaffMember.fulfilled, (state, action) => {
+        state.loading = false;
+        const { staffId } = action.payload;
+        const member = state.staff.find(s => s.id === staffId);
+        if (member) {
+          delete member.currentShift;
+        }
+        state.successMessage = 'Clocked out successfully!';
+      })
+      .addCase(clockOutStaffMember.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -345,7 +423,6 @@ export const {
   setRoleFilter,
   setViewMode,
   updateStaffStatus,
-  clockInOut,
 } = staffSlice.actions;
 
 export default staffSlice.reducer;

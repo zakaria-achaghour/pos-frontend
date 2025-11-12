@@ -83,6 +83,15 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Tenants List", path: "/admin/tenants" },
     ],
+  },
+  {
+    icon: "👥",
+    name: "Roles & Permissions",
+    allowedRoles: ['superadmin'],
+    subItems: [
+      { name: "Roles", path: "/admin/roles" },
+      { name: "Permissions", path: "/admin/permissions" },
+    ],
   }
 ];
 

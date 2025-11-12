@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
@@ -22,6 +22,7 @@ export default function StaffManagement() {
     filteredStaff,
     selectedMember,
     editingMember,
+    availableRoles,
     
     // UI State
     viewMode,
@@ -39,6 +40,7 @@ export default function StaffManagement() {
     updateStaffStatus,
     clockInOut,
     goToPage,
+    fetchAvailableRoles,
     
     // UI Actions
     setViewMode,
@@ -50,6 +52,11 @@ export default function StaffManagement() {
     // Computed values
     staffStats,
   } = useStaffManagement();
+
+  // Fetch available roles on mount
+  useEffect(() => {
+    fetchAvailableRoles();
+  }, []);
 
   // Local modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -179,6 +186,7 @@ export default function StaffManagement() {
           }
         }}
         onAddStaff={() => setShowAddModal(true)}
+        availableRoles={availableRoles}
       />
 
       {/* Main Content based on View Mode */}
@@ -224,6 +232,7 @@ export default function StaffManagement() {
           onCancel={closeModals}
           onSubmit={handleAddStaff}
           serverErrors={validationErrors}
+          availableRoles={availableRoles}
         />
       </Modal>
 
