@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useSidebar } from "../hooks/useSidebarRedux";
 import { useTheme } from "../hooks/useThemeRedux";
+import { useAuth } from "../hooks/useAuthRedux";
 import { Outlet, useLocation } from "react-router";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
@@ -9,6 +10,7 @@ import AppSidebar from "./AppSidebar";
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const location = useLocation();
 
   // Apply theme class to document root for table components
@@ -18,7 +20,27 @@ const LayoutContent: React.FC = () => {
 
   // Determine if current page is table-related for enhanced styling
   const isTablePage = location.pathname.includes('/table');
+  
+  // Check if user is kitchen staff for full-screen layout
+  const isKitchenStaff = user?.role === 'kitchen';
 
+  // Full-screen layout for kitchen staff (header only, no sidebar)
+  if (isKitchenStaff) {
+    return (
+      <div className={`min-h-screen transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-gray-900 text-white' 
+          : 'bg-gray-50 text-gray-900'
+      }`}>
+        <AppHeader />
+        <div className="p-4">
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
+  // Normal layout for other roles
   return (
     <div className={`min-h-screen lg:flex transition-colors duration-300 ${
       theme === 'dark' 
