@@ -1,7 +1,7 @@
-// Kitchen components moved to @/components/kitchen
+// Kitchen components
 export { default as KitchenManagement } from '@/pages/Kitchen/KitchenManagement';
-export { default as KitchenFilters } from '@/components/kitchen/KitchenFilters';
-export { default as KitchenStats } from '@/components/kitchen/KitchenStats';
-export { default as KitchenTicketCard } from '@/components/kitchen/KitchenTicketCard';
-export { default as StatusBadge } from '@/components/kitchen/StatusBadge';
-export { default as PriorityBadge } from '@/components/kitchen/PriorityBadge';
+export { default as KitchenFilters } from './KitchenFilters';
+export { default as KitchenStats } from './KitchenStats';
+export { default as KitchenTicketCard } from './KitchenTicketCard';
+export { default as StatusBadge } from './StatusBadge';
+export { default as PriorityBadge } from './PriorityBadge';

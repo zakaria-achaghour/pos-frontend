@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KitchenAnalytics } from '@/store/slices/kitchenSlice';
+import type { KitchenAnalytics } from '@/types/kitchen';
 import { TimeIcon, CheckCircleIcon, AlertIcon, ArrowUpIcon } from '@/icons';
 
 interface KitchenStatsProps {

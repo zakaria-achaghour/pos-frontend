@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
-import kitchenAPI from '@/api/kitchen';
 import { TimeIcon, AlertIcon, BoltIcon } from '@/icons';
-import type { KitchenTicket } from '@/types/kitchen';
 import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
+import { useKitchenManagement } from '@/hooks/useKitchenManagement';
 
 /**
  * Kitchen Management Page
@@ -26,109 +25,26 @@ import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
  * pending → [Start Prep] → preparing → [Complete Prep] → ready
  */
 const KitchenManagement: React.FC = () => {
-  const [tickets, setTickets] = useState<KitchenTicket[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all');
-  const [filterPriority, setFilterPriority] = useState<'all' | 'normal' | 'rush' | 'urgent'>('all');
-  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh toggle
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    last_page: 1,
-    per_page: 10,
-    total: 0,
-    from: 1,
-    to: 0
-  });
-  const itemsPerPage = 10;
+  const {
+    tickets,
+    loading,
+    error,
+    filters,
+    pagination,
+    autoRefresh,
+    setAutoRefresh,
+    updateFilters,
+    clearError,
+    fetchTickets,
+    handleStartPreparation,
+    handleCompletePreparation,
+    goToPage,
+  } = useKitchenManagement();
 
-  // Fetch kitchen tickets from backend
-  const fetchTickets = async (page: number = currentPage) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const filters: any = {
-        page,
-        per_page: itemsPerPage,
-        date: selectedDate, // Send date filter to backend
-      };
-      if (filterStatus !== 'all') filters.status = filterStatus;
-      if (filterPriority !== 'all') filters.priority = filterPriority;
-      
-      const response = await kitchenAPI.getTickets(filters);
-      console.log('Kitchen tickets fetched:', response);
-      console.log('First ticket data:', response.data[0]);
-      console.log('First ticket items:', response.data[0]?.items);
-      
-      setTickets(response.data);
-      setPagination({
-        current_page: response.current_page || 1,
-        last_page: response.last_page || 1,
-        per_page: response.per_page || itemsPerPage,
-        total: response.total || 0,
-        from: response.from || 1,
-        to: response.to || response.data.length
-      });
-      setCurrentPage(response.current_page || 1);
-    } catch (err: any) {
-      console.error('Failed to fetch kitchen tickets:', err);
-      setError(err.message || 'Failed to load kitchen tickets');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch tickets on mount and when filters change
-  useEffect(() => {
-    fetchTickets(1); // Reset to page 1 when filters change
-  }, [filterStatus, filterPriority, selectedDate]); // Add selectedDate to dependencies
-
-  // Auto-refresh when there are preparing orders
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    // Check if there are any preparing tickets
-    const hasPreparingTickets = tickets.some(ticket => ticket.status === 'preparing');
-    
-    if (hasPreparingTickets) {
-      // Refresh every 30 seconds when there are preparing orders
-      const interval = setInterval(() => {
-        console.log('Auto-refreshing kitchen tickets (preparing orders detected)');
-        fetchTickets(currentPage);
-      }, 30000); // 30 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [tickets, autoRefresh, currentPage]);
-
-  // Start preparation (pending → preparing)
-  const handleStartPreparation = async (ticketId: number) => {
-    try {
-      await kitchenAPI.startPreparation(ticketId);
-      console.log(`Ticket ${ticketId} preparation started (pending → preparing)`);
-      fetchTickets();
-    } catch (err: any) {
-      console.error('Failed to start preparation:', err);
-      setError(err.response?.data?.message || 'Failed to start preparation. Ticket must be in pending status.');
-    }
-  };
-
-  // Complete preparation (preparing → ready)
-  const handleCompletePreparation = async (ticketId: number) => {
-    try {
-      await kitchenAPI.completeTicket(ticketId);
-      console.log(`Ticket ${ticketId} completed (preparing → ready)`);
-      fetchTickets();
-    } catch (err: any) {
-      console.error('Failed to complete preparation:', err);
-      setError(err.response?.data?.message || 'Failed to complete preparation. Ticket must be in preparing status.');
-    }
-  };
+  const selectedDate = filters.date ?? new Date().toISOString().split('T')[0];
+  const statusFilter = filters.status ?? 'all';
+  const priorityFilter = filters.priority ?? 'all';
+  const isLoading = loading.list;
 
   // Utility functions
   const getStatusColor = (status: string) => {
@@ -167,8 +83,13 @@ const KitchenManagement: React.FC = () => {
   const displayTickets = tickets;
 
   const handlePageChange = (page: number) => {
-    fetchTickets(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    goToPage(page)
+      .catch(() => {
+        /* error handled via hook */
+      })
+      .finally(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
   };
 
   return (
@@ -190,7 +111,9 @@ const KitchenManagement: React.FC = () => {
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) =>
+                updateFilters({ date: e.target.value || undefined })
+              }
               className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"
             />
           </div>
@@ -198,8 +121,16 @@ const KitchenManagement: React.FC = () => {
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Status</label>
             <select 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+              value={statusFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                updateFilters({
+                  status:
+                    value === 'all'
+                      ? undefined
+                      : (value as 'pending' | 'preparing' | 'ready'),
+                });
+              }}
               className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"
             >
               <option value="all">All Orders</option>
@@ -212,8 +143,16 @@ const KitchenManagement: React.FC = () => {
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Priority</label>
             <select 
-              value={filterPriority} 
-              onChange={(e) => setFilterPriority(e.target.value as typeof filterPriority)}
+              value={priorityFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                updateFilters({
+                  priority:
+                    value === 'all'
+                      ? undefined
+                      : (value as 'normal' | 'rush' | 'urgent'),
+                });
+              }}
               className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-400 dark:hover:border-gray-500"
             >
               <option value="all">All Priorities</option>
@@ -237,14 +176,18 @@ const KitchenManagement: React.FC = () => {
               </label>
               
               <button
-                onClick={() => fetchTickets(currentPage)}
-                disabled={loading}
+                onClick={() => {
+                  fetchTickets().catch(() => {
+                    /* handled inside hook */
+                  });
+                }}
+                disabled={isLoading}
                 className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-sm hover:shadow flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                {loading ? 'Refreshing...' : 'Refresh'}
+                {isLoading ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
           </div>
@@ -256,7 +199,7 @@ const KitchenManagement: React.FC = () => {
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
           <p className="text-red-800 dark:text-red-200">{error}</p>
           <button 
-            onClick={() => setError(null)}
+            onClick={clearError}
             className="text-red-600 dark:text-red-400 text-sm underline mt-1"
           >
             Dismiss
@@ -265,7 +208,7 @@ const KitchenManagement: React.FC = () => {
       )}
 
       {/* Loading State */}
-      {loading && displayTickets.length === 0 ? (
+      {isLoading && displayTickets.length === 0 ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
@@ -443,4 +386,3 @@ const KitchenManagement: React.FC = () => {
 };
 
 export default KitchenManagement;
-

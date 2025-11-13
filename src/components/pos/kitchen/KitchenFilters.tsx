@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KitchenFilters as KitchenFiltersType } from '@/store/slices/kitchenSlice';
+import type { KitchenFilters as KitchenFiltersType } from '@/types/kitchen';
 import { GridIcon, CloseIcon } from '@/icons';
 
 interface KitchenFiltersProps {

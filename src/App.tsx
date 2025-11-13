@@ -15,7 +15,6 @@ import RoleBasedRedirect from "@/components/auth/RoleBasedRedirect";
 import Dashboard from "@/pages/Dashboard/Dashboard";
 import OwnerDashboard from "@/pages/Dashboard/OwnerDashboard";
 import CashierDashboard from "@/pages/Dashboard/CashierDashboard";
-import DailySummary from "@/pages/Dashboard/DailySummary";
 import Tables from "@/pages/Tables/Tables";
 import TableManagement from "@/pages/Tables/TableManagement";
 import EnhancedTableManagement from "@/pages/Tables/EnhancedTableManagement";
@@ -31,7 +30,6 @@ import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
 import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
 import EditRestaurant from "@/pages/Restaurant/EditRestaurant";
 import RestaurantDetails from "@/pages/Restaurant/RestaurantDetails";
-import KitchenTickets from "@/pages/Kitchen/KitchenTickets";
 import RoleManagement from "@/pages/Admin/Roles/RoleManagement";
 import CreateRole from "@/pages/Admin/Roles/CreateRole";
 import EditRole from "@/pages/Admin/Roles/EditRole";
@@ -39,7 +37,6 @@ import PermissionManagement from "@/pages/Admin/Permissions/PermissionManagement
 
 // Protected Route Component
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { EnhancedOrdersList } from './pages/Orders';
 import { KitchenManagement } from './components/pos';
 
 export default function App() {
@@ -149,13 +146,6 @@ export default function App() {
                 <OrdersManagement />
               </ProtectedRoute>
             } />
-            
-            {/* Reports - accessible by owner, manager only */}
-            {/* <Route path="/reports" element={
-              <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <DailySummary />
-              </ProtectedRoute>
-            } /> */}
             
             {/* Kitchen - accessible by kitchen, owner, manager */}
             <Route path="/kitchen" element={

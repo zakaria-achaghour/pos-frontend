@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KitchenTicket } from '@/store/slices/kitchenSlice';
+import type { KitchenTicket } from '@/types/kitchen';
 import { TimeIcon, AlertIcon } from '@/icons';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
