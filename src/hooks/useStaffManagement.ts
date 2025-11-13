@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './useAuthRedux';
 import { staffAPI } from '../api/staff';
+import { rolesAPI } from '../api/roles';
 import type { Staff } from '../api/staff';
 import type { StaffMember, StaffFormData, StaffStatus, StaffRole } from '../types/staff';
+import type { PaginationInfo, UseResourceManagementReturn } from '@/types/components';
 
 const roleToDepartment = (role: StaffRole): string => {
   switch (role) {
@@ -74,6 +76,25 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & Record<string, any>): Sta
       ? salaryRaw
       : 0;
 
+  // Check if staff has active attendance (clock in without clock out)
+  // Backend returns active_attendance as an array
+  const hasActiveAttendance = apiStaff.active_attendance && Array.isArray(apiStaff.active_attendance) && apiStaff.active_attendance.length > 0;
+  
+  if (apiStaff.active_attendance) {
+    console.log('📋 Active attendance data for staff:', apiStaff.id, apiStaff.active_attendance);
+  }
+  
+  const currentShift = hasActiveAttendance ? {
+    clockIn: new Date(apiStaff.active_attendance[0].clock_in).toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    isActive: true,
+    attendanceId: apiStaff.active_attendance[0].id,
+    ...(normalizedRole === 'waiter' && { tableAssignments: [] })
+  } : undefined;
+
   return {
     id: apiStaff.id ?? Date.now(),
     name: fullName || apiStaff.name || 'Unknown',
@@ -83,6 +104,7 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & Record<string, any>): Sta
     status: normalizedStatus,
     hireDate,
     salary,
+    currentShift,
     // Set default values for complex fields not provided by API
     shiftSchedule: {
       monday: { start: '09:00', end: '17:00', isWorking: true },
@@ -106,62 +128,54 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & Record<string, any>): Sta
 export type ViewMode = 'grid' | 'performance' | 'schedule';
 export type StaffFilter = 'all' | StaffRole;
 
-interface PaginationInfo {
-  currentPage: number;
-  lastPage: number;
-  perPage: number;
+interface StaffStats {
   total: number;
+  active: number;
+  onShift: number;
+  totalSalary: number;
 }
 
-interface UseStaffManagementReturn {
-  // Data
+interface UseStaffManagementReturn extends UseResourceManagementReturn<
+  StaffMember,
+  StaffFormData,
+  StaffStatus,
+  StaffFilter,
+  StaffStats
+> {
+  // Staff-specific extensions
+  viewMode: ViewMode; // Override to include staff-specific view modes
+  clockInOut: (id: number) => Promise<void>;
+  availableRoles: Array<{ name: string; label: string }>;
+  fetchAvailableRoles: () => Promise<void>;
+  
+  // Aliases for consistency with existing code
   staff: StaffMember[];
   filteredStaff: StaffMember[];
   selectedMember: StaffMember | null;
   editingMember: StaffMember | null;
-  
-  // UI State
-  viewMode: ViewMode;
   roleFilter: StaffFilter;
-  loading: boolean;
-  error: string | null;
-  successMessage: string | null;
-  validationErrors: Record<string, string[]>;
-  pagination: PaginationInfo;
-  
-  // Actions
+  setRoleFilter: (filter: StaffFilter) => void;
+  setSelectedMember: (member: StaffMember | null) => void;
+  setEditingMember: (member: StaffMember | null) => void;
   fetchStaff: (page?: number) => Promise<void>;
   createStaff: (data: StaffFormData) => Promise<void>;
   updateStaff: (id: number, data: Partial<StaffFormData>) => Promise<void>;
   deleteStaff: (id: number) => Promise<void>;
   updateStaffStatus: (id: number, status: StaffStatus) => Promise<void>;
-  clockInOut: (id: number) => Promise<void>;
-  goToPage: (page: number) => void;
-  
-  // UI Actions
-  setViewMode: (mode: ViewMode) => void;
-  setRoleFilter: (filter: StaffFilter) => void;
-  setSelectedMember: (member: StaffMember | null) => void;
-  setEditingMember: (member: StaffMember | null) => void;
-  clearError: () => void;
-  clearSuccessMessage: () => void;
-  
-  // Computed values
-  staffStats: {
-    total: number;
-    active: number;
-    onShift: number;
-    totalSalary: number;
-  };
+  staffStats: StaffStats;
 }
 
 export function useStaffManagement(): UseStaffManagementReturn {
   const { user } = useAuth();
   
+  // Track if we're currently fetching to prevent duplicate calls
+  const isFetchingRef = useRef(false);
+  
   // Data state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<StaffMember | null>(null);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<Array<{ name: string; label: string }>>([]);
   
   // UI state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -170,10 +184,11 @@ export function useStaffManagement(): UseStaffManagementReturn {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     lastPage: 1,
-    perPage: 15,
+    perPage: 5,
     total: 0,
   });
 
@@ -194,14 +209,34 @@ export function useStaffManagement(): UseStaffManagementReturn {
 
   // Fetch staff data from API
   const fetchStaff = async (page: number = pagination.currentPage) => {
+    // Prevent duplicate simultaneous fetches
+    if (isFetchingRef.current) {
+      console.log('⏭️ Skipping duplicate fetchStaff call');
+      return;
+    }
+    
+    console.log('🔄 fetchStaff called with page:', page, 'roleFilter:', roleFilter);
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     
     try {
-      const response = await staffAPI.getStaff({
+      const filters: {
+        page: number;
+        per_page: number;
+        role?: string;
+      } = {
         page,
         per_page: pagination.perPage,
-      });
+      };
+      
+      // Add role filter if not 'all'
+      if (roleFilter !== 'all') {
+        filters.role = roleFilter;
+      }
+      
+      console.log('📤 Sending API request with filters:', filters);
+      const response = await staffAPI.getStaff(filters);
       const mappedStaff = response.data.map(mapApiStaffToLocal);
       setStaff(mappedStaff);
       setPagination({
@@ -214,6 +249,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
       setError(error.response?.data?.message || 'Failed to fetch staff data');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -242,6 +278,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
         email: formData.email,
         phone: formData.phone,
         position: formData.role,
+        role: formData.role.charAt(0).toUpperCase() + formData.role.slice(1),
         department: roleToDepartment(formData.role),
         hire_date: formData.hireDate,
         hourly_rate: formData.salary,
@@ -374,6 +411,31 @@ export function useStaffManagement(): UseStaffManagementReturn {
     });
   };
 
+  // Fetch available roles from API
+  const fetchAvailableRoles = async () => {
+    try {
+      console.log('🔍 Fetching available roles from API...');
+      const response = await rolesAPI.getRoles({ per_page: 100 }); // Get all roles without pagination
+      
+      const roles = response.data.map((role) => ({
+        name: role.name.toLowerCase(),
+        label: role.name,
+      }));
+      
+      console.log('📡 Available roles:', roles);
+      setAvailableRoles(roles);
+    } catch (error: any) {
+      console.error('❌ Error fetching available roles:', error);
+      // Fallback to default roles if API fails
+      setAvailableRoles([
+        { name: 'waiter', label: 'Waiter' },
+        { name: 'cashier', label: 'Cashier' },
+        { name: 'manager', label: 'Manager' },
+        { name: 'kitchen', label: 'Kitchen' },
+      ]);
+    }
+  };
+
   const clockInOut = async (id: number) => {
     const member = staff.find(s => s.id === id);
     if (!member) return;
@@ -383,7 +445,9 @@ export function useStaffManagement(): UseStaffManagementReturn {
     try {
       const isClockingIn = !member.currentShift?.isActive;
       if (isClockingIn) {
+        console.log('🕐 Clocking in staff member:', id);
         const record = await staffAPI.clockIn({ staff_id: id });
+        console.log('✅ Clock in response:', record);
         const clockInTime = formatTime(record?.clock_in);
 
         setStaff(prev =>
@@ -394,6 +458,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
                   currentShift: {
                     clockIn: clockInTime,
                     isActive: true,
+                    attendanceId: record?.id,
                     ...(s.role === 'waiter' && { tableAssignments: [] }),
                   },
                 }
@@ -403,18 +468,19 @@ export function useStaffManagement(): UseStaffManagementReturn {
 
         setSuccessMessage(`${member.name} clocked in at ${clockInTime}`);
       } else {
+        console.log('🕐 Clocking out staff member:', id);
         const record = await staffAPI.clockOut({ staff_id: id });
+        console.log('✅ Clock out response:', record);
         const clockOutTime = formatTime(record?.clock_out);
 
         setStaff(prev =>
-          prev.map(s =>
-            s.id === id
-              ? {
-                  ...s,
-                  currentShift: undefined,
-                }
-              : s
-          )
+          prev.map(s => {
+            if (s.id === id) {
+              const { currentShift, ...rest } = s;
+              return rest;
+            }
+            return s;
+          })
         );
 
         setSuccessMessage(`${member.name} clocked out${clockOutTime ? ` at ${clockOutTime}` : ''}`);
@@ -443,16 +509,42 @@ export function useStaffManagement(): UseStaffManagementReturn {
     setSuccessMessage(null);
   };
 
-  // Load staff data on mount
+  // Bulk operations
+  const bulkUpdateStatus = async (ids: number[], status: StaffStatus): Promise<void> => {
+    if (ids.length === 0) return;
+    
+    setLoading(true);
+    try {
+      // Update each staff member's status
+      await Promise.all(ids.map(id => updateStaffStatus(id, status)));
+      setSuccessMessage(`Successfully updated ${ids.length} staff member(s)`);
+      clearSelection();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update staff members');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Selection management
+  const toggleItemSelection = (id: number) => {
+    setSelectedItems(prev =>
+      prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
+    );
+  };
+
+  const clearSelection = () => {
+    setSelectedItems([]);
+  };
+
+  // Load staff data on mount and when role filter changes
   useEffect(() => {
     fetchStaff(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [roleFilter]);
 
-  // Filter staff by role
-  const filteredStaff = staff.filter(member => 
-    roleFilter === 'all' || member.role === roleFilter
-  );
+  // Since filtering is now done server-side, filteredStaff is just the staff array
+  const filteredStaff = staff;
 
   // Computed staff stats
   const staffStats = {
@@ -463,39 +555,65 @@ export function useStaffManagement(): UseStaffManagementReturn {
   };
 
   return {
-    // Data
+    // Data - base properties
+    items: staff,
+    filteredItems: filteredStaff,
+    selectedItem: selectedMember,
+    editingItem: editingMember,
+    
+    // Data - aliases for backward compatibility
     staff,
     filteredStaff,
     selectedMember,
     editingMember,
+    availableRoles,
     
     // UI State
     viewMode,
+    filter: roleFilter,
     roleFilter,
     loading,
     error,
     successMessage,
     validationErrors,
     pagination,
+    selectedItems,
     
-    // Actions
+    // Actions - base
+    fetchItems: fetchStaff,
+    createItem: createStaff,
+    updateItem: updateStaff,
+    deleteItem: deleteStaff,
+    updateItemStatus: updateStaffStatus,
+    bulkUpdateStatus,
+    goToPage,
+    
+    // Actions - aliases
     fetchStaff,
     createStaff,
     updateStaff,
     deleteStaff,
     updateStaffStatus,
     clockInOut,
-    goToPage,
+    fetchAvailableRoles,
     
-    // UI Actions
-    setViewMode,
+    // UI Actions - base
+    setViewMode: (mode: 'grid' | 'list') => setViewMode(mode as ViewMode),
+    setFilter: setRoleFilter,
+    setSelectedItem: setSelectedMember,
+    setEditingItem: setEditingMember,
+    clearError,
+    clearSuccessMessage,
+    toggleItemSelection,
+    clearSelection,
+    
+    // UI Actions - aliases
     setRoleFilter,
     setSelectedMember,
     setEditingMember,
-    clearError,
-    clearSuccessMessage,
     
     // Computed values
+    stats: staffStats,
     staffStats,
   };
 }

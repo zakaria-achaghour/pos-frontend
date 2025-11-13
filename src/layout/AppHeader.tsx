@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import React, { useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../hooks/useSidebarRedux";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
@@ -22,21 +21,22 @@ const AppHeader: React.FC = () => {
   };
 
   const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
+    setApplicationMenuOpen((prev) => !prev);
   };
 
-
-
   return (
-    <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 xl:border-b">
-      <div className="flex flex-col items-center justify-between grow xl:flex-row xl:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 xl:justify-normal xl:border-b-0 xl:px-0 lg:py-4">
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex items-center justify-between w-full px-4 py-3 sm:px-6 lg:py-4 xl:flex-row">
+        {/* Left Section: Toggle Button + Logo */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Toggle Sidebar Button */}
           <button
-            className={`items-center justify-center  w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 flex dark:text-gray-400 lg:h-11 lg:w-11 xl:border ${
-              isMobileOpen ? "bg-gray-100 dark:bg-white/[0.03]" : ""
+            className={`flex items-center justify-center w-10 h-10 lg:w-11 lg:h-11 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 xl:border ${
+              isMobileOpen ? "bg-gray-100 dark:bg-white/5" : ""
             }`}
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
+            aria-expanded={isMobileOpen}
           >
             {isMobileOpen ? (
               <svg
@@ -45,6 +45,7 @@ const AppHeader: React.FC = () => {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <path
                   fillRule="evenodd"
@@ -60,6 +61,7 @@ const AppHeader: React.FC = () => {
                 viewBox="0 0 16 12"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <path
                   fillRule="evenodd"
@@ -69,25 +71,31 @@ const AppHeader: React.FC = () => {
                 />
               </svg>
             )}
-            {/* Cross Icon */}
           </button>
 
-          <Link to="/" className="xl:hidden">
+          {/* Logo - Visible only on mobile */}
+          <Link to="/" className="xl:hidden" aria-label="Go to homepage">
             <img
-              className="dark:hidden"
+              className="h-8 dark:hidden"
               src="./images/logo/logo.svg"
-              alt="Logo"
+              alt="POS System Logo"
             />
             <img
-              className="hidden dark:block"
+              className="hidden h-8 dark:block"
               src="./images/logo/logo-dark.svg"
-              alt="Logo"
+              alt="POS System Logo"
             />
           </Link>
+        </div>
 
+        {/* Right Section: Menu Toggle (Mobile) + Actions */}
+        <div className="flex items-center gap-3">
+          {/* Mobile Menu Toggle Button */}
           <button
             onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 xl:hidden"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 xl:hidden"
+            aria-label="Toggle application menu"
+            aria-expanded={isApplicationMenuOpen}
           >
             <svg
               width="24"
@@ -95,6 +103,7 @@ const AppHeader: React.FC = () => {
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
             >
               <path
                 fillRule="evenodd"
@@ -105,24 +114,25 @@ const AppHeader: React.FC = () => {
             </svg>
           </button>
 
-
-        </div>
-        <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:justify-end xl:px-0 xl:shadow-none`}
-        >
-          <div className="flex items-center gap-2 2xsm:gap-3">
-            {/* <!-- Dark Mode Toggler --> */}
+          {/* Desktop Actions - Always visible on XL+ */}
+          <div className="items-center hidden gap-3 xl:flex">
             <ThemeToggleButton />
-            {/* <!-- Dark Mode Toggler --> */}
             <NotificationDropdown />
-            {/* <!-- Notification Menu Area --> */}
+            <UserDropdown />
           </div>
-          {/* <!-- User Area --> */}
-          <UserDropdown />
         </div>
       </div>
+
+      {/* Mobile Actions Menu - Dropdown on mobile */}
+      {isApplicationMenuOpen && (
+        <div className="flex items-center justify-between w-full gap-4 px-4 py-4 border-t border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 sm:px-6 xl:hidden">
+          <div className="flex items-center gap-3">
+            <ThemeToggleButton />
+            <NotificationDropdown />
+          </div>
+          <UserDropdown />
+        </div>
+      )}
     </header>
   );
 };

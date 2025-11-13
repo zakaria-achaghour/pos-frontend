@@ -1,7 +1,7 @@
 // Order and POS types
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
+export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
 export type OrderType = 'dine-in' | 'takeout' | 'delivery';
-export type PaymentMethod = 'cash' | 'card' | 'digital-wallet' | 'split';
+export type PaymentMethod = 'cash' | 'card' | 'digital-wallet' | 'split' | 'mobile';
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
 
 export interface OrderItem {
@@ -47,11 +47,14 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   tax: number;
+  tax_amount?: number; // Backend uses tax_amount
   discount: number;
+  discount_amount?: number; // Backend uses discount_amount
   tip: number;
   total: number;
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
+  payment_method?: string; // Backend uses payment_method
   serverId?: number;
   server?: {
     id: number;
@@ -64,6 +67,8 @@ export interface Order {
   servedTime?: string;
   createdAt: string;
   updatedAt: string;
+  notes?: string; // Backend might use notes
+  priority?: string; // From your screenshot
 }
 
 export interface Payment {
@@ -228,4 +233,117 @@ export interface UpdateOrderRequest extends Partial<CreateOrderRequest> {
 export interface CreatePaymentRequest extends Omit<PaymentFormData, 'id'> {}
 export interface UpdatePaymentRequest extends Partial<CreatePaymentRequest> {
   id: number;
+}
+
+// Order Management Hook Types (following menu pattern)
+export type OrderFilter = 'all' | 'active' | 'completed' | 'cancelled';
+export type OrderTypeFilter = 'all' | 'dine-in' | 'takeout' | 'delivery';
+
+export interface OrderStats {
+  total: number;
+  active: number;
+  completed: number;
+  cancelled: number;
+  pending: number;
+  preparing: number;
+  ready: number;
+  served: number;
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
+}
+
+export interface CreateOrderData {
+  table_id?: number;
+  type: OrderType;
+  customer_name?: string;
+  items: {
+    menu_item_id: number;
+    quantity: number;
+    special_instructions?: string;
+  }[];
+  kitchen_notes?: string;
+  customer_notes?: string;
+}
+
+export interface UpdateOrderData {
+  status?: OrderStatus;
+  table_id?: number;
+  kitchen_notes?: string;
+  customer_notes?: string;
+}
+
+export interface AddOrderItemData {
+  menu_item_id: number;
+  quantity: number;
+  special_instructions?: string;
+}
+
+export interface UseOrderManagementReturn {
+  // Data State
+  orders: Order[];
+  filteredOrders: Order[];
+  selectedOrder: Order | null;
+  editingOrder: Order | null;
+  selectedOrders: number[];
+
+  // UI State
+  viewMode: 'grid' | 'list';
+  statusFilter: OrderFilter;
+  typeFilter: OrderTypeFilter;
+  tableFilter: number | 'all';
+  searchTerm: string;
+  loading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  validationErrors: Record<string, string[]>;
+  pagination: PaginationInfo;
+  orderStats: OrderStats;
+
+  // CRUD Actions
+  fetchOrders: () => Promise<void>;
+  createOrder: (data: CreateOrderData) => Promise<Order>;
+  updateOrder: (id: number, data: UpdateOrderData) => Promise<void>;
+  deleteOrder: (id: number) => Promise<void>;
+  updateOrderStatus: (id: number, status: OrderStatus) => Promise<void>;
+  addOrderItem: (orderId: number, item: AddOrderItemData) => Promise<void>;
+  removeOrderItem: (orderId: number, itemId: number) => Promise<void>;
+  closeOrder: (orderId: number, paymentData: { payment_method: PaymentMethod; amount_paid: number }) => Promise<void>;
+
+  // Selection Actions
+  setSelectedOrder: (order: Order | null) => void;
+  setEditingOrder: (order: Order | null) => void;
+  toggleOrderSelection: (id: number) => void;
+  selectAllOrders: () => void;
+  clearSelection: () => void;
+
+  // Pagination Actions
+  goToPage: (page: number) => void;
+  setPerPage: (perPage: number) => void;
+
+  // Filter Actions
+  setViewMode: (mode: 'grid' | 'list') => void;
+  setStatusFilter: (filter: OrderFilter) => void;
+  setTypeFilter: (filter: OrderTypeFilter) => void;
+  setTableFilter: (tableId: number | 'all') => void;
+  setSearchTerm: (term: string) => void;
+  clearError: () => void;
+  clearSuccessMessage: () => void;
+}
+
+// Order List Component Props
+export interface OrderListProps {
+  orders?: Order[];
+  items?: Order[]; // Alias for backward compatibility
+  loading?: boolean;
+  onEdit: (order: Order) => void;
+  onDelete: (id: number, orderNumber: string) => void;
+  onViewDetails: (order: Order) => void;
+  onUpdateStatus?: (id: number, status: OrderStatus, orderNumber: string) => void;
+  onPayment?: (order: Order) => void;
+  hasFilters?: boolean;
 }

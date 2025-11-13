@@ -43,16 +43,21 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "View Tables", path: "/tables" },
       { name: "Manage Tables", path: "/tables/manage" },
-      { name: "📊 Analytics (Owner)", path: "/owner/tables", allowedRoles: ['owner'] },
     ],
   },
+  // {
+  //   icon: "📊",
+  //   name: "Analytics",
+  //   path: "/owner/tables",
+  //   allowedRoles: ['owner']
+  // },
   {
     icon: "📋",
     name: "Menu",
     allowedRoles: ['owner', 'manager'],
     subItems: [
       { name: "Categories", path: "/categories" },
-      { name: "Items", path: "/items" },
+      { name: "Items", path: "/menu/items" },
     ],
   },
   {
@@ -64,12 +69,12 @@ const navItems: NavItem[] = [
       { name: "New Order", path: "/orders/new" },
     ],
   },
-  {
-    icon: "📈",
-    name: "Reports",
-    path: "/reports",
-    allowedRoles: ['owner', 'manager']
-  },
+  // {
+  //   icon: "📈",
+  //   name: "Reports",
+  //   path: "/reports",
+  //   allowedRoles: ['owner', 'manager']
+  // },
   {
     icon: "🍳",
     name: "Kitchen",
@@ -82,6 +87,15 @@ const navItems: NavItem[] = [
     allowedRoles: ['superadmin'],
     subItems: [
       { name: "Tenants List", path: "/admin/tenants" },
+    ],
+  },
+  {
+    icon: "👥",
+    name: "Roles & Permissions",
+    allowedRoles: ['superadmin'],
+    subItems: [
+      { name: "Roles", path: "/admin/roles" },
+      { name: "Permissions", path: "/admin/permissions" },
     ],
   }
 ];

@@ -1,93 +1,12 @@
 import apiClient from './client';
 import type { ApiResponse, PaginatedResponse } from './client';
-
-// Restaurant types
-export interface Restaurant {
-  id: number;
-  name: string;
-  slug?: string;
-  description?: string;
-  address: string;
-  city?: string;
-  country?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  logo_url?: string;
-  status?: 'active' | 'inactive';
-  license_number?: string;
-  tax_number?: string;
-  owner_name?: string;
-  owner_email?: string;
-  owner_phone?: string;
-  subscription_plan?: string;
-  subscription_status?: 'active' | 'expired' | 'trial';
-  subscription_expires_at?: string;
-  timezone?: string;
-  currency?: string;
-  tax_rate?: string;
-  is_active?: boolean;
-  subdomain?: string;
-  settings?: {
-    theme?: string;
-    language?: string;
-    receipt_footer?: string;
-    auto_print_kitchen?: boolean;
-  };
-  users?: Array<{
-    id: number;
-    name: string;
-    email: string;
-    email_verified_at?: string;
-    created_at: string;
-    updated_at: string;
-    restaurant_id: number;
-  }>;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CreateRestaurantData {
-  name: string;
-  description?: string;
-  address: string;
-  city: string;
-  country: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  license_number?: string;
-  tax_number?: string;
-  owner_name: string;
-  owner_email: string;
-  owner_phone?: string;
-  subscription_plan?: string;
-  timezone?: string;
-  currency?: string;
-}
-
-export interface UpdateRestaurantData extends Partial<CreateRestaurantData> {
-  status?: 'active' | 'inactive';
-  subscription_status?: 'active' | 'expired' | 'trial';
-}
-
-export interface RestaurantStats {
-  total_restaurants: number;
-  active_restaurants: number;
-  inactive_restaurants: number;
-  new_this_month: number;
-  revenue_this_month: number;
-  subscription_expiring_soon: number;
-}
-
-export interface RestaurantFilters {
-  search?: string;
-  status?: 'active' | 'inactive';
-  city?: string;
-  subscription_status?: 'active' | 'expired' | 'trial';
-  page?: number;
-  per_page?: number;
-}
+import type {
+  Restaurant,
+  CreateRestaurantData,
+  UpdateRestaurantData,
+  RestaurantStats,
+  RestaurantFilters
+} from '../types/restaurant';
 
 // Restaurant API service
 export const restaurantAPI = {

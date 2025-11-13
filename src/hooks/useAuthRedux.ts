@@ -36,14 +36,16 @@ export const useAuth = () => {
         redirectPath = '/dashboard';
         break;
       case 'cashier':
-        redirectPath = '/pos/cashier-dashboard';
+        redirectPath = '/orders';
+        break;
+      case 'kitchen':
+        redirectPath = '/kitchen';
         break;
       case 'waiter':
-      case 'kitchen':
-        redirectPath = '/pos/orders';
+        redirectPath = '/tables';
         break;
       default:
-        redirectPath = '/pos/orders';
+        redirectPath = '/orders';
     }
     
     return redirectPath;

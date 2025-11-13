@@ -52,7 +52,8 @@ const Pagination: React.FC<PaginationProps> = ({
     return rangeWithDots;
   };
 
-  if (totalPages <= 1) {
+  // Show pagination if there are any items
+  if (totalItems === 0) {
     return null;
   }
 
@@ -84,19 +85,20 @@ const Pagination: React.FC<PaginationProps> = ({
         <span className="font-medium">{totalItems}</span> results
       </div>
 
-      {/* Pagination controls */}
-      <div className="flex items-center gap-1">
-        {/* Previous button */}
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Previous
-        </button>
+      {/* Pagination controls - only show if more than 1 page */}
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          {/* Previous button */}
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Previous
+          </button>
 
         {/* Page numbers */}
         <div className="flex items-center gap-1">
@@ -146,6 +148,7 @@ const Pagination: React.FC<PaginationProps> = ({
           </svg>
         </button>
       </div>
+      )}
     </div>
   );
 };

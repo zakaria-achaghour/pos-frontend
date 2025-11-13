@@ -1,39 +1,43 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import NotFound from "./pages/OtherPage/NotFound";
+import { ScrollToTop } from "@/components/common/ScrollToTop";
+import NotFound from "@/pages/OtherPage/NotFound";
 
 // Layouts
-import AppLayout from "./layout/AppLayout";
+import AppLayout from "@/layout/AppLayout";
 
 // Auth Pages
-import Login from "./pages/Auth/Login";
-import Unauthorized from "./pages/Auth/Unauthorized";
-import RoleBasedRedirect from "./components/auth/RoleBasedRedirect";
+import Login from "@/pages/Auth/Login";
+import Unauthorized from "@/pages/Auth/Unauthorized";
+import RoleBasedRedirect from "@/components/auth/RoleBasedRedirect";
 
 // POS Pages
-import Dashboard from "./pages/POS/Dashboard";
-import OwnerDashboard from "./pages/POS/OwnerDashboard";
-import Tables from "./pages/POS/Tables";
-import TableManagement from "./pages/POS/TableManagement";
-import EnhancedTableManagement from "./pages/POS/EnhancedTableManagement";
-import StaffManagement from "./pages/POS/StaffManagement";
-import Categories from "./pages/POS/Categories";
-import Items from "./pages/POS/Items";
-import OrderCreate from "./pages/POS/OrderCreate";
-import OrderDetails from "./pages/POS/OrderDetails";
-import DailySummary from "./pages/POS/DailySummary";
-import AdminTenants from "./pages/POS/AdminTenants";
-import AdminTenantOverview from "./pages/POS/AdminTenantOverview";
-import CreateRestaurant from "./pages/POS/CreateRestaurant";
-import EditRestaurant from "./pages/POS/EditRestaurant";
-import RestaurantDetails from "./pages/POS/RestaurantDetails";
-import KitchenTickets from "./pages/POS/KitchenTickets";
-import CashierDashboard from "./pages/POS/CashierDashboard";
-import EnhancedOrdersList from "./pages/POS/EnhancedOrdersList";
+import Dashboard from "@/pages/Dashboard/Dashboard";
+import OwnerDashboard from "@/pages/Dashboard/OwnerDashboard";
+import CashierDashboard from "@/pages/Dashboard/CashierDashboard";
+import Tables from "@/pages/Tables/Tables";
+import TableManagement from "@/pages/Tables/TableManagement";
+import EnhancedTableManagement from "@/pages/Tables/EnhancedTableManagement";
+import StaffManagement from "@/pages/Staff/StaffManagement";
+import CategoriesManagement from "@/pages/Menu/CategoriesManagement";
+import MenuItemsManagement from "@/pages/Menu/MenuItemsManagement";
+import MenuItemForm from "@/pages/Menu/MenuItemForm";
+import OrderCreate from "@/pages/Orders/QuickOrderCreate";
+import OrderDetails from "@/pages/Orders/OrderDetails";
+import OrdersManagement from "@/pages/Orders/OrdersManagement";
+import AdminTenants from "@/pages/Restaurant/AdminTenants";
+import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
+import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
+import EditRestaurant from "@/pages/Restaurant/EditRestaurant";
+import RestaurantDetails from "@/pages/Restaurant/RestaurantDetails";
+import RoleManagement from "@/pages/Admin/Roles/RoleManagement";
+import CreateRole from "@/pages/Admin/Roles/CreateRole";
+import EditRole from "@/pages/Admin/Roles/EditRole";
+import PermissionManagement from "@/pages/Admin/Permissions/PermissionManagement";
 
 // Protected Route Component
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { KitchenManagement } from './components/pos';
 
 export default function App() {
   return (
@@ -94,19 +98,30 @@ export default function App() {
             {/* Menu Management - accessible by owner, manager only */}
             <Route path="/categories" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <Categories />
+                <CategoriesManagement />
               </ProtectedRoute>
             } />
-            <Route path="/items" element={
+            {/* Menu Items - specific routes must come before general route */}
+            <Route path="/menu/items/add" element={
               <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <Items />
+                <MenuItemForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/menu/items/edit/:id" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <MenuItemForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/menu/items" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager']}>
+                <MenuItemsManagement />
               </ProtectedRoute>
             } />
             
             {/* Orders - accessible by owner, manager, cashier, waiter */}
             <Route path="/orders" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
-                <EnhancedOrdersList />
+                <OrdersManagement />
               </ProtectedRoute>
             } />
             <Route path="/orders/new" element={
@@ -128,21 +143,14 @@ export default function App() {
             } />
             <Route path="/cashier/orders" element={
               <ProtectedRoute allowedRoles={['cashier']}>
-                <EnhancedOrdersList />
-              </ProtectedRoute>
-            } />
-            
-            {/* Reports - accessible by owner, manager only */}
-            <Route path="/reports" element={
-              <ProtectedRoute allowedRoles={['owner', 'manager']}>
-                <DailySummary />
+                <OrdersManagement />
               </ProtectedRoute>
             } />
             
             {/* Kitchen - accessible by kitchen, owner, manager */}
             <Route path="/kitchen" element={
               <ProtectedRoute allowedRoles={['kitchen', 'owner', 'manager']}>
-                <KitchenTickets />
+                <KitchenManagement />
               </ProtectedRoute>
             } />
             
@@ -170,6 +178,30 @@ export default function App() {
             <Route path="/admin/tenants/:id" element={
               <ProtectedRoute allowedRoles={['superadmin']}>
                 <AdminTenantOverview />
+              </ProtectedRoute>
+            } />
+            
+            {/* Role Management Routes */}
+            <Route path="/admin/roles" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <RoleManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/roles/create" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <CreateRole />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/roles/:id/edit" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <EditRole />
+              </ProtectedRoute>
+            } />
+            
+            {/* Permission Management Routes */}
+            <Route path="/admin/permissions" element={
+              <ProtectedRoute allowedRoles={['superadmin']}>
+                <PermissionManagement />
               </ProtectedRoute>
             } />
           </Route>

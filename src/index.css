@@ -276,6 +276,16 @@ layer(base);
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+@utility scrollbar-hide {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
     @apply size-1.5;
@@ -859,4 +869,20 @@ pre[class*="language-"] {
 }
 pre[class*="language-"].line-numbers {
   padding-left: 2.8em !important;
+}
+
+/* Toast Animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

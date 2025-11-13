@@ -1,3 +1,7 @@
+// ============================================
+// TABLE CORE TYPES
+// ============================================
+
 // Table management types
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning' | 'out-of-order' | 'maintenance';
 export type TableShape = 'round' | 'square' | 'rectangular' | 'rectangle'; // Added 'rectangle' for backward compatibility
@@ -18,15 +22,23 @@ export interface Table {
   capacity: number;
   shape: TableShape;
   status: TableStatus;
-  location: TableLocation;
+  section?: string; // Direct from API
+  floor?: number; // Direct from API
+  grid_x?: number; // Direct from API
+  grid_y?: number; // Direct from API
+  location?: TableLocation; // Legacy/optional nested structure
   description?: string;
-  features: string[];
+  features?: string[];
   currentOrder?: number;
   assignedWaiter?: number;
   lastCleaned?: string;
   reservations?: TableReservation[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  created_at?: string; // API uses snake_case
+  updated_at?: string; // API uses snake_case
+  restaurant_id?: number;
+  qr_code?: string;
 }
 
 export interface TableReservation {
@@ -74,6 +86,10 @@ export interface ReservationFormData {
   specialRequests?: string;
   notes?: string;
 }
+
+// ============================================
+// TABLE API TYPES
+// ============================================
 
 // Filter and search interfaces
 export interface TableFilters {
@@ -172,4 +188,65 @@ export interface UpdateTableRequest extends Partial<CreateTableRequest> {
 export interface CreateReservationRequest extends Omit<ReservationFormData, 'id'> {}
 export interface UpdateReservationRequest extends Partial<CreateReservationRequest> {
   id: number;
+}
+
+// ============================================
+// TABLE COMPONENT PROPS
+// ============================================
+
+export interface TableFiltersProps {
+  filters: any;
+  onFilterChange: (key: string, value: any) => void;
+  onClearFilters: () => void;
+  statusOptions?: Array<{ value: TableStatus; label: string }>;
+}
+
+export interface TableFormProps {
+  initialData?: Partial<TableFormData>;
+  table?: Table; // Alias for backward compatibility
+  isEdit?: boolean;
+  onSubmit: (data: TableFormData) => Promise<void> | void;
+  onCancel: () => void;
+  isLoading?: boolean;
+  serverErrors?: Record<string, string[]>;
+}
+
+export interface TableListProps {
+  tables: Table[];
+  loading?: boolean;
+  onEdit: (table: Table) => void;
+  onDelete: (id: number, name: string) => void;
+  onStatusChange?: (id: number, status: TableStatus) => void;
+  onSelect?: (id: number) => void;
+  selectedIds?: number[];
+}
+
+export interface TableCardProps {
+  table: Table;
+  onEdit: (table: Table) => void;
+  onDelete: (id: number) => void;
+  onStatusChange?: (status: TableStatus) => void;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
+
+export interface TableStatsData {
+  total: number;
+  available: number;
+  occupied: number;
+  reserved: number;
+  cleaning: number;
+  occupancyRate: number;
+  averagePartySize?: number;
+  turnoverRate?: number;
+}
+
+export interface TableStatsProps {
+  stats: TableStatsData;
+  loading?: boolean;
+  className?: string;
+}
+
+export interface EnhancedTableStatsProps {
+  className?: string;
 }

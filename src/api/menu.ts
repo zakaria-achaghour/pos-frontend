@@ -1,70 +1,59 @@
 import apiClient from './client';
 import type { ApiResponse } from './client';
-
-// Menu types
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  is_active: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MenuItem {
-  id: number;
-  category_id: number;
-  category: Category;
-  name: string;
-  description?: string;
-  price: number;
-  cost?: number;
-  is_active: boolean;
-  is_available: boolean;
-  image_url?: string;
-  preparation_time?: number; // in minutes
-  allergens?: string[];
-  ingredients?: string[];
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateCategoryData {
-  name: string;
-  description?: string;
-  is_active?: boolean;
-  sort_order?: number;
-}
-
-export interface UpdateCategoryData extends Partial<CreateCategoryData> {}
-
-export interface CreateMenuItemData {
-  category_id: number;
-  name: string;
-  description?: string;
-  price: number;
-  cost?: number;
-  is_active?: boolean;
-  is_available?: boolean;
-  preparation_time?: number;
-  allergens?: string[];
-  ingredients?: string[];
-  sort_order?: number;
-}
-
-export interface UpdateMenuItemData extends Partial<CreateMenuItemData> {}
+import type {
+  Category,
+  MenuItem,
+  CreateCategoryData,
+  UpdateCategoryData,
+  CreateMenuItemData,
+  UpdateMenuItemData,
+  CategoryFilters,
+  MenuItemFilters,
+  CategoriesResponse,
+  MenuItemsResponse
+} from '../types/menu';
 
 // Menu API service
 export const menuAPI = {
   // Category endpoints
   /**
-   * Get all categories
+   * Get all categories with pagination and filters
    */
-  getCategories: async (): Promise<Category[]> => {
-    const response = await apiClient.get<ApiResponse<Category[]>>('/categories');
-    return response.data.data;
+  getCategories: async (filters: CategoryFilters = {}): Promise<CategoriesResponse> => {
+    const params = new URLSearchParams();
+    
+    if (filters.searchTerm) params.append('search', filters.searchTerm);
+    if (filters.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+
+    const response = await apiClient.get<ApiResponse<CategoriesResponse>>(`/categories?${params}`);
+    
+    console.log('Raw API response:', response.data);
+    
+    // Handle both response formats
+    if (response.data.data && typeof response.data.data === 'object' && 'data' in response.data.data) {
+      const result = response.data.data as CategoriesResponse;
+      console.log('Returning paginated response:', result);
+      return result;
+    }
+    
+    // Fallback: if data is array directly (calculate pagination manually)
+    const categories = Array.isArray(response.data.data) ? response.data.data as Category[] : [];
+    const limit = filters.limit || 50;
+    const total = categories.length;
+    const totalPages = Math.ceil(total / limit);
+    
+    const result = {
+      data: categories,
+      total: total,
+      page: filters.page || 1,
+      limit: limit,
+      totalPages: totalPages
+    };
+    
+    console.log('Returning fallback response:', result);
+    return result;
   },
 
   /**
@@ -100,22 +89,34 @@ export const menuAPI = {
 
   // Menu Item endpoints
   /**
-   * Get all menu items
+   * Get all menu items with pagination and filters
    */
-  getItems: async (filters: {
-    category_id?: number;
-    is_active?: boolean;
-    is_available?: boolean;
-  } = {}): Promise<MenuItem[]> => {
+  getItems: async (filters: MenuItemFilters = {}): Promise<MenuItemsResponse> => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value.toString());
-      }
-    });
     
-    const response = await apiClient.get<ApiResponse<MenuItem[]>>(`/items?${params}`);
-    return response.data.data;
+    if (filters.category_id) params.append('category_id', filters.category_id.toString());
+    if (filters.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    if (filters.is_available !== undefined) params.append('is_available', filters.is_available.toString());
+    if (filters.searchTerm) params.append('search', filters.searchTerm);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    
+    const response = await apiClient.get<ApiResponse<MenuItemsResponse>>(`/items?${params}`);
+    
+    // Handle both response formats
+    if (response.data.data && typeof response.data.data === 'object' && 'data' in response.data.data) {
+      return response.data.data as MenuItemsResponse;
+    }
+    
+    // Fallback: if data is array directly
+    const items = Array.isArray(response.data.data) ? response.data.data as MenuItem[] : [];
+    return {
+      data: items,
+      total: items.length,
+      page: filters.page || 1,
+      limit: filters.limit || 50,
+      totalPages: 1
+    };
   },
 
   /**
