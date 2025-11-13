@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../hooks/useAuthRedux';
-import { dashboardAPI } from '../../api/dashboard';
+// import { dashboardAPI } from '../../api/dashboard'; // DEPRECATED - endpoint no longer exists
 import type { DashboardMetrics, DashboardPeriod } from '@/types/dashboard';
 import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
@@ -69,11 +69,13 @@ export default function OwnerDashboard() {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        const data = await dashboardAPI.getMetrics(selectedTimeframe);
-        setMetrics(data);
+        // NOTE: /dashboard/metrics endpoint no longer exists on backend
+        // Using mock data until new endpoint is implemented
+        console.warn('⚠️ Using mock data - /dashboard/metrics endpoint is deprecated');
+        setMetrics(mockMetrics);
       } catch (err: any) {
         console.error('Error fetching metrics:', handleApiError(err));
-        // Fallback to mock data for development
+        // Fallback to mock data
         setMetrics(mockMetrics);
       } finally {
         setLoading(false);

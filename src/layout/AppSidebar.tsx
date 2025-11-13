@@ -45,14 +45,14 @@ const navItems: NavItem[] = [
       { name: "Manage Tables", path: "/tables/manage" },
     ],
   },
+  // {
+  //   icon: "📊",
+  //   name: "Analytics",
+  //   path: "/owner/tables",
+  //   allowedRoles: ['owner']
+  // },
   {
-    icon: "�",
-    name: "Analytics",
-    path: "/owner/tables",
-    allowedRoles: ['owner']
-  },
-  {
-    icon: "�📋",
+    icon: "📋",
     name: "Menu",
     allowedRoles: ['owner', 'manager'],
     subItems: [

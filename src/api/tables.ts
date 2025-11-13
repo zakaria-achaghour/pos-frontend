@@ -66,18 +66,12 @@ export const tableAPI = {
   },
 
   /**
+   * @deprecated - This endpoint is no longer supported by the backend
    * Get table analytics - general analytics data
    */
   getTableAnalytics: async (): Promise<TableAnalytics[]> => {
-    try {
-      console.log('🔍 Fetching table analytics');
-      const response = await apiClient.get<ApiResponse<TableAnalytics[]>>('/tables/analytics');
-      console.log('📡 Table analytics API response:', response.data);
-      return response.data.data || response.data || [];
-    } catch (error: any) {
-      console.error('❌ Error fetching table analytics:', error);
-      return [];
-    }
+    console.warn('⚠️ tableAPI.getTableAnalytics is deprecated - endpoint /tables/analytics no longer exists');
+    return [];
   },
 
   /**
@@ -218,30 +212,23 @@ export const tableAPI = {
   },
 
   /**
+   * @deprecated - This endpoint is no longer supported by the backend
    * Get table performance analytics (individual table metrics)
    * Returns performance metrics for each table from /api/tables/analytics
    */
   getTablePerformanceAnalytics: async (period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
-    try {
-      console.log('🔍 Fetching table performance analytics for period:', period);
-      const queryString = period !== 'today' ? `?period=${period}` : '';
-      const response = await apiClient.get<TableAnalytics[]>(`/tables/analytics${queryString}`);
-      console.log('📡 Table performance analytics API response:', response.data);
-      
-      // The backend returns an array directly, not wrapped in a data object
-      return response.data || [];
-    } catch (error: any) {
-      console.error('❌ Error fetching table performance analytics:', error);
-      return [];
-    }
+    console.warn('⚠️ tableAPI.getTablePerformanceAnalytics is deprecated - endpoint /tables/analytics no longer exists');
+    return [];
   },
 
   /**
+   * @deprecated - This endpoint is no longer supported by the backend
    * Get table analytics overview (comprehensive analytics)
    * Legacy method - kept for backward compatibility
    */
   getAnalytics: async (period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
-    return tableAPI.getTablePerformanceAnalytics(period);
+    console.warn('⚠️ tableAPI.getAnalytics is deprecated - endpoint /tables/analytics no longer exists');
+    return [];
   },
 
   /**
