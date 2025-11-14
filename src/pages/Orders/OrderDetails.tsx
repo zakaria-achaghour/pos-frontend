@@ -5,6 +5,7 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Button from '../../components/ui/button/Button';
 import { getUser } from '../../app/auth';
 import { orderAPI } from '@/api/orders';
+import { downloadReceipt, printReceipt } from '@/api/receipts';
 
 // Backend response structure (snake_case)
 interface BackendOrderItem {
@@ -79,6 +80,7 @@ export default function OrderDetails() {
   const [order, setOrder] = useState<BackendOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [receiptLoading, setReceiptLoading] = useState<'download' | 'print' | null>(null);
   const user = getUser();
 
   // Get order status styling
@@ -213,11 +215,46 @@ export default function OrderDetails() {
     }
   };
 
+  const handleDownloadReceipt = async () => {
+    if (!order) return;
+    try {
+      setReceiptLoading('download');
+      await downloadReceipt(order.id, 'pdf');
+      showToast('Receipt downloaded successfully', 'success');
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      showToast('Failed to download receipt', 'error');
+    } finally {
+      setReceiptLoading(null);
+    }
+  };
+
+  const handlePrintReceipt = async () => {
+    if (!order) return;
+    try {
+      setReceiptLoading('print');
+      await printReceipt(order.id);
+      showToast('Opening receipt for printing...', 'success');
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+      showToast('Failed to print receipt', 'error');
+    } finally {
+      setReceiptLoading(null);
+    }
+  };
+
   const canProcessPayment = () => {
     // Check if payment is not completed (paid_at is null or payment_method is null)
     return !order?.paid_at &&
            user &&
            ['owner', 'manager', 'cashier'].includes(user.role);
+  };
+
+  const isReceiptAvailable = () => {
+    // Receipt is available if order is completed or paid
+    return order?.paid_at || 
+           order?.status === 'completed' || 
+           order?.status === 'served';
   };
 
   const getPaymentStatus = () => {
@@ -477,6 +514,44 @@ export default function OrderDetails() {
                 className="border-red-300 text-red-600 hover:bg-red-50"
               >
                 ❌ Cancel Order
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Receipt Actions */}
+        {isReceiptAvailable() && (
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Receipt Actions</h3>
+            <div className="flex gap-3">
+              <Button
+                onClick={handlePrintReceipt}
+                disabled={receiptLoading === 'print'}
+                variant="outline"
+                className="border-gray-300 hover:bg-gray-50"
+              >
+                {receiptLoading === 'print' ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full inline-block"></div>
+                    Printing...
+                  </>
+                ) : (
+                  <>🖨️ Print Receipt</>
+                )}
+              </Button>
+              <Button
+                onClick={handleDownloadReceipt}
+                disabled={receiptLoading === 'download'}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {receiptLoading === 'download' ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block"></div>
+                    Downloading...
+                  </>
+                ) : (
+                  <>📄 Download PDF</>
+                )}
               </Button>
             </div>
           </div>

@@ -25,6 +25,8 @@ import MenuItemForm from "@/pages/Menu/MenuItemForm";
 import OrderCreate from "@/pages/Orders/QuickOrderCreate";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import OrdersManagement from "@/pages/Orders/OrdersManagement";
+import PaymentConfirmation from "@/pages/Orders/PaymentConfirmation";
+import ReceiptPreview from "@/pages/Orders/ReceiptPreview";
 import AdminTenants from "@/pages/Restaurant/AdminTenants";
 import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
 import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
@@ -132,6 +134,18 @@ export default function App() {
             <Route path="/orders/:id" element={
               <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
                 <OrderDetails />
+              </ProtectedRoute>
+            } />
+            
+            {/* Receipt Routes */}
+            <Route path="/orders/:id/payment-confirmation" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
+                <PaymentConfirmation />
+              </ProtectedRoute>
+            } />
+            <Route path="/orders/:id/receipt" element={
+              <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier', 'waiter']}>
+                <ReceiptPreview />
               </ProtectedRoute>
             } />
             

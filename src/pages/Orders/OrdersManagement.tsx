@@ -119,11 +119,9 @@ export default function OrdersManagement() {
     discount_amount?: number;
   }) => {
     try {
-      await orderAPI.updatePayment(orderId, paymentData);
-      setIsPaymentModalOpen(false);
-      setOrderToPayment(null);
-      // Refresh orders after payment
-      window.location.reload();
+      const updatedOrder = await orderAPI.updatePayment(orderId, paymentData);
+      await fetchOrders();
+      return updatedOrder;
     } catch (error: any) {
       console.error('Payment update failed:', error);
       alert(error.response?.data?.message || 'Failed to process payment');
