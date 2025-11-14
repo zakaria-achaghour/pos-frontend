@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Order } from '@/types/order';
+import { emitCashierDashboardRefresh } from '@/utils/cashierEvents';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -98,6 +99,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
 
       await onConfirm(order.id, paymentData);
+      emitCashierDashboardRefresh();
       setPaidAt(new Date().toISOString());
       setIsSuccess(true);
     } catch (error) {

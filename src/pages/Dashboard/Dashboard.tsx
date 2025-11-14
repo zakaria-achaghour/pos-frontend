@@ -1,127 +1,121 @@
-import { useState, useEffect } from 'react';
-import PageMeta from '../../components/common/PageMeta';
-import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuthRedux';
+import PageMeta from '@/components/common/PageMeta';
+import PageBreadcrumb from '@/components/common/PageBreadCrumb';
+import Alert from '@/components/ui/alert/Alert';
+import { useCurrency } from '@/hooks/useConfig';
+import { dashboardAPI } from '@/api/dashboard';
+import type { DashboardPeriod, DashboardOverviewResponse } from '@/types/dashboard';
+import { handleApiError } from '@/api/client';
 
-// Mock data - replace with actual API call
-const mockDashboardData = {
-  salesTotal: 12450.75,
-  ordersCount: 87,
-  avgTicket: 143.00,
-  paymentMethods: {
-    cash: 5400.25,
-    card: 6200.50,
-    other: 850.00
-  }
-};
+const timeframeOptions: Array<{ key: DashboardPeriod; label: string }> = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
 
-interface DashboardData {
-  salesTotal: number;
-  ordersCount: number;
-  avgTicket: number;
-  paymentMethods: {
-    cash: number;
-    card: number;
-    other: number;
-  };
-}
+const SkeletonCard = () => (
+  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
+    <div className="h-8 bg-gray-200 rounded w-2/3" />
+  </div>
+);
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
+  const [period, setPeriod] = useState<DashboardPeriod>('today');
+  const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadOverview = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await dashboardAPI.getOverview({ period });
+      setOverview(data);
+    } catch (err: any) {
+      setError(handleApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        // TODO: Replace with actual API call
-        // const response = await api.get(`/reports/summary?date=${new Date().toISOString().split('T')[0]}`);
-        // setData(response.data);
-        
-        // Simulate API delay
-        setTimeout(() => {
-          setData(mockDashboardData);
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setLoading(false);
-      }
-    };
+    loadOverview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
 
-    fetchDashboardData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div>
-        <PageMeta
-          title="POS Dashboard | TailAdmin - React.js Admin Dashboard Template"
-          description="POS Dashboard for restaurant management"
-        />
-        <PageBreadcrumb pageTitle="Dashboard" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-4 rounded-xl shadow animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const metricCards = [
+    { label: period === 'today' ? 'Sales Today' : 'Total Sales', value: overview?.sales_today ?? 0, currency: true },
+    { label: period === 'today' ? 'Orders Today' : 'Orders', value: overview?.orders_today ?? 0, currency: false },
+    { label: 'Avg Ticket', value: overview?.avg_ticket ?? 0, currency: true },
+  ];
 
   return (
-    <div>
-      <PageMeta
-        title="POS Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="POS Dashboard for restaurant management"
-      />
+    <div className="space-y-6">
+      <PageMeta title="Dashboard | POS System" description="Restaurant performance overview" />
       <PageBreadcrumb pageTitle="Dashboard" />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Sales Today */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Sales Today</h3>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {data?.salesTotal.toFixed(2)} MAD
-          </p>
-        </div>
 
-        {/* Orders Count */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Orders</h3>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {data?.ordersCount}
-          </p>
-        </div>
+      {error && (
+        <Alert variant="error" title="Dashboard" message={error} onClose={() => setError(null)} />
+      )}
 
-        {/* Average Ticket */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Ticket</h3>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {data?.avgTicket.toFixed(2)} MAD
-          </p>
-        </div>
+      <div className="bg-indigo-500 text-white p-6 rounded-lg">
+        <h1 className="text-2xl font-bold">Hey {user?.name || 'there'} 👋</h1>
+        <p className="text-indigo-100">Here is how your business is performing</p>
+      </div>
 
-        {/* Payment Methods */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Payment Methods</h3>
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Cash:</span>
-              <span className="font-medium">{data?.paymentMethods.cash.toFixed(2)} MAD</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Card:</span>
-              <span className="font-medium">{data?.paymentMethods.card.toFixed(2)} MAD</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Other:</span>
-              <span className="font-medium">{data?.paymentMethods.other.toFixed(2)} MAD</span>
-            </div>
+      <div className="flex gap-2 flex-wrap">
+        {timeframeOptions.map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setPeriod(option.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              period === option.key ? 'bg-indigo-500 text-white' : 'bg-white text-gray-700 border hover:bg-gray-50'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {loading
+          ? metricCards.map((_, index) => <SkeletonCard key={`skeleton-${index}`} />)
+          : metricCards.map((card) => (
+              <div key={card.label} className="bg-white p-6 rounded-lg shadow">
+                <p className="text-sm text-gray-500">{card.label}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {card.currency
+                    ? formatCurrency(card.value as number)
+                    : Number(card.value).toLocaleString()}
+                </p>
+              </div>
+            ))}
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-6 bg-gray-200 rounded animate-pulse" />
+            ))}
           </div>
-        </div>
+        ) : overview?.payment_methods?.length ? (
+          <div className="space-y-3">
+            {overview.payment_methods.map((method) => (
+              <div key={method.method} className="flex items-center justify-between">
+                <span className="text-gray-600">{method.label || method.method}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(method.total)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">No payment data for this period.</p>
+        )}
       </div>
     </div>
   );

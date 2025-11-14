@@ -10,9 +10,19 @@ import PaymentModal from '@/components/pos/orders/PaymentModal';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { orderAPI } from '@/api/orders';
 import type { Order, OrderStatus } from '@/types/order';
+import { useCashierShift } from '@/hooks/useCashierShift';
+import { useAuth } from '@/hooks/useAuthRedux';
 
 export default function OrdersManagement() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isCashier = user?.role === 'cashier';
+  const {
+    currentShift,
+    requireShift,
+    error: shiftError,
+    setError: setShiftError,
+  } = useCashierShift({ autoFetch: isCashier });
   const {
     // Data
     filteredOrders,
@@ -106,7 +116,14 @@ export default function OrdersManagement() {
   };
 
   // Handler for payment request
-  const handlePaymentRequest = (order: Order) => {
+  const handlePaymentRequest = async (order: Order) => {
+    if (isCashier) {
+      const hasShift = currentShift || (await requireShift());
+      if (!hasShift) {
+        alert('Please open a shift before processing payments.');
+        return;
+      }
+    }
     setOrderToPayment(order);
     setIsPaymentModalOpen(true);
   };
@@ -159,6 +176,16 @@ export default function OrdersManagement() {
             variant="error"
             title="Error"
             message={error}
+          />
+        </div>
+      )}
+      {shiftError && (
+        <div className="mb-4">
+          <Alert
+            variant="error"
+            title="Shift Warning"
+            message={shiftError}
+            onClose={() => setShiftError(null)}
           />
         </div>
       )}

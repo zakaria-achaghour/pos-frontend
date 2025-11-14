@@ -27,6 +27,24 @@ export interface DashboardMetrics {
   available_tables: number;
 }
 
+export interface DashboardPaymentMethodTotal {
+  method: string;
+  label?: string;
+  total: number;
+}
+
+export interface DashboardOverviewResponse {
+  sales_today: number;
+  orders_today: number;
+  avg_ticket: number;
+  currency?: {
+    code: string;
+    symbol: string;
+    locale?: string;
+  };
+  payment_methods: DashboardPaymentMethodTotal[];
+}
+
 /**
  * Sales chart data structure
  * Used for visualizing sales trends over time

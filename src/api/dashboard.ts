@@ -5,13 +5,29 @@ import type {
   SalesChart,
   TopItem,
   StaffPerformance,
-  DashboardPeriod
+  DashboardPeriod,
+  DashboardOverviewResponse,
 } from '../types/dashboard';
 
 // Dashboard API service
 // NOTE: These endpoints are deprecated and should not be used in production
 // They are kept here for reference only
 export const dashboardAPI = {
+  getOverview: async (params: { period?: DashboardPeriod } = {}): Promise<DashboardOverviewResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params.period) {
+      searchParams.append('period', params.period);
+    }
+    const query = searchParams.toString();
+    const response = await apiClient.get<ApiResponse<DashboardOverviewResponse>>(
+      `/dashboard/overview${query ? `?${query}` : ''}`,
+    );
+    const payload = response.data as ApiResponse<DashboardOverviewResponse> | DashboardOverviewResponse;
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+      return (payload as ApiResponse<DashboardOverviewResponse>).data;
+    }
+    return payload as DashboardOverviewResponse;
+  },
   /**
    * @deprecated - This endpoint is no longer supported by the backend
    * Get dashboard metrics
