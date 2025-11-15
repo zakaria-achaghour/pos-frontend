@@ -71,7 +71,6 @@ export default function OwnerDashboard() {
         setLoading(true);
         // NOTE: /dashboard/metrics endpoint no longer exists on backend
         // Using mock data until new endpoint is implemented
-        console.warn('⚠️ Using mock data - /dashboard/metrics endpoint is deprecated');
         setMetrics(mockMetrics);
       } catch (err: any) {
         console.error('Error fetching metrics:', handleApiError(err));

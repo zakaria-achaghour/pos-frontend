@@ -4,11 +4,26 @@ import { useSidebar } from "../hooks/useSidebarRedux";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
+import { useAuth } from "../hooks/useAuthRedux";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { user } = useAuth();
+
+  const restaurantName =
+    user?.restaurant?.name ||
+    user?.restaurant_name ||
+    user?.restaurant?.slug ||
+    null;
+  const restaurantLogo =
+    user?.restaurant?.logo_url ||
+    user?.restaurant?.logo ||
+    user?.restaurant_logo_url ||
+    user?.restaurant_logo ||
+    null;
+  const hasBranding = Boolean(restaurantLogo || restaurantName);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1280) {
@@ -73,19 +88,27 @@ const AppHeader: React.FC = () => {
             )}
           </button>
 
-          {/* Logo - Visible only on mobile */}
-          <Link to="/" className="xl:hidden" aria-label="Go to homepage">
-            <img
-              className="h-8 dark:hidden"
-              src="./images/logo/logo.svg"
-              alt="POS System Logo"
-            />
-            <img
-              className="hidden h-8 dark:block"
-              src="./images/logo/logo-dark.svg"
-              alt="POS System Logo"
-            />
-          </Link>
+          {/* Logo + Restaurant Name */}
+          {hasBranding && (
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-gray-900 dark:text-white"
+              aria-label={`${restaurantName || "Restaurant"} dashboard`}
+            >
+              {restaurantLogo && (
+                <img
+                  className="h-9 w-9 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
+                  src={restaurantLogo}
+                  alt={`${restaurantName || "Restaurant"} Logo`}
+                />
+              )}
+              {restaurantName && (
+                <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline-block">
+                  {restaurantName}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
 
         {/* Right Section: Menu Toggle (Mobile) + Actions */}

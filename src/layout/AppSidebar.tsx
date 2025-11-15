@@ -105,6 +105,27 @@ const AppSidebar = () => {
   const { user } = useAuth();
   const location = useLocation();
 
+  const restaurantName =
+    user?.restaurant?.name ||
+    user?.restaurant_name ||
+    user?.restaurant?.slug ||
+    null;
+  const restaurantLogo =
+    user?.restaurant?.logo_url ||
+    user?.restaurant?.logo ||
+    user?.restaurant_logo_url ||
+    user?.restaurant_logo ||
+    null;
+  const brandingInitials = restaurantName
+    ? restaurantName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 3)
+        .map((word) => word[0]?.toUpperCase() ?? '')
+        .join('')
+    : '';
+  const hasBranding = Boolean(restaurantLogo || restaurantName);
+
   const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
 
   const isActive = useCallback(
@@ -145,16 +166,28 @@ const AppSidebar = () => {
       <div className="flex h-full flex-col">
         {/* Logo Section */}
         <div className="flex h-16 items-center border-b border-gray-200 dark:border-gray-700 px-3">
-          <div className="flex items-center space-x-3 w-full">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">POS</span>
+          {hasBranding ? (
+            <div className="flex items-center space-x-3 w-full">
+              {restaurantLogo ? (
+                <img
+                  src={restaurantLogo}
+                  alt={`${restaurantName || 'Restaurant'} Logo`}
+                  className="h-9 w-9 rounded-lg border border-gray-200 object-cover dark:border-gray-700 flex-shrink-0"
+                />
+              ) : restaurantName ? (
+                <div className="h-9 w-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0 dark:bg-indigo-500">
+                  {brandingInitials || restaurantName.charAt(0).toUpperCase()}
+                </div>
+              ) : null}
+              {(isExpanded || isHovered) && restaurantName && (
+                <span className="text-lg font-bold text-gray-900 dark:text-white transition-all duration-200 truncate">
+                  {restaurantName}
+                </span>
+              )}
             </div>
-            {(isExpanded || isHovered) && (
-              <span className="text-lg font-bold text-gray-900 dark:text-white transition-all duration-200 truncate">
-                Restaurant POS
-              </span>
-            )}
-          </div>
+          ) : (
+            <div className="w-full h-9" />
+          )}
         </div>
 
         {/* User Info */}
