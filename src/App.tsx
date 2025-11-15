@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import { ScrollToTop } from "@/components/common/ScrollToTop";
 import NotFound from "@/pages/OtherPage/NotFound";

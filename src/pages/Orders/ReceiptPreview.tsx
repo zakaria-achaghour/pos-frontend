@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import { fetchReceipt, downloadReceipt, printReceipt } from '../../api/receipts';
@@ -34,16 +34,25 @@ export default function ReceiptPreview() {
     loadReceipt();
   }, [id, navigate]);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (id) {
-      printReceipt(parseInt(id));
+      try {
+        await printReceipt(parseInt(id));
+      } catch (err) {
+        console.error('Error printing receipt:', err);
+        setError('Failed to print receipt. Please try again.');
+      }
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (id) {
-      const url = downloadReceipt(parseInt(id), 'pdf');
-      window.open(url, '_blank');
+      try {
+        await downloadReceipt(parseInt(id), 'pdf');
+      } catch (err) {
+        console.error('Error downloading receipt:', err);
+        setError('Failed to download receipt. Please try again.');
+      }
     }
   };
 

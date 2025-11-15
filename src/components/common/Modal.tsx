@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface ModalProps {
   isOpen: boolean;
@@ -68,7 +69,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50 backdrop-blur-sm"
+      className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"

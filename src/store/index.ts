@@ -3,6 +3,8 @@ import authSlice from './slices/authSlice';
 import sidebarSlice from './slices/sidebarSlice';
 import themeSlice from './slices/themeSlice';
 
+const isDevEnvironment = import.meta.env?.MODE !== 'production';
+
 export const store = configureStore({
   reducer: {
     auth: authSlice,
@@ -16,7 +18,7 @@ export const store = configureStore({
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: isDevEnvironment,
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -8,7 +8,7 @@ import Label from '../../components/form/Label';
 import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
 import { restaurantAPI } from '../../api/restaurants';
-import type { CreateRestaurantData } from '../../api/restaurants';
+import type { CreateRestaurantData } from '@/types/restaurant';
 
 export default function CreateRestaurant() {
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ export default function CreateRestaurant() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: CreateRestaurantData) => ({
       ...prev,
       [name]: value
     }));

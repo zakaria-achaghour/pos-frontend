@@ -2,6 +2,8 @@
 // MENU CORE TYPES
 // ============================================
 
+import type { PaginationInfo } from './pagination';
+
 // Menu and Category types
 export type MenuItemStatus = 'available' | 'unavailable' | 'out-of-stock';
 export type CategoryStatus = 'active' | 'inactive';
@@ -334,13 +336,6 @@ export interface MenuItemStats {
   inactive: number;
   available: number;
   unavailable: number;
-}
-
-export interface PaginationInfo {
-  currentPage: number;
-  lastPage: number;
-  perPage: number;
-  total: number;
 }
 
 // Category Management Hook Return Type

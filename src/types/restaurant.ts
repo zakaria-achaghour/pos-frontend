@@ -106,6 +106,8 @@ export interface Restaurant {
   subscription_status?: SubscriptionStatus;
   subscription_expires_at?: string;
   subdomain?: string;
+  timezone?: string;
+  currency?: string;
   establishedDate: string;
   users?: Array<{
     id: number;

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { RoleUser } from '@/types/roles';
+import { MODAL_BACKDROP_CLASS } from '@/utils/modalStyles';
 
 interface RoleUsersDrawerProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ export default function RoleUsersDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+        className={`fixed inset-0 z-40 transition-opacity ${MODAL_BACKDROP_CLASS}`}
         onClick={onClose}
       />
 

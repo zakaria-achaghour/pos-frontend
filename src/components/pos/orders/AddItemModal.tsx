@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { MenuItem } from '@/types/menu';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface AddItemModalProps {
   item: MenuItem | null;
@@ -64,7 +65,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
   const hasIngredients = item.ingredients && item.ingredients.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white flex items-center justify-between p-4 border-b z-10">

@@ -5,7 +5,7 @@ import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Button from '../../components/ui/button/Button';
 import { restaurantAPI } from '../../api/restaurants';
-import type { Restaurant } from '../../api/restaurants';
+import type { Restaurant } from '@/types/restaurant';
 
 export default function RestaurantDetails() {
   const navigate = useNavigate();

@@ -11,6 +11,7 @@ import { CategoryTabs } from '@/components/pos/orders/CategoryTabs';
 import { AddItemModal } from '@/components/pos/orders/AddItemModal';
 import type { MenuItem } from '@/types/menu';
 import type { Table } from '@/types/table';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface CartItem {
   menu_item_id: number;
@@ -422,8 +423,8 @@ export default function QuickOrderCreate() {
 
       {/* Payment Collection Modal (for takeout/delivery) */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-[10000]`}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               Collect Payment Now?
             </h3>

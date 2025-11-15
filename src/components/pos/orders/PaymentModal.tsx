@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Order } from '@/types/order';
 import { emitCashierDashboardRefresh } from '@/utils/cashierEvents';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -128,8 +129,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
+      <div className="bg-white rounded-lg shadow-xl max-w-md md:max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b">
           <div className="flex justify-between items-start">

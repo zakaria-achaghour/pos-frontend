@@ -3,6 +3,7 @@ import type { MenuItemFormProps } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { MenuItemFormData, Category } from '@/types/menu';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface MenuItemFormProps {
   initialData?: Partial<MenuItemFormData>;
@@ -65,7 +66,7 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-6">

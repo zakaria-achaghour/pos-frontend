@@ -1,11 +1,15 @@
 // Type mappers for converting between API responses and frontend types
-import type { Category as ApiCategory, MenuItem as ApiMenuItem } from '../api/menu';
-import type { Category, MenuItem } from '../types/menu';
+import type {
+  Category as ApiCategory,
+  MenuItem as ApiMenuItem,
+  Category as FrontendCategory,
+  MenuItem as FrontendMenuItem,
+} from '@/types/menu';
 
 /**
  * Maps API Category (snake_case) to frontend Category (camelCase)
  */
-export const mapApiCategoryToFrontend = (apiCategory: ApiCategory): Category => {
+export const mapApiCategoryToFrontend = (apiCategory: ApiCategory): FrontendCategory => {
   return {
     id: apiCategory.id,
     name: apiCategory.name,
@@ -21,7 +25,7 @@ export const mapApiCategoryToFrontend = (apiCategory: ApiCategory): Category => 
 /**
  * Maps frontend Category to API Category format
  */
-export const mapFrontendCategoryToApi = (category: Partial<Category>): Partial<ApiCategory> => {
+export const mapFrontendCategoryToApi = (category: Partial<FrontendCategory>): Partial<ApiCategory> => {
   return {
     name: category.name,
     description: category.description,
@@ -33,7 +37,7 @@ export const mapFrontendCategoryToApi = (category: Partial<Category>): Partial<A
 /**
  * Maps API MenuItem (snake_case) to frontend MenuItem (camelCase)
  */
-export const mapApiMenuItemToFrontend = (apiItem: ApiMenuItem): MenuItem => {
+export const mapApiMenuItemToFrontend = (apiItem: ApiMenuItem): FrontendMenuItem => {
   return {
     id: apiItem.id,
     name: apiItem.name,
@@ -62,7 +66,7 @@ export const mapApiMenuItemToFrontend = (apiItem: ApiMenuItem): MenuItem => {
 /**
  * Maps frontend MenuItem to API MenuItem format
  */
-export const mapFrontendMenuItemToApi = (item: Partial<MenuItem>): Partial<ApiMenuItem> => {
+export const mapFrontendMenuItemToApi = (item: Partial<FrontendMenuItem>): Partial<ApiMenuItem> => {
   return {
     category_id: item.categoryId,
     name: item.name,
@@ -83,14 +87,14 @@ export const mapFrontendMenuItemToApi = (item: Partial<MenuItem>): Partial<ApiMe
 /**
  * Maps array of API categories to frontend categories
  */
-export const mapApiCategoriesToFrontend = (apiCategories: ApiCategory[]): Category[] => {
+export const mapApiCategoriesToFrontend = (apiCategories: ApiCategory[]): FrontendCategory[] => {
   return apiCategories.map(mapApiCategoryToFrontend);
 };
 
 /**
  * Maps array of API menu items to frontend menu items
  */
-export const mapApiMenuItemsToFrontend = (apiItems: ApiMenuItem[]): MenuItem[] => {
+export const mapApiMenuItemsToFrontend = (apiItems: ApiMenuItem[]): FrontendMenuItem[] => {
   return apiItems.map(mapApiMenuItemToFrontend);
 };
 

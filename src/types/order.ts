@@ -1,3 +1,5 @@
+import type { PaginationInfo } from './pagination';
+
 // Order and POS types
 export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
 export type OrderType = 'dine-in' | 'takeout' | 'delivery';
@@ -248,13 +250,6 @@ export interface OrderStats {
   preparing: number;
   ready: number;
   served: number;
-}
-
-export interface PaginationInfo {
-  currentPage: number;
-  lastPage: number;
-  perPage: number;
-  total: number;
 }
 
 export interface CreateOrderData {

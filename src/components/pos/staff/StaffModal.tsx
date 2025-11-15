@@ -1,5 +1,5 @@
 import React from 'react';
-import type { StaffModalProps } from '@/types/staff';
+import { MODAL_BACKDROP_CLASS } from '@/utils/modalStyles';
 
 interface StaffModalProps {
   isOpen: boolean;
@@ -26,10 +26,10 @@ export default function StaffModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:px-6 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="fixed bg-opacity-50 transition-opacity"
+        className={`fixed inset-0 ${MODAL_BACKDROP_CLASS}`}
         onClick={onClose}
       />
       
