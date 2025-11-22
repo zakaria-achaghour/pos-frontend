@@ -26,7 +26,7 @@ const AppHeader: React.FC = () => {
   const hasBranding = Boolean(restaurantLogo || restaurantName);
 
   const handleToggle = () => {
-    if (window.innerWidth >= 1280) {
+    if (window.innerWidth >= 768) {
       // xl and above: use desktop sidebar behavior
       toggleSidebar();
     } else {
@@ -46,9 +46,8 @@ const AppHeader: React.FC = () => {
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Toggle Sidebar Button */}
           <button
-            className={`flex items-center justify-center w-10 h-10 lg:w-11 lg:h-11 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 xl:border ${
-              isMobileOpen ? "bg-gray-100 dark:bg-white/5" : ""
-            }`}
+            className={`flex items-center justify-center w-10 h-10 md:w-11 md:h-11 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 md:border ${isMobileOpen ? "bg-gray-100 dark:bg-white/5" : ""
+              }`}
             onClick={handleToggle}
             aria-label="Toggle Sidebar"
             aria-expanded={isMobileOpen}

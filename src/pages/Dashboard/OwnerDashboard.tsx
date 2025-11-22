@@ -106,7 +106,7 @@ export default function OwnerDashboard() {
       <div>
         <PageMeta title="Owner Dashboard | POS System" description="Restaurant management dashboard" />
         <PageBreadcrumb pageTitle="Owner Dashboard" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -124,7 +124,7 @@ export default function OwnerDashboard() {
     <div className="space-y-6">
       <PageMeta title="Owner Dashboard | POS System" description="Restaurant management dashboard" />
       <PageBreadcrumb pageTitle="Owner Dashboard" />
-      
+
       {/* Welcome Header */}
       <div className="bg-blue-500 text-white p-6 rounded-lg">
         <h1 className="text-2xl font-bold">Welcome back, {user?.name}!</h1>
@@ -141,11 +141,10 @@ export default function OwnerDashboard() {
           <button
             key={timeframe.key}
             onClick={() => setSelectedTimeframe(timeframe.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              selectedTimeframe === timeframe.key
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${selectedTimeframe === timeframe.key
                 ? 'bg-blue-500 text-white'
                 : 'bg-white text-gray-700 border hover:bg-gray-50'
-            }`}
+              }`}
           >
             {timeframe.label}
           </button>
@@ -153,7 +152,7 @@ export default function OwnerDashboard() {
       </div>
 
       {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Revenue */}
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
@@ -219,7 +218,7 @@ export default function OwnerDashboard() {
               <div key={hour.hour} className="flex items-center gap-3">
                 <div className="w-12 text-sm text-gray-600">{hour.hour}</div>
                 <div className="flex-1 bg-gray-200 rounded-full h-3 relative">
-                  <div 
+                  <div
                     className="bg-blue-500 h-3 rounded-full"
                     style={{ width: `${(hour.sales / 2500) * 100}%` }}
                   ></div>
@@ -277,7 +276,7 @@ export default function OwnerDashboard() {
       {/* Popular Items */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">🏆 Top Selling Items Today</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
           {extendedMockData.topItems.map((item, index) => (
             <div key={item.name} className="border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -296,36 +295,36 @@ export default function OwnerDashboard() {
       {/* Quick Actions */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">⚡ Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <button 
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <button
             onClick={() => navigate('/reports')}
             className="p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">📊</div>
             <div className="text-sm font-medium">View Reports</div>
           </button>
-          <button 
+          <button
             onClick={() => navigate('/tables/manage')}
             className="p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">🍽️</div>
             <div className="text-sm font-medium">Manage Tables</div>
           </button>
-          <button 
+          <button
             onClick={() => navigate('/owner/tables')}
             className="p-4 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">📊</div>
             <div className="text-sm font-medium">Table Analytics</div>
           </button>
-          <button 
+          <button
             onClick={() => navigate('/owner/staff')}
             className="p-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">👥</div>
             <div className="text-sm font-medium">Staff Management</div>
           </button>
-          <button 
+          <button
             onClick={() => navigate('/items')}
             className="p-4 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors hover:scale-105 transform duration-200"
           >
