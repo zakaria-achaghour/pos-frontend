@@ -22,11 +22,11 @@ const LayoutContent: React.FC = () => {
   // Determine if current page is table-related for enhanced styling
   const isTablePage = location.pathname.includes('/table');
 
-  // Check if user is kitchen staff for full-screen layout
-  const isKitchenStaff = user?.role === 'kitchen';
+  // Check if user is kitchen staff or waiter for full-screen layout
+  const isFullScreenRole = user?.role === 'kitchen' || user?.role === 'waiter';
 
-  // Full-screen layout for kitchen staff (header only, no sidebar)
-  if (isKitchenStaff) {
+  // Full-screen layout for kitchen staff and waiters (header only, no sidebar)
+  if (isFullScreenRole) {
     return (
       <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark'
         ? 'bg-gray-900 text-white'

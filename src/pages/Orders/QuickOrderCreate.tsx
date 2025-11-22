@@ -33,7 +33,7 @@ export default function QuickOrderCreate() {
   const [categories, setCategories] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
-  
+
   // Order states
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTable, setSelectedTable] = useState<number | ''>(preSelectedTableId || '');
@@ -42,7 +42,7 @@ export default function QuickOrderCreate() {
   const [priority, setPriority] = useState<'normal' | 'high' | 'urgent'>('normal');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // UI states
   const [loading, setLoading] = useState(true); // Initial bootstrap only
   const [itemsLoading, setItemsLoading] = useState(false); // Category/item fetching
@@ -50,7 +50,7 @@ export default function QuickOrderCreate() {
   const [error, setError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Payment states (for pay-at-creation scenarios)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | null>(null);
@@ -63,7 +63,7 @@ export default function QuickOrderCreate() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch categories and tables in parallel
       const [categoriesResponse, tablesResponse] = await Promise.all([
         menuAPI.getCategories({ is_active: true }), // Only get active categories
@@ -73,7 +73,7 @@ export default function QuickOrderCreate() {
       // Handle categories response
       const categoriesData = categoriesResponse.data || [];
       setCategories(categoriesData);
-      
+
       // Fetch all active menu items initially (for "All" category)
       await fetchMenuItems(null);
 
@@ -94,20 +94,20 @@ export default function QuickOrderCreate() {
   const fetchMenuItems = async (categoryId: number | null) => {
     try {
       setItemsLoading(true); // Use separate flag for item fetching
-      
+
       // Build filters
       const filters: any = {
         is_active: true, // Only get active items
       };
-      
+
       // Add category filter if specific category is selected
       if (categoryId !== null) {
         filters.category_id = categoryId;
       }
-      
+
       const menuResponse = await menuAPI.getItems(filters);
       const menuData = menuResponse.data || [];
-      
+
       setMenuItems(menuData);
     } catch (err) {
       console.error('Failed to fetch menu items:', err);
@@ -126,35 +126,29 @@ export default function QuickOrderCreate() {
 
   const filteredItems = useMemo(() => {
     let filtered = menuItems;
-    
+
     // Search filter (local filtering on already fetched items)
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(term)
       );
     }
-    
+
     return filtered;
   }, [menuItems, searchTerm]);
 
-  // Open modal when clicking on item
-  const handleItemClick = useCallback((item: MenuItem) => {
-    setSelectedItem(item);
-    setIsModalOpen(true);
-  }, []);
-
-  // Add item to cart from modal
+  // Add item to cart
   const addToCart = useCallback((
-    item: MenuItem, 
-    quantity: number, 
+    item: MenuItem,
+    quantity: number,
     specialInstructions?: string,
     removedIngredients?: string[],
     addedExtras?: string[]
   ) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => 
-        cartItem.menu_item_id === item.id && 
+      const existingItem = prevCart.find(cartItem =>
+        cartItem.menu_item_id === item.id &&
         cartItem.special_instructions === specialInstructions &&
         JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
         JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
@@ -162,10 +156,10 @@ export default function QuickOrderCreate() {
 
       if (existingItem) {
         return prevCart.map(cartItem =>
-          cartItem.menu_item_id === item.id && 
-          cartItem.special_instructions === specialInstructions &&
-          JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
-          JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
+          cartItem.menu_item_id === item.id &&
+            cartItem.special_instructions === specialInstructions &&
+            JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
+            JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
             ? { ...cartItem, quantity: cartItem.quantity + quantity }
             : cartItem
         );
@@ -182,6 +176,17 @@ export default function QuickOrderCreate() {
         return [...prevCart, newItem];
       }
     });
+  }, []);
+
+  // Quick Add: Add item directly to cart when clicking
+  const handleItemClick = useCallback((item: MenuItem) => {
+    addToCart(item, 1);
+  }, [addToCart]);
+
+  // Customize: Open modal for customization
+  const handleItemCustomize = useCallback((item: MenuItem) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
   }, []);
 
   const closeModal = useCallback(() => {
@@ -259,11 +264,11 @@ export default function QuickOrderCreate() {
           menu_item_id: item.menu_item_id,
           quantity: item.quantity,
           special_instructions: item.special_instructions || undefined,
-          removed_ingredients: item.removed_ingredients && item.removed_ingredients.length > 0 
-            ? item.removed_ingredients 
+          removed_ingredients: item.removed_ingredients && item.removed_ingredients.length > 0
+            ? item.removed_ingredients
             : undefined,
-          added_extras: item.added_extras && item.added_extras.length > 0 
-            ? item.added_extras 
+          added_extras: item.added_extras && item.added_extras.length > 0
+            ? item.added_extras
             : undefined,
         })),
       };
@@ -276,13 +281,23 @@ export default function QuickOrderCreate() {
 
       await orderAPI.createOrder(orderData);
 
-      navigate('/orders', {
-        state: { 
-          successMessage: collectPaymentNow 
-            ? 'Order created and payment collected!' 
-            : 'Order created successfully!' 
-        }
-      });
+      if (user?.role === 'waiter') {
+        navigate('/tables', {
+          state: {
+            message: collectPaymentNow
+              ? 'Order created and payment collected!'
+              : 'Order created successfully!'
+          }
+        });
+      } else {
+        navigate('/orders', {
+          state: {
+            successMessage: collectPaymentNow
+              ? 'Order created and payment collected!'
+              : 'Order created successfully!'
+          }
+        });
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create order');
     } finally {
@@ -294,7 +309,7 @@ export default function QuickOrderCreate() {
     setCollectPaymentNow(collectNow);
     setPaymentMethod(method || null);
     setShowPaymentModal(false);
-    
+
     if (collectNow) {
       // Proceed with order creation including payment
       handleSubmit();
@@ -367,10 +382,11 @@ export default function QuickOrderCreate() {
 
           {/* Menu Items Grid */}
           <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
-            <MenuItemsGrid 
+            <MenuItemsGrid
               items={filteredItems}
               loading={itemsLoading}
               onAddToCart={handleItemClick}
+              onCustomize={handleItemCustomize}
             />
           </div>
         </div>
@@ -431,7 +447,7 @@ export default function QuickOrderCreate() {
             <p className="text-gray-600 mb-6">
               For {orderType} orders, you can collect payment immediately or let the customer pay later.
             </p>
-            
+
             <div className="space-y-3 mb-6">
               <button
                 onClick={() => handlePaymentDecision(true, 'cash')}
