@@ -101,18 +101,8 @@ export interface MenuItemFormData {
   preparation_time?: number; // backward compatibility
   preparationTime?: number;
   ingredients: string | string[]; // backward compatibility - can be string or array
-  allergens: string | string[]; // backward compatibility - can be string or array
-  isVegetarian?: boolean;
-  isVegan?: boolean;
-  isGlutenFree?: boolean;
-  isSpicy?: boolean;
-  spiceLevel?: number;
-  tags?: string[];
+  allergens?: string | string[];
 }
-
-// ============================================
-// MENU API TYPES
-// ============================================
 
 // API-specific interfaces (from api/menu.ts)
 export interface CreateCategoryData {
@@ -122,7 +112,7 @@ export interface CreateCategoryData {
   sort_order?: number;
 }
 
-export interface UpdateCategoryData extends Partial<CreateCategoryData> {}
+export interface UpdateCategoryData extends Partial<CreateCategoryData> { }
 
 export interface CreateMenuItemData {
   category_id: number;
@@ -138,7 +128,7 @@ export interface CreateMenuItemData {
   sort_order?: number;
 }
 
-export interface UpdateMenuItemData extends Partial<CreateMenuItemData> {}
+export interface UpdateMenuItemData extends Partial<CreateMenuItemData> { }
 
 // API Filter interfaces
 export interface CategoryFilters {
@@ -186,12 +176,12 @@ export interface MenuItemsResponse {
 }
 
 // Create/Update request interfaces
-export interface CreateMenuItemRequest extends Omit<MenuItemFormData, 'id'> {}
+export interface CreateMenuItemRequest extends Omit<MenuItemFormData, 'id'> { }
 export interface UpdateMenuItemRequest extends Partial<CreateMenuItemRequest> {
   id: number;
 }
 
-export interface CreateCategoryRequest extends Omit<CategoryFormData, 'id'> {}
+export interface CreateCategoryRequest extends Omit<CategoryFormData, 'id'> { }
 export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {
   id: number;
 }
@@ -276,6 +266,7 @@ export interface MenuItemFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   categories: Category[];
+  serverErrors?: Record<string, string[]>;
 }
 
 export interface MenuItemModalProps {

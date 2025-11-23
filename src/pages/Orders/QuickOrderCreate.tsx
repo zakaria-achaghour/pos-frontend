@@ -21,6 +21,7 @@ interface CartItem {
   special_instructions?: string;
   removed_ingredients?: string[];
   added_extras?: string[];
+  originalItem: MenuItem;
 }
 
 export default function QuickOrderCreate() {
@@ -41,7 +42,14 @@ export default function QuickOrderCreate() {
   const [customerName, setCustomerName] = useState('');
   const [priority, setPriority] = useState<'normal' | 'high' | 'urgent'>('normal');
   const [cart, setCart] = useState<CartItem[]>([]);
+
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 12;
 
   // UI states
   const [loading, setLoading] = useState(true); // Initial bootstrap only
@@ -50,6 +58,7 @@ export default function QuickOrderCreate() {
   const [error, setError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCartItemIndex, setEditingCartItemIndex] = useState<number | null>(null);
 
   // Payment states (for pay-at-creation scenarios)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -75,7 +84,8 @@ export default function QuickOrderCreate() {
       setCategories(categoriesData);
 
       // Fetch all active menu items initially (for "All" category)
-      await fetchMenuItems(null);
+      // fetchMenuItems(null); // Removed explicit call here as useEffect for searchTerm will trigger it initially or we call it explicitly with defaults
+      await fetchMenuItems(null, 1, '', true);
 
       // Handle tables
       const tablesData = Array.isArray(tablesResponse) ? tablesResponse : tablesResponse.data || [];
@@ -91,29 +101,85 @@ export default function QuickOrderCreate() {
     }
   };
 
-  const fetchMenuItems = async (categoryId: number | null) => {
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchMenuItems(selectedCategory, 1, searchTerm, true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  const fetchMenuItems = async (
+    categoryId: number | null,
+    pageNum: number = 1,
+    search: string = '',
+    reset: boolean = false
+  ) => {
     try {
-      setItemsLoading(true); // Use separate flag for item fetching
+      if (pageNum === 1) {
+        setItemsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
 
       // Build filters
       const filters: any = {
-        is_active: true, // Only get active items
+        is_active: true,
+        page: pageNum,
+        limit: ITEMS_PER_PAGE,
       };
 
-      // Add category filter if specific category is selected
       if (categoryId !== null) {
         filters.category_id = categoryId;
       }
 
-      const menuResponse = await menuAPI.getItems(filters);
-      const menuData = menuResponse.data || [];
+      if (search) {
+        filters.search = search;
+      }
 
-      setMenuItems(menuData);
+      const menuResponse = await menuAPI.getItems(filters);
+
+      // Handle response format (support both array and paginated object)
+      let newItems: MenuItem[] = [];
+      let totalItems = 0;
+
+      if (Array.isArray(menuResponse)) {
+        // Fallback for array response (shouldn't happen with updated API but good for safety)
+        newItems = menuResponse;
+        totalItems = menuResponse.length;
+      } else {
+        newItems = menuResponse.data || [];
+        totalItems = menuResponse.total || 0;
+      }
+
+      if (reset) {
+        setMenuItems(newItems);
+      } else {
+        setMenuItems(prev => [...prev, ...newItems]);
+      }
+
+      // Check if we have more items
+      // If we got fewer items than limit, or if total items reached
+      const currentCount = reset ? newItems.length : menuItems.length + newItems.length;
+      setHasMore(newItems.length === ITEMS_PER_PAGE && currentCount < totalItems);
+
     } catch (err) {
       console.error('Failed to fetch menu items:', err);
       setError('Failed to load menu items');
     } finally {
       setItemsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const loadMoreItems = () => {
+    if (!itemsLoading && !isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchMenuItems(selectedCategory, nextPage, searchTerm, false);
     }
   };
 
@@ -121,22 +187,12 @@ export default function QuickOrderCreate() {
   const handleCategoryChange = useCallback((categoryId: number | null) => {
     setSelectedCategory(categoryId);
     setSearchTerm(''); // Clear search when changing category
-    fetchMenuItems(categoryId);
+    setPage(1);
+    fetchMenuItems(categoryId, 1, '', true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredItems = useMemo(() => {
-    let filtered = menuItems;
-
-    // Search filter (local filtering on already fetched items)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(term)
-      );
-    }
-
-    return filtered;
-  }, [menuItems, searchTerm]);
+  // Removed local filtering since we now do server-side filtering
+  const filteredItems = menuItems;
 
   // Add item to cart
   const addToCart = useCallback((
@@ -147,22 +203,37 @@ export default function QuickOrderCreate() {
     addedExtras?: string[]
   ) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem =>
+      // If editing, replace the item at the specific index
+      if (editingCartItemIndex !== null) {
+        const newCart = [...prevCart];
+        newCart[editingCartItemIndex] = {
+          menu_item_id: item.id,
+          name: item.name,
+          price: Number(item.price),
+          quantity: quantity,
+          ...(specialInstructions && { special_instructions: specialInstructions }),
+          ...(removedIngredients && removedIngredients.length > 0 && { removed_ingredients: removedIngredients }),
+          ...(addedExtras && addedExtras.length > 0 && { added_extras: addedExtras }),
+          originalItem: item
+        };
+        return newCart;
+      }
+
+      // Normal add logic
+      const existingItemIndex = prevCart.findIndex(cartItem =>
         cartItem.menu_item_id === item.id &&
         cartItem.special_instructions === specialInstructions &&
         JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
         JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
       );
 
-      if (existingItem) {
-        return prevCart.map(cartItem =>
-          cartItem.menu_item_id === item.id &&
-            cartItem.special_instructions === specialInstructions &&
-            JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
-            JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
-            ? { ...cartItem, quantity: cartItem.quantity + quantity }
-            : cartItem
-        );
+      if (existingItemIndex !== -1) {
+        const newCart = [...prevCart];
+        newCart[existingItemIndex] = {
+          ...newCart[existingItemIndex],
+          quantity: newCart[existingItemIndex].quantity + quantity
+        };
+        return newCart;
       } else {
         const newItem: CartItem = {
           menu_item_id: item.id,
@@ -171,12 +242,16 @@ export default function QuickOrderCreate() {
           quantity: quantity,
           ...(specialInstructions && { special_instructions: specialInstructions }),
           ...(removedIngredients && removedIngredients.length > 0 && { removed_ingredients: removedIngredients }),
-          ...(addedExtras && addedExtras.length > 0 && { added_extras: addedExtras })
+          ...(addedExtras && addedExtras.length > 0 && { added_extras: addedExtras }),
+          originalItem: item
         };
         return [...prevCart, newItem];
       }
     });
-  }, []);
+
+    // Reset editing state
+    setEditingCartItemIndex(null);
+  }, [editingCartItemIndex]);
 
   // Quick Add: Add item directly to cart when clicking
   const handleItemClick = useCallback((item: MenuItem) => {
@@ -186,12 +261,23 @@ export default function QuickOrderCreate() {
   // Customize: Open modal for customization
   const handleItemCustomize = useCallback((item: MenuItem) => {
     setSelectedItem(item);
+    setEditingCartItemIndex(null); // Ensure we are not in edit mode
     setIsModalOpen(true);
   }, []);
+
+  const handleEditCartItem = useCallback((index: number) => {
+    const itemToEdit = cart[index];
+    if (itemToEdit && itemToEdit.originalItem) {
+      setSelectedItem(itemToEdit.originalItem);
+      setEditingCartItemIndex(index);
+      setIsModalOpen(true);
+    }
+  }, [cart]);
 
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedItem(null);
+    setEditingCartItemIndex(null);
   }, []);
 
   const updateQuantity = useCallback((menu_item_id: number, newQuantity: number) => {
@@ -381,13 +467,39 @@ export default function QuickOrderCreate() {
           />
 
           {/* Menu Items Grid */}
-          <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
+          <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4" id="menu-items-container">
             <MenuItemsGrid
               items={filteredItems}
-              loading={itemsLoading}
+              loading={itemsLoading && page === 1}
               onAddToCart={handleItemClick}
               onCustomize={handleItemCustomize}
             />
+
+            {/* Load More Button */}
+            {hasMore && !itemsLoading && (
+              <div className="mt-6 flex justify-center pb-4">
+                <button
+                  onClick={loadMoreItems}
+                  disabled={isLoadingMore}
+                  className="px-6 py-2 bg-white border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Items'
+                  )}
+                </button>
+              </div>
+            )}
+
+            {!hasMore && filteredItems.length > 0 && (
+              <div className="mt-6 text-center text-sm text-gray-500 pb-4">
+                No more items to load
+              </div>
+            )}
           </div>
         </div>
 
@@ -397,6 +509,7 @@ export default function QuickOrderCreate() {
             cart={cart}
             onUpdateQuantity={updateQuantity}
             onRemoveItem={removeFromCart}
+            onEditItem={handleEditCartItem}
             onPlaceOrder={handleSubmit}
             loading={submitting}
           />
@@ -435,6 +548,13 @@ export default function QuickOrderCreate() {
         isOpen={isModalOpen}
         onClose={closeModal}
         onAdd={addToCart}
+        initialValues={editingCartItemIndex !== null ? {
+          quantity: cart[editingCartItemIndex].quantity,
+          specialInstructions: cart[editingCartItemIndex].special_instructions,
+          removedIngredients: cart[editingCartItemIndex].removed_ingredients,
+          addedExtras: cart[editingCartItemIndex].added_extras
+        } : undefined}
+        mode={editingCartItemIndex !== null ? 'edit' : 'add'}
       />
 
       {/* Payment Collection Modal (for takeout/delivery) */}

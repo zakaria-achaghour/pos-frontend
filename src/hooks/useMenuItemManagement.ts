@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { menuAPI } from '../api/menu';
-import type { 
+import type {
   MenuItem,
   Category,
-  CreateMenuItemData, 
-  UpdateMenuItemData,
+  MenuItemFormData,
   MenuItemFilter,
   MenuItemStats,
   PaginationInfo,
@@ -20,7 +19,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  
+
   // UI State
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<MenuItemFilter>('all');
@@ -87,10 +86,10 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
       if (availabilityFilter !== 'all') params.is_available = availabilityFilter === 'available';
 
       const response = await menuAPI.getItems(params);
-      
+
       const itemsData = Array.isArray(response) ? response : response.data || [];
       setMenuItems(itemsData);
-      
+
       // Calculate stats
       const stats: MenuItemStats = {
         total: itemsData.length,
@@ -128,7 +127,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
 
     // Apply filters
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         statusFilter === 'active' ? item.is_active : !item.is_active
       );
     }
@@ -138,7 +137,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
     }
 
     if (availabilityFilter !== 'all') {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         availabilityFilter === 'available' ? item.is_available : !item.is_available
       );
     }
@@ -164,13 +163,30 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
   };
 
   // Create menu item
-  const createMenuItem = async (data: CreateMenuItemData) => {
+  const createMenuItem = async (data: MenuItemFormData) => {
     setLoading(true);
     setError(null);
     setValidationErrors({});
     try {
+      // Create item first
       const newItem = await menuAPI.createItem(data);
-      setMenuItems(prev => [newItem, ...prev]);
+
+      // If there's an image file, upload it
+      if (data.imageFile) {
+        try {
+          await menuAPI.uploadItemImage(newItem.id, data.imageFile);
+          // Refresh to get the image URL
+          const updatedItem = await menuAPI.getItem(newItem.id);
+          setMenuItems(prev => [updatedItem, ...prev]);
+        } catch (imageErr) {
+          console.error('Failed to upload image:', imageErr);
+          // Still add the item but maybe show a warning?
+          setMenuItems(prev => [newItem, ...prev]);
+        }
+      } else {
+        setMenuItems(prev => [newItem, ...prev]);
+      }
+
       setSuccessMessage(`Menu item "${data.name}" created successfully!`);
       await fetchMenuItems();
     } catch (err: any) {
@@ -185,13 +201,30 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
   };
 
   // Update menu item
-  const updateMenuItem = async (id: number, data: UpdateMenuItemData) => {
+  const updateMenuItem = async (id: number, data: MenuItemFormData) => {
     setLoading(true);
     setError(null);
     setValidationErrors({});
     try {
+      // Update item details
       const updatedItem = await menuAPI.updateItem(id, data);
-      setMenuItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+
+      // If there's an image file, upload it
+      if (data.imageFile) {
+        try {
+          await menuAPI.uploadItemImage(id, data.imageFile);
+          // Refresh to get the new image URL
+          const refreshedItem = await menuAPI.getItem(id);
+          setMenuItems(prev => prev.map(item => item.id === id ? refreshedItem : item));
+        } catch (imageErr) {
+          console.error('Failed to upload image:', imageErr);
+          // Still update the item details
+          setMenuItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+        }
+      } else {
+        setMenuItems(prev => prev.map(item => item.id === id ? updatedItem : item));
+      }
+
       setSuccessMessage(`Menu item "${data.name}" updated successfully!`);
       if (editingMenuItem?.id === id) {
         setEditingMenuItem(null);
@@ -231,7 +264,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
     setError(null);
     try {
       await menuAPI.updateItem(id, { is_active: isActive });
-      setMenuItems(prev => prev.map(item => 
+      setMenuItems(prev => prev.map(item =>
         item.id === id ? { ...item, is_active: isActive } : item
       ));
       setSuccessMessage(`Menu item ${isActive ? 'activated' : 'deactivated'} successfully!`);
@@ -250,7 +283,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
     setError(null);
     try {
       await menuAPI.updateItem(id, { is_available: isAvailable });
-      setMenuItems(prev => prev.map(item => 
+      setMenuItems(prev => prev.map(item =>
         item.id === id ? { ...item, is_available: isAvailable } : item
       ));
       setSuccessMessage(`Menu item marked as ${isAvailable ? 'available' : 'unavailable'}!`);

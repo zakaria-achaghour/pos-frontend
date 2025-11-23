@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { useAuth } from '@/hooks/useAuthRedux';
 import type { Order } from '@/types/order';
+import { getOrderStatusColor, getKitchenStatusIcon } from '@/utils/orderStatus';
 
 export const ActiveOrdersList: React.FC = () => {
     const navigate = useNavigate();
@@ -46,25 +47,7 @@ export const ActiveOrdersList: React.FC = () => {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'ready': return 'bg-green-100 text-green-800 border-green-200';
-            case 'served': return 'bg-gray-100 text-gray-800 border-gray-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
 
-    const getStatusEmoji = (status: string) => {
-        switch (status) {
-            case 'pending': return '⏳';
-            case 'preparing': return '👨‍🍳';
-            case 'ready': return '✅';
-            case 'served': return '🍽️';
-            default: return '📦';
-        }
-    };
 
     if (loading && activeOrders.length === 0) {
         return (
@@ -113,7 +96,7 @@ export const ActiveOrdersList: React.FC = () => {
                 <div
                     key={order.id}
                     onClick={() => navigate(`/orders/${order.id}`)}
-                    className={`bg-white rounded-xl shadow-sm border-2 p-4 cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${getStatusColor(order.status).replace('bg-', 'border-').replace('text-', 'border-opacity-50 ')}`}
+                    className={`bg-white rounded-xl shadow-sm border-2 p-4 cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${getOrderStatusColor(order.status).replace('bg-', 'border-').replace('text-', 'border-opacity-50 ')}`}
                 >
                     <div className="flex justify-between items-start mb-3">
                         <div>
@@ -121,8 +104,8 @@ export const ActiveOrdersList: React.FC = () => {
                                 <span className="font-bold text-lg text-gray-900">
                                     Order #{order.orderNumber || order.id}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
-                                    {getStatusEmoji(order.status)} {order.status.toUpperCase()}
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${getOrderStatusColor(order.status)}`}>
+                                    {getKitchenStatusIcon(order.status)} {order.status.toUpperCase()}
                                 </span>
                             </div>
                             <div className="text-sm text-gray-600">

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
-import PageMeta from '../../components/common/PageMeta';
-import PageBreadcrumb from '../../components/common/PageBreadCrumb';
-import Button from '../../components/ui/button/Button';
-import { getUser } from '../../app/auth';
 import { orderAPI } from '@/api/orders';
 import { downloadReceipt, printReceipt } from '@/api/receipts';
+import {
+  getOrderStatusColor,
+  getPaymentStatusColor,
+  getKitchenStatusIcon
+} from '@/utils/orderStatus';
+import PaymentModal from '@/components/pos/orders/PaymentModal';
 
 // Backend response structure (snake_case)
 interface BackendOrderItem {
@@ -63,9 +63,8 @@ interface BackendOrder {
 // Toast notification function
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
   const toast = document.createElement('div');
-  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium transition-all ${
-    type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-  }`;
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium transition-all ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+    }`;
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => {
@@ -81,62 +80,8 @@ export default function OrderDetails() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [receiptLoading, setReceiptLoading] = useState<'download' | 'print' | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const user = getUser();
-
-  // Get order status styling
-  const getOrderStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-gray-100 text-gray-800';
-      case 'accepted':
-        return 'bg-blue-100 text-blue-800';
-      case 'preparing':
-        return 'bg-orange-100 text-orange-800';
-      case 'ready':
-        return 'bg-purple-100 text-purple-800';
-      case 'served':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get payment status styling
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      case 'refunded':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getKitchenStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return '⏳';
-      case 'preparing':
-        return '👨‍🍳';
-      case 'ready':
-        return '✅';
-      case 'served':
-        return '🍽️';
-      default:
-        return '❓';
-    }
-  };
 
   const fetchOrder = async () => {
     try {
@@ -159,41 +104,26 @@ export default function OrderDetails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleCloseOrder = async () => {
-    try {
-      setProcessing(true);
-      if (!order) return;
-      
-      await orderAPI.closeOrder(order.id, {
-        payment_method: 'cash',
-        amount_paid: parseFloat(order.total)
-      });
-      
-      showToast('Payment processed successfully', 'success');
-      fetchOrder(); // Refresh order data
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      showToast('Failed to process payment', 'error');
-    } finally {
-      setProcessing(false);
-    }
+  const handlePaymentRequest = () => {
+    setIsPaymentModalOpen(true);
   };
 
-  const handleCardPayment = async () => {
+  const handleConfirmPayment = async (orderId: number, paymentData: {
+    payment_method: string;
+    payment_status: string;
+    amount_received?: number;
+    tip_amount?: number;
+    discount_amount?: number;
+  }) => {
     try {
       setProcessing(true);
-      if (!order) return;
-      
-      await orderAPI.closeOrder(order.id, {
-        payment_method: 'card',
-        amount_paid: parseFloat(order.total)
-      });
-      
-      showToast('Card payment processed successfully', 'success');
+      await orderAPI.updatePayment(orderId, paymentData);
+      showToast('Payment processed successfully', 'success');
+      setIsPaymentModalOpen(false);
       fetchOrder(); // Refresh order data
-    } catch (error) {
-      console.error('Error processing card payment:', error);
-      showToast('Failed to process card payment', 'error');
+    } catch (error: any) {
+      console.error('Payment update failed:', error);
+      showToast(error.response?.data?.message || 'Failed to process payment', 'error');
     } finally {
       setProcessing(false);
     }
@@ -203,7 +133,7 @@ export default function OrderDetails() {
     try {
       setProcessing(true);
       if (!order) return;
-      
+
       await orderAPI.updateOrderStatus(order.id, newStatus);
       showToast(`Order status updated to ${newStatus}`, 'success');
       fetchOrder(); // Refresh order data
@@ -246,15 +176,15 @@ export default function OrderDetails() {
   const canProcessPayment = () => {
     // Check if payment is not completed (paid_at is null or payment_method is null)
     return !order?.paid_at &&
-           user &&
-           ['owner', 'manager', 'cashier'].includes(user.role);
+      user &&
+      ['owner', 'manager', 'cashier'].includes(user.role);
   };
 
   const isReceiptAvailable = () => {
     // Receipt is available if order is completed or paid
-    return order?.paid_at || 
-           order?.status === 'completed' || 
-           order?.status === 'served';
+    return order?.paid_at ||
+      order?.status === 'completed' ||
+      order?.status === 'served';
   };
 
   const getPaymentStatus = () => {
@@ -324,7 +254,7 @@ export default function OrderDetails() {
     <div>
       <PageMeta title={`Order #${order.id} | POS System`} description="View order details" />
       <PageBreadcrumb pageTitle={`Order #${order.id}`} />
-      
+
       <div className="space-y-6">
         {/* Order Header */}
         <div className="bg-white rounded-xl shadow p-6">
@@ -344,7 +274,7 @@ export default function OrderDetails() {
               </span>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Table:</span>
@@ -366,11 +296,10 @@ export default function OrderDetails() {
 
           {order.priority && order.priority !== 'normal' && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                order.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${order.priority === 'urgent' ? 'bg-red-100 text-red-800' :
                 order.priority === 'high' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
+                  'bg-blue-100 text-blue-800'
+                }`}>
                 {order.priority === 'urgent' ? '🔴' : order.priority === 'high' ? '🟡' : '🔵'} Priority: {order.priority.toUpperCase()}
               </span>
             </div>
@@ -397,21 +326,21 @@ export default function OrderDetails() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-500">{parseFloat(item.unit_price).toFixed(2)} MAD each</p>
-                      
+
                       {/* Special Instructions */}
                       {item.special_instructions && (
                         <p className="text-sm text-blue-600 mt-2">
                           <span className="font-medium">📝 Note:</span> {item.special_instructions}
                         </p>
                       )}
-                      
+
                       {/* Removed Ingredients */}
                       {item.removed_ingredients && item.removed_ingredients.length > 0 && (
                         <p className="text-sm text-red-600 mt-2">
                           <span className="font-medium">❌ No:</span> {item.removed_ingredients.join(', ')}
                         </p>
                       )}
-                      
+
                       {/* Added Extras */}
                       {item.added_extras && item.added_extras.length > 0 && (
                         <p className="text-sm text-green-600 mt-2">
@@ -429,7 +358,7 @@ export default function OrderDetails() {
                 </div>
               ))}
             </div>
-            
+
             {/* Order Summary */}
             <div className="border-t border-gray-200 pt-6 mt-6 space-y-2">
               <div className="flex justify-between items-center text-sm">
@@ -457,67 +386,67 @@ export default function OrderDetails() {
         </div>
 
         {/* Order Status Actions */}
-        {user && ['owner', 'manager', 'waiter'].includes(user.role) && 
-         order.status !== 'completed' && order.status !== 'cancelled' && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Update Order Status</h3>
-            <div className="flex flex-wrap gap-3">
-              {order.status === 'pending' && (
+        {user && ['owner', 'manager', 'waiter'].includes(user.role) &&
+          order.status !== 'completed' && order.status !== 'cancelled' && (
+            <div className="bg-white rounded-xl shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Update Order Status</h3>
+              <div className="flex flex-wrap gap-3">
+                {order.status === 'pending' && (
+                  <Button
+                    onClick={() => handleUpdateStatus('accepted')}
+                    disabled={processing}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    ✅ Accept Order
+                  </Button>
+                )}
+                {(order.status === 'accepted' || order.status === 'pending') && (
+                  <Button
+                    onClick={() => handleUpdateStatus('preparing')}
+                    disabled={processing}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    👨‍🍳 Start Preparing
+                  </Button>
+                )}
+                {order.status === 'preparing' && (
+                  <Button
+                    onClick={() => handleUpdateStatus('ready')}
+                    disabled={processing}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    ✅ Mark Ready
+                  </Button>
+                )}
+                {order.status === 'ready' && (
+                  <Button
+                    onClick={() => handleUpdateStatus('served')}
+                    disabled={processing}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    🍽️ Mark Served
+                  </Button>
+                )}
+                {order.status === 'served' && order.paid_at && (
+                  <Button
+                    onClick={() => handleUpdateStatus('completed')}
+                    disabled={processing}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    ✓ Complete Order
+                  </Button>
+                )}
                 <Button
-                  onClick={() => handleUpdateStatus('accepted')}
+                  onClick={() => handleUpdateStatus('cancelled')}
                   disabled={processing}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  variant="outline"
+                  className="border-red-300 text-red-600 hover:bg-red-50"
                 >
-                  ✅ Accept Order
+                  ❌ Cancel Order
                 </Button>
-              )}
-              {(order.status === 'accepted' || order.status === 'pending') && (
-                <Button
-                  onClick={() => handleUpdateStatus('preparing')}
-                  disabled={processing}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  👨‍🍳 Start Preparing
-                </Button>
-              )}
-              {order.status === 'preparing' && (
-                <Button
-                  onClick={() => handleUpdateStatus('ready')}
-                  disabled={processing}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  ✅ Mark Ready
-                </Button>
-              )}
-              {order.status === 'ready' && (
-                <Button
-                  onClick={() => handleUpdateStatus('served')}
-                  disabled={processing}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  🍽️ Mark Served
-                </Button>
-              )}
-              {order.status === 'served' && order.paid_at && (
-                <Button
-                  onClick={() => handleUpdateStatus('completed')}
-                  disabled={processing}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  ✓ Complete Order
-                </Button>
-              )}
-              <Button
-                onClick={() => handleUpdateStatus('cancelled')}
-                disabled={processing}
-                variant="outline"
-                className="border-red-300 text-red-600 hover:bg-red-50"
-              >
-                ❌ Cancel Order
-              </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Receipt Actions */}
         {isReceiptAvailable() && (
@@ -563,23 +492,27 @@ export default function OrderDetails() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Actions</h3>
             <div className="flex gap-3">
               <Button
-                onClick={handleCloseOrder}
+                onClick={handlePaymentRequest}
                 disabled={processing}
-                className="bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
               >
-                {processing ? 'Processing...' : '💵 Cash Payment'}
-              </Button>
-              <Button
-                onClick={handleCardPayment}
-                disabled={processing}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                💳 Card Payment
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {processing ? 'Processing...' : `Process Payment (${parseFloat(order.total).toFixed(2)} MAD)`}
               </Button>
             </div>
           </div>
         )}
       </div>
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        order={order}
+        onConfirm={handleConfirmPayment}
+      />
     </div>
+
   );
 }
