@@ -6,9 +6,10 @@ interface MenuItemsGridProps {
   items: MenuItem[];
   loading: boolean;
   onAddToCart: (item: MenuItem) => void;
+  onCustomize: (item: MenuItem) => void;
 }
 
-const MenuItemsGridComponent: React.FC<MenuItemsGridProps> = ({ items, loading, onAddToCart }) => {
+const MenuItemsGridComponent: React.FC<MenuItemsGridProps> = ({ items, loading, onAddToCart, onCustomize }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -33,10 +34,11 @@ const MenuItemsGridComponent: React.FC<MenuItemsGridProps> = ({ items, loading, 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-5">
       {items.map(item => (
-        <MenuItemCard 
-          key={item.id} 
-          item={item} 
+        <MenuItemCard
+          key={item.id}
+          item={item}
           onAddToCart={onAddToCart}
+          onCustomize={onCustomize}
         />
       ))}
     </div>

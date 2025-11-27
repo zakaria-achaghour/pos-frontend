@@ -417,10 +417,13 @@ export function useStaffManagement(): UseStaffManagementReturn {
       console.log('🔍 Fetching available roles from API...');
       const response = await rolesAPI.getRoles({ per_page: 100 }); // Get all roles without pagination
       
-      const roles = response.data.map((role) => ({
-        name: role.name.toLowerCase(),
-        label: role.name,
-      }));
+      const excludedRoles = new Set(['superadmin', 'owner']);
+      const roles = response.data
+        .filter((role) => !excludedRoles.has(role.name?.toLowerCase?.() || ''))
+        .map((role) => ({
+          name: role.name.toLowerCase(),
+          label: role.name,
+        }));
       
       console.log('📡 Available roles:', roles);
       setAvailableRoles(roles);

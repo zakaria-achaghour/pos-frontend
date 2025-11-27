@@ -8,7 +8,7 @@ import Label from '../../components/form/Label';
 import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
 import { restaurantAPI } from '../../api/restaurants';
-import type { Restaurant, UpdateRestaurantData } from '../../api/restaurants';
+import type { Restaurant, UpdateRestaurantData } from '@/types/restaurant';
 
 export default function EditRestaurant() {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ export default function EditRestaurant() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: UpdateRestaurantData) => ({
       ...prev,
       [name]: value
     }));

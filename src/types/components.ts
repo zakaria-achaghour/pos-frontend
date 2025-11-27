@@ -10,6 +10,8 @@
  * This file now only contains truly shared/common UI component props.
  */
 
+import type { PaginationInfo } from './pagination';
+
 // ============================================
 // COMMON UI COMPONENT PROPS
 // ============================================
@@ -23,13 +25,6 @@ export interface PaginationProps {
   onItemsPerPageChange?: (items: number) => void;
   showItemsPerPage?: boolean;
   className?: string;
-}
-
-export interface PaginationInfo {
-  currentPage: number;
-  lastPage: number;
-  perPage: number;
-  total: number;
 }
 
 // ============================================

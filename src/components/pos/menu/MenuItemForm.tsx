@@ -3,6 +3,7 @@ import type { MenuItemFormProps } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { MenuItemFormData, Category } from '@/types/menu';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface MenuItemFormProps {
   initialData?: Partial<MenuItemFormData>;
@@ -65,53 +66,36 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-6">
             {isEdit ? 'Edit Menu Item' : 'Create New Menu Item'}
           </h3>
-          
+
           <Formik
             initialValues={defaultValues}
             validationSchema={validationSchema}
-            onSubmit={async (values: MenuItemFormData) => {
-              await onSubmit(values);
-            }}
-            enableReinitialize
+            onSubmit={onSubmit}
           >
             {({ values, errors, touched, isSubmitting }) => (
-              <Form className="space-y-4">
-                {/* Server Errors */}
-                {serverErrors && Object.keys(serverErrors).length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <div className="text-sm text-red-800">
-                      {Object.entries(serverErrors).map(([field, messages]) => (
-                        <div key={field} className="mb-1">
-                          <strong>{field}:</strong> {messages.join(', ')}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Item Name */}
-                  <div className="md:col-span-2">
+              <Form className="space-y-6">
+                {/* Basic Info Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Name */}
+                  <div className="col-span-2">
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                       Item Name *
                     </label>
                     <Field
-                      id="name"
-                      name="name"
                       type="text"
-                      placeholder="e.g., Grilled Chicken Breast"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.name && touched.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      disabled={isSubmitting || isLoading}
+                      name="name"
+                      id="name"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.name && touched.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
+                      placeholder="e.g., Classic Burger"
                     />
-                    <ErrorMessage name="name" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="name" component="div" className="mt-1 text-sm text-red-500" />
                   </div>
 
                   {/* Price */}
@@ -119,20 +103,19 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
                     <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
                       Price (MAD) *
                     </label>
-                    <Field
-                      id="price"
-                      name="price"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max="9999.99"
-                      placeholder="0.00"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.price && touched.price ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      disabled={isSubmitting || isLoading}
-                    />
-                    <ErrorMessage name="price" component="div" className="text-red-600 text-sm mt-1" />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">MAD</span>
+                      <Field
+                        type="number"
+                        name="price"
+                        id="price"
+                        step="0.01"
+                        className={`w-full pl-12 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.price && touched.price ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          }`}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <ErrorMessage name="price" component="div" className="mt-1 text-sm text-red-500" />
                   </div>
 
                   {/* Category */}
@@ -142,126 +125,134 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
                     </label>
                     <Field
                       as="select"
-                      id="category_id"
                       name="category_id"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.category_id && touched.category_id ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      disabled={isSubmitting || isLoading}
+                      id="category_id"
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.category_id && touched.category_id ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
                     >
-                      <option value="">Select Category</option>
+                      <option value="">Select a category</option>
                       {activeCategories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
                       ))}
                     </Field>
-                    <ErrorMessage name="category_id" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="category_id" component="div" className="mt-1 text-sm text-red-500" />
                   </div>
+                </div>
 
-                  {/* Preparation Time */}
+                {/* Details Section */}
+                <div className="space-y-4">
+                  {/* Description */}
                   <div>
-                    <label htmlFor="preparation_time" className="block text-sm font-medium text-gray-700 mb-1">
-                      Prep Time (minutes)
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
                     </label>
                     <Field
-                      id="preparation_time"
-                      name="preparation_time"
-                      type="number"
-                      min="1"
-                      max="480"
-                      placeholder="15"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                        errors.preparation_time && touched.preparation_time ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      disabled={isSubmitting || isLoading}
+                      as="textarea"
+                      name="description"
+                      id="description"
+                      rows={3}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.description && touched.description ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                        }`}
+                      placeholder="Describe the dish..."
                     />
-                    <ErrorMessage name="preparation_time" component="div" className="text-red-600 text-sm mt-1" />
-                    <div className="text-xs text-gray-500 mt-1">
-                      {values.preparation_time ? `${values.preparation_time} minute${values.preparation_time !== 1 ? 's' : ''}` : 'Not specified'}
+                    <ErrorMessage name="description" component="div" className="mt-1 text-sm text-red-500" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Preparation Time */}
+                    <div>
+                      <label htmlFor="preparation_time" className="block text-sm font-medium text-gray-700 mb-1">
+                        Preparation Time (mins)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">⏱️</span>
+                        <Field
+                          type="number"
+                          name="preparation_time"
+                          id="preparation_time"
+                          className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${errors.preparation_time && touched.preparation_time ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                            }`}
+                          placeholder="15"
+                        />
+                      </div>
+                      <ErrorMessage name="preparation_time" component="div" className="mt-1 text-sm text-red-500" />
+                    </div>
+
+                    {/* Status Toggle */}
+                    <div className="flex items-center h-full pt-6">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <Field type="checkbox" name="is_active" className="sr-only peer" />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">
+                          {values.is_active ? 'Available for ordering' : 'Currently unavailable'}
+                        </span>
+                      </label>
                     </div>
                   </div>
 
-                  {/* Active Status */}
-                  <div className="flex items-center">
-                    <Field
-                      id="is_active"
-                      name="is_active"
-                      type="checkbox"
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      disabled={isSubmitting || isLoading}
-                    />
-                    <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
-                      Active (available for ordering)
-                    </label>
+                  {/* Additional Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Ingredients */}
+                    <div>
+                      <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
+                        Ingredients
+                      </label>
+                      <Field
+                        as="textarea"
+                        name="ingredients"
+                        id="ingredients"
+                        rows={2}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        placeholder="Comma separated list..."
+                      />
+                      <ErrorMessage name="ingredients" component="div" className="mt-1 text-sm text-red-500" />
+                    </div>
+
+                    {/* Allergens */}
+                    <div>
+                      <label htmlFor="allergens" className="block text-sm font-medium text-gray-700 mb-1">
+                        Allergens
+                      </label>
+                      <Field
+                        as="textarea"
+                        name="allergens"
+                        id="allergens"
+                        rows={2}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        placeholder="Comma separated list..."
+                      />
+                      <ErrorMessage name="allergens" component="div" className="mt-1 text-sm text-red-500" />
+                    </div>
                   </div>
                 </div>
 
-                {/* Description */}
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <Field
-                    as="textarea"
-                    id="description"
-                    name="description"
-                    rows={3}
-                    placeholder="Brief description of the item..."
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
-                      errors.description && touched.description ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    disabled={isSubmitting || isLoading}
-                  />
-                  <ErrorMessage name="description" component="div" className="text-red-600 text-sm mt-1" />
-                  <div className="text-xs text-gray-500 mt-1">
-                    {values.description?.length || 0}/500 characters
+                {serverErrors && Object.keys(serverErrors).length > 0 && (
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm leading-5 font-medium text-red-800">
+                          There were errors with your submission
+                        </h3>
+                        <div className="mt-2 text-sm leading-5 text-red-700">
+                          <ul className="list-disc pl-5 space-y-1">
+                            {Object.entries(serverErrors).map(([key, errors]) => (
+                              <li key={key}>
+                                {key}: {errors.join(', ')}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Ingredients */}
-                <div>
-                  <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
-                    Ingredients (comma separated)
-                  </label>
-                  <Field
-                    as="textarea"
-                    id="ingredients"
-                    name="ingredients"
-                    rows={2}
-                    placeholder="e.g., Chicken breast, Olive oil, Herbs, Salt, Pepper"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
-                      errors.ingredients && touched.ingredients ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    disabled={isSubmitting || isLoading}
-                  />
-                  <ErrorMessage name="ingredients" component="div" className="text-red-600 text-sm mt-1" />
-                  <div className="text-xs text-gray-500 mt-1">
-                    Separate each ingredient with a comma
-                  </div>
-                </div>
-
-                {/* Allergens */}
-                <div>
-                  <label htmlFor="allergens" className="block text-sm font-medium text-gray-700 mb-1">
-                    Allergens (comma separated)
-                  </label>
-                  <Field
-                    as="textarea"
-                    id="allergens"
-                    name="allergens"
-                    rows={2}
-                    placeholder="e.g., Dairy, Gluten, Nuts, Eggs"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
-                      errors.allergens && touched.allergens ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    disabled={isSubmitting || isLoading}
-                  />
-                  <ErrorMessage name="allergens" component="div" className="text-red-600 text-sm mt-1" />
-                  <div className="text-xs text-gray-500 mt-1">
-                    List all allergens present in this item
-                  </div>
-                </div>
+                )}
 
                 {/* Form Actions */}
                 <div className="flex gap-3 pt-4">
@@ -310,9 +301,9 @@ const MenuItemForm: React.FC<MenuItemFormProps> = ({
               </Form>
             )}
           </Formik>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   );
 };
 

@@ -3,6 +3,7 @@ import type { CreateCategoryData } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage, type FormikHelpers } from 'formik';
 import type { CategoryModalProps } from '@/types/menu';
 import * as Yup from 'yup';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 
 const categorySchema = Yup.object().shape({
@@ -47,7 +48,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {/* Header */}

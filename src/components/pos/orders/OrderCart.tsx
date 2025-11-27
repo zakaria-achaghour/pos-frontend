@@ -8,22 +8,25 @@ interface CartItem {
   special_instructions?: string;
   removed_ingredients?: string[];
   added_extras?: string[];
+  originalItem?: any; // We don't need the full type here, just to pass it through if needed, but actually we just need the index for editing
 }
 
 interface OrderCartProps {
   cart: CartItem[];
   onUpdateQuantity: (itemId: number, newQuantity: number) => void;
   onRemoveItem: (itemId: number) => void;
+  onEditItem?: (index: number) => void;
   onPlaceOrder: () => void;
   loading: boolean;
 }
 
-const OrderCartComponent: React.FC<OrderCartProps> = ({ 
-  cart, 
-  onUpdateQuantity, 
-  onRemoveItem, 
+const OrderCartComponent: React.FC<OrderCartProps> = ({
+  cart,
+  onUpdateQuantity,
+  onRemoveItem,
+  onEditItem,
   onPlaceOrder,
-  loading 
+  loading
 }) => {
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -61,21 +64,21 @@ const OrderCartComponent: React.FC<OrderCartProps> = ({
                     <div className="text-sm text-gray-600">
                       {Number(item.price).toFixed(2)} MAD
                     </div>
-                    
+
                     {/* Removed Ingredients */}
                     {item.removed_ingredients && item.removed_ingredients.length > 0 && (
                       <div className="text-xs text-red-600 mt-1">
                         ❌ No: {item.removed_ingredients.join(', ')}
                       </div>
                     )}
-                    
+
                     {/* Added Extras */}
                     {item.added_extras && item.added_extras.length > 0 && (
                       <div className="text-xs text-green-600 mt-1">
                         ➕ Extra: {item.added_extras.join(', ')}
                       </div>
                     )}
-                    
+
                     {/* Special Instructions */}
                     {item.special_instructions && (
                       <div className="text-xs text-blue-600 mt-1 italic">
@@ -83,16 +86,30 @@ const OrderCartComponent: React.FC<OrderCartProps> = ({
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => onRemoveItem(item.menu_item_id)}
-                    className="text-red-500 hover:text-red-700 p-1"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center">
+                    {onEditItem && (
+                      <button
+                        onClick={() => onEditItem(index)}
+                        className="text-blue-500 hover:text-blue-700 p-1 mr-1"
+                        title="Edit Item"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onRemoveItem(item.menu_item_id)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                      title="Remove Item"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-300">
                     <button
                       onClick={() => onUpdateQuantity(item.menu_item_id, item.quantity - 1)}

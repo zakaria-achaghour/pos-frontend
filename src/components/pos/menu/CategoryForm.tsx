@@ -3,6 +3,7 @@ import type { CategoryFormProps } from '@/types/menu';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { CategoryFormData } from '@/types/menu';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface CategoryFormProps {
   initialData?: Partial<CategoryFormData>;
@@ -39,7 +40,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
         <div className="p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-6">

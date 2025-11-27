@@ -1,18 +1,50 @@
 import React, { useState } from 'react';
 import type { MenuItem } from '@/types/menu';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface AddItemModalProps {
   item: MenuItem | null;
   isOpen: boolean;
   onClose: () => void;
   onAdd: (item: MenuItem, quantity: number, specialInstructions?: string, removedIngredients?: string[], addedExtras?: string[]) => void;
+  initialValues?: {
+    quantity: number;
+    specialInstructions?: string;
+    removedIngredients?: string[];
+    addedExtras?: string[];
+  };
+  mode?: 'add' | 'edit';
 }
 
-export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClose, onAdd }) => {
+export const AddItemModal: React.FC<AddItemModalProps> = ({
+  item,
+  isOpen,
+  onClose,
+  onAdd,
+  initialValues,
+  mode = 'add'
+}) => {
   const [quantity, setQuantity] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
   const [addedExtras, setAddedExtras] = useState<string[]>([]);
+
+  // Reset or initialize state when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && initialValues) {
+        setQuantity(initialValues.quantity);
+        setSpecialInstructions(initialValues.specialInstructions || '');
+        setRemovedIngredients(initialValues.removedIngredients || []);
+        setAddedExtras(initialValues.addedExtras || []);
+      } else {
+        setQuantity(1);
+        setSpecialInstructions('');
+        setRemovedIngredients([]);
+        setAddedExtras([]);
+      }
+    }
+  }, [isOpen, mode, initialValues]);
 
   // Common extras that can be added
   const availableExtras = [
@@ -46,7 +78,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
   };
 
   const toggleIngredient = (ingredient: string) => {
-    setRemovedIngredients(prev => 
+    setRemovedIngredients(prev =>
       prev.includes(ingredient)
         ? prev.filter(i => i !== ingredient)
         : [...prev, ingredient]
@@ -54,7 +86,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
   };
 
   const toggleExtra = (extra: string) => {
-    setAddedExtras(prev => 
+    setAddedExtras(prev =>
       prev.includes(extra)
         ? prev.filter(e => e !== extra)
         : [...prev, extra]
@@ -64,19 +96,37 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
   const hasIngredients = item.ingredients && item.ingredients.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white flex items-center justify-between p-4 border-b z-10">
-          <h3 className="text-lg font-bold text-gray-900">{item.name}</h3>
+        {/* Image Header */}
+        <div className="relative h-48 sm:h-56 bg-gray-100">
+          {item.image || item.image_url ? (
+            <img
+              src={item.image || item.image_url}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-300">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
+
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-600 hover:text-gray-900 rounded-full p-2 shadow-sm backdrop-blur-sm transition-all"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+        </div>
+
+        {/* Header Content */}
+        <div className="px-4 pt-4 pb-2">
+          <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
         </div>
 
         {/* Content */}
@@ -133,11 +183,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
                   <button
                     key={ingredient}
                     onClick={() => toggleIngredient(ingredient)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      removedIngredients.includes(ingredient)
-                        ? 'bg-red-100 text-red-700 border-2 border-red-500 line-through'
-                        : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
-                    }`}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${removedIngredients.includes(ingredient)
+                      ? 'bg-red-100 text-red-700 border-2 border-red-500 line-through'
+                      : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                      }`}
                   >
                     {ingredient}
                   </button>
@@ -161,11 +210,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
                 <button
                   key={extra}
                   onClick={() => toggleExtra(extra)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    addedExtras.includes(extra)
-                      ? 'bg-green-100 text-green-700 border-2 border-green-500'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${addedExtras.includes(extra)
+                    ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                    : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                    }`}
                 >
                   {extra}
                 </button>
@@ -235,7 +283,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ item, isOpen, onClos
             onClick={handleAdd}
             className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors"
           >
-            Add to Cart
+            {mode === 'edit' ? 'Update Cart' : 'Add to Cart'}
           </button>
         </div>
       </div>

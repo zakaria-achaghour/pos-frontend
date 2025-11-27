@@ -1,5 +1,6 @@
 import React from 'react';
 import type { OrderListProps } from '@/types/order';
+import { getOrderStatusColor } from '@/utils/orderStatus';
 
 const OrderList: React.FC<OrderListProps> = ({
   items,
@@ -46,26 +47,7 @@ const OrderList: React.FC<OrderListProps> = ({
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'accepted':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'preparing':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'ready':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'served':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -99,14 +81,14 @@ const OrderList: React.FC<OrderListProps> = ({
                 </p>
               </div>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
+                className={`px-3 py-1 rounded-full text-xs font-semibold border ${getOrderStatusColor(
                   order.status
                 )}`}
               >
                 {order.status.toUpperCase()}
               </span>
             </div>
-            
+
             {order.table && (
               <p className="text-sm text-gray-700 font-medium">
                 🪑 {order.table.number}
@@ -173,11 +155,10 @@ const OrderList: React.FC<OrderListProps> = ({
               <span className="text-sm text-gray-600">Payment:</span>
               <div className="flex flex-col items-end gap-1">
                 <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${
-                    order.payment_method || order.paymentMethod
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-orange-100 text-orange-700'
-                  }`}
+                  className={`px-2 py-1 rounded text-xs font-semibold ${order.payment_method || order.paymentMethod
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-orange-100 text-orange-700'
+                    }`}
                 >
                   {order.payment_method || order.paymentMethod ? 'Paid' : 'Ready to Pay'}
                 </span>
@@ -282,15 +263,14 @@ const OrderList: React.FC<OrderListProps> = ({
                 </svg>
                 View
               </button>
-              
+
               <button
                 onClick={() => onEdit(order)}
                 disabled={order.status !== 'pending' && order.status !== 'accepted'}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                  order.status === 'pending' || order.status === 'accepted'
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${order.status === 'pending' || order.status === 'accepted'
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 title={order.status === 'pending' || order.status === 'accepted' ? 'Edit order' : 'Cannot edit order after preparing'}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,15 +278,14 @@ const OrderList: React.FC<OrderListProps> = ({
                 </svg>
                 Edit
               </button>
-              
+
               <button
                 onClick={() => onDelete(order.id, order.orderNumber || `#${order.id}`)}
                 disabled={order.status !== 'pending' && order.status !== 'accepted'}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-                  order.status === 'pending' || order.status === 'accepted'
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${order.status === 'pending' || order.status === 'accepted'
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 title={order.status === 'pending' || order.status === 'accepted' ? 'Delete order' : 'Cannot delete order after preparing'}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

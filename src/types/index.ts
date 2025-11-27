@@ -257,4 +257,6 @@ export * from './table';
 export * from './order';
 export * from './customer';
 export * from './restaurant';
+export * from './receipt';
 export * from './components';
+export * from './pagination';

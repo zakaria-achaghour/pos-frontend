@@ -14,10 +14,15 @@ export interface User {
   role: 'superadmin' | 'owner' | 'manager' | 'cashier' | 'waiter' | 'kitchen';
   roles?: string[]; // Backend uses roles array
   restaurant_id?: number;
+  restaurant_name?: string;
+  restaurant_logo_url?: string;
+  restaurant_logo?: string;
   restaurant?: {
     id: number;
     name: string;
     slug: string;
+    logo_url?: string;
+    logo?: string;
   };
   created_at?: string;
   updated_at?: string;

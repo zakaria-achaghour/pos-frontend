@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuthRedux';
-import { useTableManagementBasic } from '@/hooks/useTableManagementBasic';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import EnhancedTableStats from '@/components/pos/tables/EnhancedTableStats';
+import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
 
 interface TableWithDetails {
   id: number;
@@ -110,7 +109,6 @@ export default function EnhancedTableManagement() {
   const [viewMode, setViewMode] = useState<'grid' | 'layout' | 'analytics'>('grid');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'occupied' | 'reserved'>('all');
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   
   // Enhanced analytics are handled by EnhancedTableStats component
 
@@ -320,18 +318,22 @@ export default function EnhancedTableManagement() {
                 )}
 
                 {/* Reservation Info */}
-                {table.reservations && table.reservations.length > 0 && (
-                  <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                    <div className="text-sm font-medium text-blue-700 mb-1">Next Reservation</div>
-                    <div className="text-sm">
-                      <div>{table.reservations[0].customerName}</div>
-                      <div className="text-blue-600">{table.reservations[0].time} • {table.reservations[0].partySize} guests</div>
-                      {table.reservations[0].notes && (
-                        <div className="text-xs text-blue-500 mt-1">📝 {table.reservations[0].notes}</div>
-                      )}
+                {table.reservations && table.reservations.length > 0 && (() => {
+                  const nextReservation = table.reservations?.[0];
+                  if (!nextReservation) return null;
+                  return (
+                    <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                      <div className="text-sm font-medium text-blue-700 mb-1">Next Reservation</div>
+                      <div className="text-sm">
+                        <div>{nextReservation.customerName}</div>
+                        <div className="text-blue-600">{nextReservation.time} • {nextReservation.partySize} guests</div>
+                        {nextReservation.notes && (
+                          <div className="text-xs text-blue-500 mt-1">📝 {nextReservation.notes}</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Today's Performance */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
@@ -425,7 +427,7 @@ export default function EnhancedTableManagement() {
 
       {/* Table Details Modal */}
       {selectedTable && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold">{selectedTable.name} Details</h3>

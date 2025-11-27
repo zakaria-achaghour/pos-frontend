@@ -63,6 +63,13 @@ export const orderAPI = {
   },
 
   /**
+   * Get single order by ID (alias for getOrder)
+   */
+  fetchOrderById: async (id: number): Promise<Order> => {
+    return orderAPI.getOrder(id);
+  },
+
+  /**
    * Create new order
    */
   createOrder: async (orderData: CreateOrderData): Promise<Order> => {
@@ -123,5 +130,8 @@ export const orderAPI = {
     return unwrapResponse<Order>(response.data);
   },
 };
+
+// Export individual functions for convenience
+export const { getOrder, fetchOrderById, createOrder, addItem, closeOrder } = orderAPI;
 
 export default orderAPI;
