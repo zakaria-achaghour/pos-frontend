@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   useGetCategoriesQuery,
@@ -89,7 +90,7 @@ export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryM
 
   // Loading is true for the first load or an action, not for background refetches
   const loading = isLoading || pendingActions > 0;
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch categories') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.categoryFetch')) : null);
 
   const clearError = () => setActionError(null);
   const clearSuccessMessage = () => setSuccessMessage(null);
@@ -131,28 +132,28 @@ export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryM
 
   const createCategory = (data: CreateCategoryData) =>
     perform(() => createCategoryMutation(data).unwrap(), {
-      success: `Category "${data.name}" created successfully!`,
-      fallback: 'Failed to create category',
+      success: i18n.t('notifications.categoryCreated'),
+      fallback: i18n.t('notifications.categoryFailed'),
       validate: true,
     });
 
   const updateCategory = (id: number, data: UpdateCategoryData) =>
     perform(() => updateCategoryMutation({ id, data }).unwrap(), {
-      success: `Category "${data.name}" updated successfully!`,
-      fallback: 'Failed to update category',
+      success: i18n.t('notifications.categoryUpdated'),
+      fallback: i18n.t('notifications.categoryFailed'),
       validate: true,
     });
 
   const deleteCategory = (id: number) =>
     perform(() => deleteCategoryMutation(id).unwrap(), {
-      success: 'Category deleted successfully!',
-      fallback: 'Failed to delete category',
+      success: i18n.t('notifications.categoryDeleted'),
+      fallback: i18n.t('notifications.categoryFailed'),
     });
 
   const updateCategoryStatus = (id: number, isActive: boolean) =>
     perform(() => updateCategoryMutation({ id, data: { is_active: isActive } }).unwrap(), {
-      success: `Category ${isActive ? 'activated' : 'deactivated'} successfully!`,
-      fallback: 'Failed to update category status',
+      success: i18n.t('notifications.categoryUpdated'),
+      fallback: i18n.t('notifications.categoryFailed'),
     });
 
   const toggleItemSelection = (id: number) => {

@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   useGetKitchenTicketsQuery,
@@ -13,7 +14,7 @@ type KitchenFilterState = KitchenFilters & { date?: string };
 
 const ITEMS_PER_PAGE = 10;
 
-const errorMessage = (err: unknown, fallback = 'Failed to process request') =>
+const errorMessage = (err: unknown, fallback = i18n.t('notifications.kitchenFailed')) =>
   (err as Partial<ApiError> | undefined)?.message || fallback;
 
 /** Local calendar day (not UTC), re-checked every minute so a screen left open overnight rolls over. */
@@ -79,7 +80,7 @@ export const useKitchenManagement = (
   };
 
   const loading = { list: isLoading || (isFetching && tickets.length === 0), analytics: analyticsLoading, action: actionLoading };
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to load tickets') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.kitchenFetch')) : null);
 
   const fetchTickets = useCallback(async () => {
     await refetch();

@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   useGetRestaurantsQuery,
@@ -122,7 +123,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
 
   // Loading is true for the first load or an action, not for background refetches
   const loading = isLoading || pendingActions > 0;
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch restaurants') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.restaurantFetch')) : null);
 
   // Auto-clear messages
   useEffect(() => {
@@ -194,29 +195,29 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
       return;
     }
     await perform(() => createMutation(formData as unknown as CreateRestaurantData).unwrap(), {
-      success: `Restaurant "${formData.name}" created successfully!`,
-      fallback: 'Failed to create restaurant',
+      success: i18n.t('notifications.restaurantCreated'),
+      fallback: i18n.t('notifications.restaurantFailed'),
       validate: true,
     });
   };
 
   const updateRestaurant = (id: number, updates: Partial<RestaurantFormData>): Promise<void> =>
     perform(() => updateMutation({ id, data: updates as unknown as UpdateRestaurantData }).unwrap(), {
-      success: 'Restaurant updated successfully!',
-      fallback: 'Failed to update restaurant',
+      success: i18n.t('notifications.restaurantUpdated'),
+      fallback: i18n.t('notifications.restaurantFailed'),
       validate: true,
     });
 
   const deleteRestaurant = (id: number): Promise<void> =>
     perform(() => deleteMutation(id).unwrap(), {
-      success: 'Restaurant deleted successfully!',
-      fallback: 'Failed to delete restaurant',
+      success: i18n.t('notifications.restaurantDeleted'),
+      fallback: i18n.t('notifications.restaurantFailed'),
     });
 
   const updateRestaurantStatus = (id: number, status: RestaurantStatus): Promise<void> =>
     perform(() => statusMutation({ id, status: status as 'active' | 'inactive' }).unwrap(), {
-      success: `Restaurant ${status === 'active' ? 'activated' : 'deactivated'} successfully!`,
-      fallback: 'Failed to update restaurant status',
+      success: i18n.t('notifications.restaurantUpdated'),
+      fallback: i18n.t('notifications.restaurantFailed'),
     });
 
   // Bulk status update
@@ -225,10 +226,10 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     setActionError(null);
     try {
       await Promise.all(ids.map(id => updateRestaurantStatus(id, status)));
-      setSuccessMessage(`${ids.length} restaurants updated successfully!`);
+      setSuccessMessage(i18n.t('notifications.restaurantUpdated'));
       setSelectedItems([]);
     } catch (err) {
-      setActionError('Failed to update some restaurants');
+      setActionError(i18n.t('notifications.restaurantFailed'));
       throw err;
     } finally {
       setPendingActions((n) => n - 1);
@@ -254,7 +255,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     editingItem: editingRestaurant,
     filter: statusFilter,
     selectedItems,
-    
+
     // Aliases for backward compatibility
     restaurants,
     filteredRestaurants: restaurants,
@@ -262,7 +263,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     editingRestaurant,
     statusFilter,
     searchTerm,
-    
+
     // UI State
     viewMode,
     loading,
@@ -270,7 +271,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     successMessage,
     validationErrors,
     pagination,
-    
+
     // Actions - base
     fetchItems: fetchRestaurants,
     createItem: createRestaurant,
@@ -279,14 +280,14 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     updateItemStatus: updateRestaurantStatus,
     bulkUpdateStatus,
     goToPage,
-    
+
     // Actions - aliases
     fetchRestaurants,
     createRestaurant,
     updateRestaurant,
     deleteRestaurant,
     updateRestaurantStatus,
-    
+
     // UI Actions - base
     setViewMode,
     setFilter: setStatusFilter,
@@ -297,13 +298,13 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     toggleItemSelection,
     clearSelection,
     setPerPage,
-    
+
     // UI Actions - aliases
     setStatusFilter,
     setSearchTerm,
     setSelectedRestaurant,
     setEditingRestaurant,
-    
+
     // Stats
     stats: restaurantStats,
     restaurantStats,

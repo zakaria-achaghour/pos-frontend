@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   useGetMenuItemsQuery,
@@ -87,7 +88,7 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
 
   // Loading is true for the first load or an action, not for background refetches
   const loading = isLoading || pendingActions > 0;
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch menu items') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.menuItemFetch')) : null);
 
   // Auto-clear success messages
   useEffect(() => {
@@ -169,8 +170,8 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
 
   const createMenuItem = (formData: MenuItemFormData) =>
     perform(() => createItem(formData).unwrap(), {
-      success: `Menu item "${formData.name}" created successfully!`,
-      fallback: 'Failed to create menu item',
+      success: i18n.t('notifications.menuItemCreated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
       validate: true,
     });
 
@@ -181,34 +182,34 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
         if (editingMenuItem?.id === id) setEditingMenuItem(null);
       },
       {
-        success: `Menu item "${formData.name}" updated successfully!`,
-        fallback: 'Failed to update menu item',
+        success: i18n.t('notifications.menuItemUpdated'),
+        fallback: i18n.t('notifications.menuItemFailed'),
         validate: true,
       }
     );
 
   const deleteMenuItem = (id: number) =>
     perform(() => deleteItem(id).unwrap(), {
-      success: 'Menu item deleted successfully!',
-      fallback: 'Failed to delete menu item',
+      success: i18n.t('notifications.menuItemDeleted'),
+      fallback: i18n.t('notifications.menuItemFailed'),
     });
 
   const updateMenuItemStatus = (id: number, isActive: boolean) =>
     perform(() => updateItem({ id, data: { is_active: isActive } }).unwrap(), {
-      success: `Menu item ${isActive ? 'activated' : 'deactivated'} successfully!`,
-      fallback: 'Failed to update menu item status',
+      success: i18n.t('notifications.menuItemUpdated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
     });
 
   const updateMenuItemAvailability = (id: number, isAvailable: boolean) =>
     perform(() => updateItem({ id, data: { is_available: isAvailable } }).unwrap(), {
-      success: `Menu item marked as ${isAvailable ? 'available' : 'unavailable'}!`,
-      fallback: 'Failed to update menu item availability',
+      success: i18n.t('notifications.menuItemUpdated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
     });
 
   const uploadMenuItemImage = (id: number, file: File) =>
     perform(() => uploadImage({ id, file }).unwrap(), {
-      success: 'Image uploaded successfully!',
-      fallback: 'Failed to upload image',
+      success: i18n.t('notifications.menuItemUploaded'),
+      fallback: i18n.t('notifications.menuItemFetch'),
     });
 
   // Selection actions

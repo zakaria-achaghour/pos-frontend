@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Permission } from '../api/permissions';
 import type { PermissionFormData } from '../types/roles';
@@ -18,11 +19,10 @@ interface PaginationInfo {
 
 const PER_PAGE = 15;
 const EMPTY: Permission[] = [];
-const ACCESS_DENIED = 'Access denied. SuperAdmin privileges required.';
 
 const messageOf = (err: unknown, fallback: string): string => {
   const e = err as Partial<ApiError> | undefined;
-  if (e?.status === 403) return ACCESS_DENIED;
+  if (e?.status === 403) return i18n.t('apiErrors.forbidden');
   return e?.message || fallback;
 };
 
@@ -71,7 +71,7 @@ export function usePermissionManagement() {
 
   const queryErrorMessage =
     queryError && queryError !== dismissedQueryError
-      ? messageOf(queryError, 'Failed to fetch permissions')
+      ? messageOf(queryError, i18n.t('notifications.permissionFetch'))
       : null;
   const error = actionError ?? queryErrorMessage;
 
@@ -124,8 +124,8 @@ export function usePermissionManagement() {
   const createPermission = async (formData: PermissionFormData) => {
     await perform(
       () => createMutation({ name: formData.name }).unwrap(),
-      'Permission created successfully!',
-      'Failed to create permission'
+      i18n.t('notifications.permissionCreated'),
+      i18n.t('notifications.permissionFailed')
     );
     setPage(1);
   };
@@ -133,8 +133,8 @@ export function usePermissionManagement() {
   const updatePermission = async (id: number, formData: PermissionFormData) => {
     await perform(
       () => updateMutation({ id, data: { name: formData.name } }).unwrap(),
-      'Permission updated successfully!',
-      'Failed to update permission'
+      i18n.t('notifications.permissionUpdated'),
+      i18n.t('notifications.permissionFailed')
     );
     setEditingPermission(null);
   };
@@ -146,8 +146,8 @@ export function usePermissionManagement() {
     try {
       await perform(
         () => deleteMutation(id).unwrap(),
-        'Permission deleted successfully!',
-        'Failed to delete permission'
+        i18n.t('notifications.permissionDeleted'),
+        i18n.t('notifications.permissionFailed')
       );
       setPage(Math.max(1, nextPage));
     } catch {

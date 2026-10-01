@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   useGetAdminTablesQuery,
@@ -8,9 +9,9 @@ import {
   type AdminTableListArgs,
 } from '@/services/tableAdminApi';
 import type { ApiError } from '@/services/baseApi';
-import type { 
-  Table, 
-  TableFormData, 
+import type {
+  Table,
+  TableFormData,
   TableStatus,
   CreateTableRequest,
   UpdateTableRequest
@@ -139,7 +140,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
   }, [data, tables]);
 
   const queryErrorMessage =
-    queryError && queryError !== dismissedQueryError ? messageOf(queryError, 'Failed to load tables') : null;
+    queryError && queryError !== dismissedQueryError ? messageOf(queryError, i18n.t('notifications.tableFetch')) : null;
   const error = actionError ?? queryErrorMessage;
 
   // Auto-clear messages
@@ -253,11 +254,11 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
 
       await perform(
         async () => {
-          const newTable = await createTableMutation(createData).unwrap();
-          setSuccessMessage(`Table "${newTable.number}" created successfully!`);
+          await createTableMutation(createData).unwrap();
+          setSuccessMessage(i18n.t('notifications.tableCreated'));
         },
         '',
-        'Failed to create table'
+        i18n.t('notifications.tableFailed')
       );
     },
     [perform, createTableMutation]
@@ -295,11 +296,11 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
 
       await perform(
         async () => {
-          const updatedTable = await updateTableMutation({ id: tableId, data: updateData }).unwrap();
-          setSuccessMessage(`Table "${updatedTable.number}" updated successfully!`);
+          await updateTableMutation({ id: tableId, data: updateData }).unwrap();
+          setSuccessMessage(i18n.t('notifications.tableUpdated'));
         },
         '',
-        'Failed to update table'
+        i18n.t('notifications.tableFailed')
       );
     },
     [tables, perform, updateTableMutation]
@@ -321,8 +322,8 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
 
       await perform(
         () => deleteTableMutation(tableId).unwrap(),
-        `Table "${table.number}" deleted successfully!`,
-        'Failed to delete table'
+        i18n.t('notifications.tableDeleted'),
+        i18n.t('notifications.tableFailed')
       );
     },
     [tables, perform, deleteTableMutation]
@@ -339,8 +340,8 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
 
       await perform(
         () => updateStatusMutation({ id: tableId, status: newStatus }).unwrap(),
-        `Table "${table.number}" status updated to ${newStatus}`,
-        'Failed to update table status'
+        i18n.t('notifications.tableUpdated'),
+        i18n.t('notifications.tableFailed')
       );
     },
     [tables, perform, updateStatusMutation]
@@ -359,10 +360,10 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     setActionError(null);
     try {
       await Promise.all(ids.map((id) => updateTableStatus(id, status)));
-      setSuccessMessage(`Successfully updated ${ids.length} table(s)`);
+      setSuccessMessage(i18n.t('notifications.tableUpdated'));
       clearSelection();
     } catch (err) {
-      setActionError(messageOf(err, 'Failed to update tables'));
+      setActionError(messageOf(err, i18n.t('notifications.tableFailed')));
     } finally {
       setActionLoading(false);
     }
@@ -380,7 +381,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     editingItem: editingTable,
     filter: statusFilter,
     selectedItems,
-    
+
     // Aliases for backward compatibility
     tables,
     filteredTables,
@@ -391,7 +392,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     sectionFilter,
     minCapacityFilter,
     maxCapacityFilter,
-    
+
     // UI State
     viewMode,
     loading: isLoading || actionLoading,
@@ -399,7 +400,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     successMessage,
     validationErrors,
     pagination,
-    
+
     // Actions - base
     fetchItems: fetchTables,
     createItem: createTable,
@@ -408,14 +409,14 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     updateItemStatus: updateTableStatus,
     bulkUpdateStatus,
     goToPage,
-    
+
     // Actions - aliases
     fetchTables,
     createTable,
     updateTable,
     deleteTable,
     updateTableStatus,
-    
+
     // UI Actions - base
     setViewMode,
     setFilter: setStatusFilter,
@@ -426,7 +427,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     toggleItemSelection,
     clearSelection,
     setPerPage,
-    
+
     // UI Actions - aliases
     setStatusFilter,
     setShapeFilter,
@@ -435,7 +436,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     setMaxCapacityFilter,
     setSelectedTable,
     setEditingTable,
-    
+
     // Stats
     stats: tableStats,
     tableStats,

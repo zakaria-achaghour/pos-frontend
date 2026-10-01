@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Role } from '../api/roles';
 import type { RoleFormData } from '../types/roles';
@@ -22,11 +23,10 @@ interface PaginationInfo {
 const PER_PAGE = 10;
 const EMPTY_ROLES: Role[] = [];
 const EMPTY_PERMISSIONS: Permission[] = [];
-const ACCESS_DENIED = 'Access denied. SuperAdmin privileges required.';
 
 const messageOf = (err: unknown, fallback: string): string => {
   const e = err as Partial<ApiError> | undefined;
-  if (e?.status === 403) return ACCESS_DENIED;
+  if (e?.status === 403) return i18n.t('apiErrors.forbidden');
   return e?.message || fallback;
 };
 
@@ -78,7 +78,7 @@ export function useRoleManagement() {
   );
 
   const queryErrorMessage =
-    queryError && queryError !== dismissedQueryError ? messageOf(queryError, 'Failed to fetch roles') : null;
+    queryError && queryError !== dismissedQueryError ? messageOf(queryError, i18n.t('notifications.roleFetch')) : null;
   const error = actionError ?? queryErrorMessage;
 
   // Auto-clear messages
@@ -131,7 +131,7 @@ export function useRoleManagement() {
     try {
       await loadRoleUsers(roleId).unwrap();
     } catch (err) {
-      setActionError(messageOf(err, 'Failed to fetch role users'));
+      setActionError(messageOf(err, i18n.t('notifications.roleFetch')));
     }
   };
 
@@ -142,8 +142,8 @@ export function useRoleManagement() {
   const createRole = async (formData: RoleFormData) => {
     await perform(
       () => createRoleMutation({ name: formData.name, permissions: formData.permissions }).unwrap(),
-      'Role created successfully!',
-      'Failed to create role'
+      i18n.t('notifications.roleCreated'),
+      i18n.t('notifications.roleFailed')
     );
     setPage(1);
   };
@@ -151,8 +151,8 @@ export function useRoleManagement() {
   const updateRole = async (id: number, formData: RoleFormData) => {
     await perform(
       () => updateRoleMutation({ id, data: { name: formData.name, permissions: formData.permissions } }).unwrap(),
-      'Role updated successfully!',
-      'Failed to update role'
+      i18n.t('notifications.roleUpdated'),
+      i18n.t('notifications.roleFailed')
     );
     setEditingRole(null);
   };
@@ -162,7 +162,7 @@ export function useRoleManagement() {
     const remaining = Math.max(0, pagination.total - 1) - (pagination.currentPage - 1) * pagination.perPage;
     const nextPage = remaining > 0 || pagination.currentPage === 1 ? pagination.currentPage : pagination.currentPage - 1;
     try {
-      await perform(() => deleteRoleMutation(id).unwrap(), 'Role deleted successfully!', 'Failed to delete role');
+      await perform(() => deleteRoleMutation(id).unwrap(), i18n.t('notifications.roleDeleted'), i18n.t('notifications.roleFailed'));
       setPage(Math.max(1, nextPage));
     } catch {
       // error already surfaced through perform

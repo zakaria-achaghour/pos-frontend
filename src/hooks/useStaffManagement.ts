@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './useAuthRedux';
 import {
@@ -96,12 +97,12 @@ const mapApiStaffToLocal = (apiStaff: Partial<Staff> & ApiStaffExtras): StaffMem
   // Check if staff has active attendance (clock in without clock out)
   // Backend returns active_attendance as an array
   const activeAttendance = Array.isArray(apiStaff.active_attendance) ? apiStaff.active_attendance[0] : undefined;
-  
+
   const currentShift = activeAttendance ? {
-    clockIn: new Date(activeAttendance.clock_in).toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    clockIn: new Date(activeAttendance.clock_in).toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
     }),
     isActive: true,
     attendanceId: activeAttendance.id,
@@ -163,7 +164,7 @@ interface UseStaffManagementReturn extends UseResourceManagementReturn<
   clockInOut: (id: number) => Promise<void>;
   availableRoles: Array<{ name: string; label: string }>;
   fetchAvailableRoles: () => Promise<void>;
-  
+
   // Aliases for consistency with existing code
   staff: StaffMember[];
   filteredStaff: StaffMember[];
@@ -247,7 +248,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
 
   // Loading is true for the first load or an action, not for background refetches
   const loading = isLoading || pendingActions > 0;
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch staff data') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.staffFetch')) : null);
 
   // Auto-clear messages
   useEffect(() => {
@@ -302,7 +303,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
       const fieldErrors = opts.validate ? getValidationErrors(err) : undefined;
       if (fieldErrors) {
         setValidationErrors(fieldErrors);
-        setActionError(errorMessage(err, 'Validation errors occurred'));
+        setActionError(errorMessage(err, i18n.t('notifications.staffValidation')));
       } else {
         setActionError(errorMessage(err, opts.fallback));
       }
@@ -334,7 +335,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
         await createStaffMutation(createData).unwrap();
         setPage(1);
       },
-      { success: 'Staff member added successfully!', fallback: 'Failed to add staff member', validate: true, rethrow: true }
+      { success: i18n.t('notifications.staffCreated'), fallback: i18n.t('notifications.staffFailed'), validate: true, rethrow: true }
     );
 
   // Update staff member
@@ -359,7 +360,7 @@ export function useStaffManagement(): UseStaffManagementReturn {
         await updateStaffMutation({ id, data: updateData }).unwrap();
         setEditingMember(null);
       },
-      { success: 'Staff member updated successfully!', fallback: 'Failed to update staff member', validate: true, rethrow: true }
+      { success: i18n.t('notifications.staffUpdated'), fallback: i18n.t('notifications.staffFailed'), validate: true, rethrow: true }
     );
 
   // Delete staff member (step back a page if it was the last one on this page)
@@ -370,17 +371,16 @@ export function useStaffManagement(): UseStaffManagementReturn {
         const remaining = Math.max(0, pagination.total - 1) - (pagination.currentPage - 1) * pagination.perPage;
         if (remaining <= 0 && pagination.currentPage > 1) setPage(pagination.currentPage - 1);
       },
-      { success: 'Staff member deleted successfully!', fallback: 'Failed to delete staff member' }
+      { success: i18n.t('notifications.staffDeleted'), fallback: i18n.t('notifications.staffFailed') }
     );
 
   // Update staff status (activate/deactivate)
   const updateStaffStatus = (id: number, status: StaffStatus) => {
-    const member = staff.find((s) => s.id === id);
     return perform(
       async () => {
         await updateStaffMutation({ id, data: { status, is_active: status === 'active' } }).unwrap();
       },
-      { success: `${member?.name}'s status updated to ${status}`, fallback: 'Failed to update status' }
+      { success: i18n.t('notifications.staffUpdated'), fallback: i18n.t('notifications.staffFailed') }
     );
   };
 
@@ -403,13 +403,13 @@ export function useStaffManagement(): UseStaffManagementReturn {
       async () => {
         if (isClockingIn) {
           const record = await clockInMutation({ staff_id: id }).unwrap();
-          success = `${member.name} clocked in at ${formatTime(record?.clock_in)}`;
+          success = i18n.t('notifications.staffClockIn', { name: member.name, time: formatTime(record?.clock_in) });
         } else {
           const record = await clockOutMutation({ staff_id: id }).unwrap();
-          success = `${member.name} clocked out at ${formatTime(record?.clock_out)}`;
+          success = i18n.t('notifications.staffClockOut', { name: member.name, time: formatTime(record?.clock_out) });
         }
       },
-      { success: '', fallback: 'Failed to update clock status' }
+      { success: '', fallback: i18n.t('notifications.staffFailed') }
     );
     if (success) setSuccessMessage(success);
   };
@@ -442,10 +442,10 @@ export function useStaffManagement(): UseStaffManagementReturn {
     setPendingActions((n) => n + 1);
     try {
       await Promise.all(ids.map(id => updateStaffStatus(id, status)));
-      setSuccessMessage(`Successfully updated ${ids.length} staff member(s)`);
+      setSuccessMessage(i18n.t('notifications.staffUpdated'));
       clearSelection();
     } catch (err) {
-      setActionError(errorMessage(err, 'Failed to update staff members'));
+      setActionError(errorMessage(err, i18n.t('notifications.staffFailed')));
     } finally {
       setPendingActions((n) => n - 1);
     }
