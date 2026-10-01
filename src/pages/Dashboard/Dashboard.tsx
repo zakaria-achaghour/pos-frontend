@@ -10,7 +10,7 @@ import type { DashboardPeriod, DashboardOverviewResponse } from '@/types/dashboa
 import { handleApiError } from '@/api/client';
 import type { AxiosError } from 'axios';
 
-const timeframeOptions: Array<{ key: DashboardPeriod; labelKey: string }> = [
+const timeframeOptions: Array<{ key: DashboardPeriod; labelKey: `dashboard.period.${DashboardPeriod}` }> = [
   { key: 'today', labelKey: 'dashboard.period.today' },
   { key: 'week', labelKey: 'dashboard.period.week' },
   { key: 'month', labelKey: 'dashboard.period.month' },

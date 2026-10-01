@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import type { ViewMode, StaffFilter } from '@/hooks/useStaffManagement';
 
@@ -31,8 +32,8 @@ export default function StaffFilters({
   const roleFilters = [
     { value: 'all', label: t('staffAdmin.filters.allRoles') },
     ...(availableRoles && availableRoles.length > 0
-      ? availableRoles.map((r) => ({ value: r.name, label: t(`roles.${r.name}`, { defaultValue: r.label }) }))
-      : defaultRoleValues.map((r) => ({ value: r, label: t(`roles.${r}`) }))),
+      ? availableRoles.map((r) => ({ value: r.name, label: dynamicT(`roles.${r.name}`, { defaultValue: r.label }) }))
+      : defaultRoleValues.map((r) => ({ value: r, label: dynamicT(`roles.${r}`) }))),
   ];
 
   return (
@@ -71,7 +72,7 @@ export default function StaffFilters({
               </option>
             ))}
           </select>
-          
+
           <button
             type="button"
             onClick={onAddStaff}

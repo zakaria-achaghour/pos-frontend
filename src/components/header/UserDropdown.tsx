@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/dropdown/Dropdown";
@@ -66,7 +67,7 @@ export default function UserDropdown() {
             {user?.name || t('header.user')}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {user?.email || 'user@example.com'} • {user?.role ? t(`roles.${user.role}`, { defaultValue: user.role }) : t('header.role')}
+            {user?.email || 'user@example.com'} • {user?.role ? dynamicT(`roles.${user.role}`, { defaultValue: user.role }) : t('header.role')}
           </span>
         </div>
 

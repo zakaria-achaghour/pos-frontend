@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { OrderListProps } from '@/types/order';
@@ -5,13 +6,13 @@ import { orderStatusStyle } from '@/design/status';
 import { Button, StatusPill } from '@/components/kit';
 import { formatMoney } from '@/lib/money';
 
-const TYPE_KEY: Record<string, string> = {
+const TYPE_KEY: Record<string, 'order.type.dineIn' | 'order.type.takeout' | 'order.type.delivery'> = {
   'dine-in': 'order.type.dineIn',
   takeout: 'order.type.takeout',
   delivery: 'order.type.delivery',
 };
 
-const NEXT_STATUS: Record<string, { to: 'accepted' | 'preparing' | 'ready' | 'served' | 'completed'; key: string }> = {
+const NEXT_STATUS: Record<string, { to: 'accepted' | 'preparing' | 'ready' | 'served' | 'completed'; key: 'orderList.accept' | 'orderList.startPreparing' | 'orderList.markReady' | 'orderList.markServed' | 'orderList.complete' }> = {
   pending: { to: 'accepted', key: 'orderList.accept' },
   accepted: { to: 'preparing', key: 'orderList.startPreparing' },
   preparing: { to: 'ready', key: 'orderList.markReady' },
@@ -91,7 +92,7 @@ const OrderList: React.FC<OrderListProps> = ({
               </div>
               <StatusPill
                 style={orderStatusStyle(order.status)}
-                label={t(`status.${order.status}`, { defaultValue: order.status })}
+                label={dynamicT(`status.${order.status}`, { defaultValue: order.status })}
                 size="sm"
               />
             </div>
@@ -164,7 +165,7 @@ const OrderList: React.FC<OrderListProps> = ({
                 </span>
                 {method && (
                   <span className="text-xs text-gray-500">
-                    {method === 'split' ? t('orderList.split') : t(`payment.method.${method}`, { defaultValue: method })}
+                    {method === 'split' ? t('orderList.split') : dynamicT(`payment.method.${method}`, { defaultValue: method })}
                   </span>
                 )}
               </div>

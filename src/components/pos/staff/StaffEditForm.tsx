@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useId, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -122,7 +123,7 @@ as="select"
             >
               {roles.map((r) => (
                 <option value={r} key={r}>
-                  {t(`roles.${r}`)}
+                  {dynamicT(`roles.${r}`)}
                 </option>
               ))}
             </Field>
@@ -184,7 +185,7 @@ name="hireDate"
                 <span className={`ms-2 px-2 py-1 rounded text-xs ${
                   member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
-                  {t(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
+                  {dynamicT(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
                 </span>
               </div>
               <div>

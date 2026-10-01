@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +30,7 @@ export default function PaymentConfirmation() {
         setLoading(true);
         setError(null);
         const orderData = await fetchOrderById(parseInt(id));
-        
+
         // Check if order is paid or completed
         if (orderData.status !== 'completed' && orderData.status !== 'served') {
           setError(t('paymentConfirmation.errors.notCompleted'));
@@ -50,7 +51,7 @@ export default function PaymentConfirmation() {
 
   const handlePrintReceipt = async () => {
     if (!id) return;
-    
+
     try {
       setActionLoading('print');
       await printReceipt(parseInt(id));
@@ -64,7 +65,7 @@ export default function PaymentConfirmation() {
 
   const handleDownloadPDF = async () => {
     if (!id) return;
-    
+
     try {
       setActionLoading('download');
       await downloadReceipt(parseInt(id), 'pdf');
@@ -185,7 +186,7 @@ export default function PaymentConfirmation() {
               <div>
                 <p className="text-sm text-gray-500">{t('paymentConfirmation.paymentMethod')}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {t(`payment.method.${order.payment_method || order.paymentMethod || 'cash'}`, {
+                  {dynamicT(`payment.method.${order.payment_method || order.paymentMethod || 'cash'}`, {
                     defaultValue: String(order.payment_method || order.paymentMethod),
                   })}
                 </p>
@@ -201,7 +202,7 @@ export default function PaymentConfirmation() {
             {/* Action Buttons */}
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('paymentConfirmation.receiptOptions')}</h3>
-              
+
               <Button fullWidth onClick={handleViewReceipt}>
                 {t('paymentConfirmation.viewReceipt')}
               </Button>

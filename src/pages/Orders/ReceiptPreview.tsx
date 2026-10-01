@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -247,7 +248,7 @@ export default function ReceiptPreview() {
                 <span className="text-gray-600">{t('receipt.subtotal')}</span>
                 <span className="text-gray-900">{formatMoney(receipt.subtotal)}</span>
               </div>
-              
+
               {receipt.discount_amount && receipt.discount_amount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>{t('receipt.discount')}</span>
@@ -280,7 +281,7 @@ export default function ReceiptPreview() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{t('receipt.paymentMethod')}</span>
                 <span className="font-semibold text-gray-900">
-                  {t(`payment.method.${receipt.payment_method}`, { defaultValue: receipt.payment_method })}
+                  {dynamicT(`payment.method.${receipt.payment_method}`, { defaultValue: receipt.payment_method })}
                 </span>
               </div>
               {receipt.amount_paid && (

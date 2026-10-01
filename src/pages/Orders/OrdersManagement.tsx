@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
@@ -379,8 +380,8 @@ export default function OrdersManagement() {
               i18nKey="orderList.statusModal.body"
               values={{
                 order: orderToUpdateStatus.order.orderNumber || `#${orderToUpdateStatus.order.id}`,
-                from: t(`status.${orderToUpdateStatus.order.status}`, { defaultValue: orderToUpdateStatus.order.status }),
-                to: t(`status.${orderToUpdateStatus.newStatus}`, { defaultValue: orderToUpdateStatus.newStatus }),
+                from: dynamicT(`status.${orderToUpdateStatus.order.status}`, { defaultValue: orderToUpdateStatus.order.status }),
+                to: dynamicT(`status.${orderToUpdateStatus.newStatus}`, { defaultValue: orderToUpdateStatus.newStatus }),
               }}
               components={{ strong: <strong /> }}
             />

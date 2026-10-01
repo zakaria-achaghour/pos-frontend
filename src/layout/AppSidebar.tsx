@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useCallback, useState, type ComponentType, type SVGProps } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -184,7 +185,7 @@ const AppSidebar = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-sidebar-fg/70">{t(`roles.${user.role}`, { defaultValue: user.role })}</p>
+                  <p className="text-xs text-sidebar-fg/70">{dynamicT(`roles.${user.role}`, { defaultValue: user.role })}</p>
                 </div>
               </div>
             </div>
@@ -192,7 +193,7 @@ const AppSidebar = () => {
 
           <nav className="flex-1 space-y-1 overflow-y-auto p-2">
             {visibleItems.map((item) => {
-              const label = t(`nav.${item.key}`);
+              const label = dynamicT(`nav.${item.key}`);
               const Icon = item.icon;
               const itemClass = twMerge(linkBase, open ? 'px-3' : 'justify-center px-0');
 
@@ -246,7 +247,7 @@ const AppSidebar = () => {
                               className={twMerge(linkBase, 'px-3', active ? linkActive : linkIdle)}
                             >
                               <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-                              {t(`nav.${sub.key}`)}
+                              {dynamicT(`nav.${sub.key}`)}
                             </Link>
                           </li>
                         );

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
@@ -26,7 +27,7 @@ export default function StaffManagement() {
     selectedMember,
     editingMember,
     availableRoles,
-    
+
     // UI State
     viewMode,
     roleFilter,
@@ -44,14 +45,14 @@ export default function StaffManagement() {
     clockInOut,
     goToPage,
     fetchAvailableRoles,
-    
+
     // UI Actions
     setViewMode,
     setRoleFilter,
     setSelectedMember,
     setEditingMember,
     clearError,
-    
+
     // Computed values
     staffStats,
   } = useStaffManagement();
@@ -114,7 +115,7 @@ export default function StaffManagement() {
     <div className="space-y-6">
       <PageMeta title={t('staffAdmin.metaTitle')} description={t('staffAdmin.metaDescription')} />
       <PageBreadcrumb pageTitle={t('staffAdmin.pageTitle')} />
-      
+
       {/* Success Message */}
       {successMessage && (
         <Alert
@@ -140,13 +141,13 @@ export default function StaffManagement() {
           <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
             {Object.entries(validationErrors).map(([field, errors]) => (
               <li key={field}>
-                <strong>{field.replace('_', ' ')}:</strong> {errors[0]}
+                {errors[0]}
               </li>
             ))}
           </ul>
         </div>
       )}
-      
+
       {/* Header with Stats */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -154,7 +155,7 @@ export default function StaffManagement() {
             <h1 className="text-2xl font-bold text-gray-900">{t('staffAdmin.pageTitle')}</h1>
             <p className="text-gray-600">{t('staffAdmin.subtitle')}</p>
           </div>
-          
+
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center">
@@ -307,31 +308,31 @@ export default function StaffManagement() {
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.email')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.email')}</span>
                   <span className="font-medium">{selectedMember.email}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.phone')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.phone')}</span>
                   <span className="font-medium">{selectedMember.phone || t('staffAdmin.details.notAvailable')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.role')}</span> 
-                  <span className="font-medium">{t(`roles.${selectedMember.role}`, { defaultValue: selectedMember.role })}</span>
+                  <span className="text-gray-600">{t('staffAdmin.details.role')}</span>
+                  <span className="font-medium">{dynamicT(`roles.${selectedMember.role}`, { defaultValue: selectedMember.role })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.hireDate')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.hireDate')}</span>
                   <span className="font-medium">{selectedMember.hireDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.salary')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.salary')}</span>
                   <span className="font-medium">{formatMoney(selectedMember.salary)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.status')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.status')}</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     selectedMember.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {t(`staffAdmin.status.${selectedMember.status}`, { defaultValue: selectedMember.status })}
+                    {dynamicT(`staffAdmin.status.${selectedMember.status}`, { defaultValue: selectedMember.status })}
                   </span>
                 </div>
               </div>
@@ -344,23 +345,23 @@ export default function StaffManagement() {
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.ordersCompleted')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.ordersCompleted')}</span>
                   <span className="font-medium">{selectedMember.performance.ordersCompleted}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.revenueGenerated')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.revenueGenerated')}</span>
                   <span className="font-medium text-green-600">{formatMoney(selectedMember.performance.revenueGenerated)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.customerRating')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.customerRating')}</span>
                   <span className="font-medium">⭐ {selectedMember.performance.customerRating.toFixed(1)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.punctuality')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.punctuality')}</span>
                   <span className="font-medium">{selectedMember.performance.punctualityScore}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.tipsEarned')}</span> 
+                  <span className="text-gray-600">{t('staffAdmin.details.tipsEarned')}</span>
                   <span className="font-medium text-green-600">{formatMoney(selectedMember.performance.tips)}</span>
                 </div>
               </div>
@@ -381,7 +382,7 @@ export default function StaffManagement() {
                   ) : (
                     <span className="text-gray-600">{t('staffAdmin.details.offDuty')}</span>
                   )}
-                  
+
                   {selectedMember.role === 'waiter' && selectedMember.currentShift.tableAssignments && (
                     <div className="mt-2">
                       <span className="text-blue-700 text-sm">{t('staffAdmin.details.assignedTables')} </span>

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
@@ -31,7 +32,7 @@ export default function TableManagement() {
     filteredTables = [],
     selectedTable,
     editingTable,
-    
+
     // UI State
     statusFilter = 'all',
     shapeFilter = 'all',
@@ -44,7 +45,7 @@ export default function TableManagement() {
     validationErrors = {}, // Provide default empty object
     pagination = { currentPage: 1, lastPage: 1, total: 0 },
     selectedTables = [],
-    
+
     // Actions
     createTable,
     updateTable,
@@ -52,7 +53,7 @@ export default function TableManagement() {
     updateTableStatus,
     bulkUpdateStatus,
     goToPage = () => {},
-    
+
     // UI Actions
     setStatusFilter = () => {},
     setShapeFilter = () => {},
@@ -64,7 +65,7 @@ export default function TableManagement() {
     clearError = () => {},
     toggleTableSelection = () => {},
     clearSelection = () => {},
-    
+
     // Computed values
     tableStats = { total: 0, available: 0, occupied: 0, reserved: 0, maintenance: 0, totalCapacity: 0, occupancyRate: 0 },
   } = useTableManagement(5) as ReturnType<typeof useTableManagement> & TableManagementExtras; // 5 tables per page for management
@@ -136,7 +137,7 @@ export default function TableManagement() {
       {/* Page Meta and Breadcrumb */}
       <PageMeta title={t('tableAdmin.metaTitle')} description={t('tableAdmin.metaDescription')} />
       <PageBreadcrumb pageTitle={t('tableAdmin.breadcrumb')} />
-      
+
       {/* Success Message */}
       {successMessage && (
         <Alert
@@ -164,14 +165,14 @@ export default function TableManagement() {
               const errorMessage = Array.isArray(errors) ? errors[0] : String(errors);
               return (
                 <li key={field}>
-                  <strong>{field.replace('_', ' ')}:</strong> {errorMessage}
+                  {errorMessage}
                 </li>
               );
             })}
           </ul>
         </div>
       )}
-      
+
       {/* Header with Stats */}
       <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-900">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
@@ -179,7 +180,7 @@ export default function TableManagement() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tableAdmin.breadcrumb')}</h1>
             <p className="text-gray-600 dark:text-gray-400">{t('tableAdmin.subtitle')}</p>
           </div>
-          
+
           {/* Add Table Button */}
           <button
             type="button"
@@ -192,7 +193,7 @@ export default function TableManagement() {
             {t('tableAdmin.addTable')}
           </button>
         </div>
-          
+
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="text-center">
@@ -412,7 +413,7 @@ export default function TableManagement() {
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.shape')}</span>
                   <span className="font-medium dark:text-white">
-                    {selectedTable.shape ? t(`tableAdmin.shape.${selectedTable.shape}`, { defaultValue: selectedTable.shape }) : t('tableAdmin.details.na')}
+                    {selectedTable.shape ? dynamicT(`tableAdmin.shape.${selectedTable.shape}`, { defaultValue: selectedTable.shape }) : t('tableAdmin.details.na')}
                   </span>
                 </div>
                 <div className="flex justify-between">

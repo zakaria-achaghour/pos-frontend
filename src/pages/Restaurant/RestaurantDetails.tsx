@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -30,13 +31,13 @@ export default function RestaurantDetails() {
     try {
       setLoading(true);
       const data = await restaurantAPI.getRestaurant(restaurantId);
-      
+
       // Convert API response to match our component expectations
       const processedData: Restaurant = {
         ...data,
         status: data.is_active ? 'active' : 'inactive' // Convert boolean to string
       };
-      
+
       setRestaurant(processedData);
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
@@ -66,7 +67,7 @@ export default function RestaurantDetails() {
 
   const handleDelete = async () => {
     if (!restaurant) return;
-    
+
     try {
       await restaurantAPI.deleteRestaurant(restaurant.id);
       navigate('/admin/tenants');
@@ -88,14 +89,14 @@ export default function RestaurantDetails() {
     return (
       <div>
         <PageMeta title={t('tenants.details.metaTitle')} description={t('tenants.details.metaDescription')} />
-        <PageBreadcrumb 
+        <PageBreadcrumb
           pageTitle={t('tenants.details.title')}
           breadcrumbItems={[
             { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
             { label: t('tenants.breadcrumb.details') }
           ]}
         />
-        
+
         <div className="bg-white rounded-xl shadow p-6 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -138,21 +139,21 @@ export default function RestaurantDetails() {
   return (
     <div>
       <PageMeta title={t('tenants.details.metaTitleNamed', { name: restaurant.name })} description={t('tenants.details.metaDescription')} />
-      <PageBreadcrumb 
+      <PageBreadcrumb
         pageTitle={restaurant.name}
         breadcrumbItems={[
           { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
           { label: restaurant.name }
         ]}
       />
-      
+
       <div className="bg-white rounded-xl shadow">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <h2 className="text-xl font-semibold text-gray-900">{restaurant.name}</h2>
               <span className={getStatusBadge(restaurant.status)}>
-                {t(`tenants.status.${restaurant.status}`, { defaultValue: restaurant.status })}
+                {dynamicT(`tenants.status.${restaurant.status}`, { defaultValue: restaurant.status })}
               </span>
             </div>
             <div className="flex gap-3">
@@ -183,7 +184,7 @@ export default function RestaurantDetails() {
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
-              
+
               <div className="space-y-3">
                 <div>
                   <span className="block text-sm font-medium text-gray-500">{t('tenants.details.name')}</span>
@@ -230,9 +231,9 @@ export default function RestaurantDetails() {
                 {restaurant.website && (
                   <div>
                     <span className="block text-sm font-medium text-gray-500">{t('tenants.form.website')}</span>
-                    <a 
-                      href={restaurant.website} 
-                      target="_blank" 
+                    <a
+                      href={restaurant.website}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800"
                     >
@@ -246,7 +247,7 @@ export default function RestaurantDetails() {
             {/* Business & Owner Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
-              
+
               <div className="space-y-3">
                 {restaurant.license_number && (
                   <div>
@@ -282,7 +283,7 @@ export default function RestaurantDetails() {
                 {restaurant.subscription_plan && (
                   <div>
                     <span className="block text-sm font-medium text-gray-500">{t('tenants.form.plan')}</span>
-                    <p className="text-gray-900">{t(`tenants.plan.${restaurant.subscription_plan}`, { defaultValue: restaurant.subscription_plan })}</p>
+                    <p className="text-gray-900">{dynamicT(`tenants.plan.${restaurant.subscription_plan}`, { defaultValue: restaurant.subscription_plan })}</p>
                   </div>
                 )}
 

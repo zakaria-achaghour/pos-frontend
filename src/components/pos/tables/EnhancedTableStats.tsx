@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '@/lib/money';
@@ -63,7 +64,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             <h3 className="text-lg font-semibold text-gray-900"><span aria-hidden="true">📊 </span>{t('tableAdmin.stats.title')}</h3>
             <p className="text-gray-600 text-sm">{t('tableAdmin.stats.subtitle')}</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Period Selector */}
             <div className="flex bg-gray-100 rounded-lg p-1" role="group" aria-label={t('tableAdmin.stats.period')}>
@@ -79,7 +80,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {t(`tableAdmin.stats.periods.${p}`)}
+                  {dynamicT(`tableAdmin.stats.periods.${p}`)}
                 </button>
               ))}
             </div>

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
@@ -144,7 +145,7 @@ const CashierDashboard: React.FC = () => {
                       : 'bg-blue-100 text-blue-700'
                   }`}
                 >
-                  {t(`payment.method.${order.payment_method}`, { defaultValue: order.payment_method }).toUpperCase()}
+                  {dynamicT(`payment.method.${order.payment_method}`, { defaultValue: order.payment_method }).toUpperCase()}
                 </span>
               </div>
               <p className="text-sm text-gray-500">

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
@@ -209,7 +210,7 @@ const KitchenManagement: React.FC = () => {
                 selected ? twMerge(style.solid, style.border) : 'border-line bg-surface text-fg'
               )}
             >
-              {t(`kitchen.lane.${lane}`)} ({byLane[lane].length})
+              {dynamicT(`kitchen.lane.${lane}`)} ({byLane[lane].length})
             </button>
           );
         })}
@@ -233,7 +234,7 @@ const KitchenManagement: React.FC = () => {
             return (
               <section
                 key={lane}
-                aria-label={t(`kitchen.lane.${lane}`)}
+                aria-label={dynamicT(`kitchen.lane.${lane}`)}
                 className={twMerge('space-y-4', activeLane === lane ? 'block' : 'hidden lg:block')}
               >
                 <h2
@@ -242,7 +243,7 @@ const KitchenManagement: React.FC = () => {
                     style.solid
                   )}
                 >
-                  <span>{t(`kitchen.lane.${lane}`)}</span>
+                  <span>{dynamicT(`kitchen.lane.${lane}`)}</span>
                   <span className="tabular-nums">{byLane[lane].length}</span>
                 </h2>
                 {byLane[lane].length === 0 ? (

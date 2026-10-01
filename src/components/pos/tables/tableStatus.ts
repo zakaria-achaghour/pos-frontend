@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import type { TFunction } from 'i18next';
 import { tableStateStyle, type StatusStyle } from '@/design/status';
 
@@ -9,5 +10,5 @@ export const tableStatusStyle = (status: string | undefined): StatusStyle =>
 export const tableStatusLabel = (t: TFunction, status: string | undefined): string => {
   if (status === 'out-of-order') return t('tableAdmin.outOfOrder');
   if (!status) return '';
-  return t(`tableState.${status}`, { defaultValue: status });
+  return dynamicT(`tableState.${status}`, { defaultValue: status });
 };

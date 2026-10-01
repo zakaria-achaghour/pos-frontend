@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +114,7 @@ export default function Tables() {
               onClick={() => handleTableClick(table)}
               aria-label={t('tables.tileLabel', {
                 n: table.number,
-                state: t(`tableState.${table.status}`, { defaultValue: state.label }),
+                state: dynamicT(`tableState.${table.status}`, { defaultValue: state.label }),
               })}
               className={twMerge(
                 'flex min-h-32 flex-col justify-between rounded-2xl border-2 bg-surface p-3 text-start shadow-sm transition-colors hover:bg-surface-2',
@@ -125,7 +126,7 @@ export default function Tables() {
                 <StatusPill
                   size="sm"
                   style={state}
-                  label={t(`tableState.${table.status}`, { defaultValue: state.label })}
+                  label={dynamicT(`tableState.${table.status}`, { defaultValue: state.label })}
                 />
               </div>
               <div className="space-y-1">
@@ -192,7 +193,7 @@ export default function Tables() {
                         selected ? 'bg-primary text-primary-fg ring-primary' : 'bg-surface text-fg ring-line hover:bg-surface-2'
                       )}
                     >
-                      {t(`tables.filter.${key}`)}
+                      {dynamicT(`tables.filter.${key}`)}
                     </button>
                   );
                 })}
@@ -243,7 +244,7 @@ export default function Tables() {
                 activeTab === tab ? 'bg-primary text-primary-fg' : 'text-fg hover:bg-surface-2'
               )}
             >
-              {t(`tables.tabs.${tab}`)}
+              {dynamicT(`tables.tabs.${tab}`)}
             </button>
           ))}
           <button

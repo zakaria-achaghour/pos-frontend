@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useId, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -44,9 +45,9 @@ export default function StaffForm({
   }), [t]);
 
   // Use API roles if available, otherwise fall back to hardcoded roles
-  const roleOptions = availableRoles && availableRoles.length > 0 
-    ? availableRoles 
-    : roles.map((r) => ({ name: r, label: t(`roles.${r}`) }));
+  const roleOptions = availableRoles && availableRoles.length > 0
+    ? availableRoles
+    : roles.map((r) => ({ name: r, label: dynamicT(`roles.${r}`) }));
 
   const startValues: StaffFormData = { ...defaultValues, ...initialValues };
 
@@ -137,7 +138,7 @@ as="select"
             >
               {roleOptions.map((r) => (
                 <option value={r.name} key={r.name}>
-                  {t(`roles.${r.name}`, { defaultValue: r.label })}
+                  {dynamicT(`roles.${r.name}`, { defaultValue: r.label })}
                 </option>
               ))}
             </Field>

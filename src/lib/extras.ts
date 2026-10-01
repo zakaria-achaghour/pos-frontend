@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import type { TFunction } from 'i18next';
 
 /**
@@ -16,7 +17,7 @@ export const EXTRAS = [
   { slug: 'egg', value: 'Fried Egg' },
 ] as const;
 
-export const extraLabel = (t: TFunction, value: string): string => {
+export const extraLabel = (_t: TFunction, value: string): string => {
   const known = EXTRAS.find((e) => e.value === value);
-  return known ? t(`extras.${known.slug}`, { defaultValue: value }) : value;
+  return known ? dynamicT(`extras.${known.slug}`, { defaultValue: value }) : value;
 };

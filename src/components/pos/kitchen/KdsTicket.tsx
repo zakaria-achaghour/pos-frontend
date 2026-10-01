@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
@@ -75,9 +76,9 @@ function KdsTicketComponent({ ticket, now, isNew, busy, onStart, onComplete }: K
 
       {/* Status / priority / station */}
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2">
-        <StatusPill style={status} label={t(`status.${ticket.status}`, { defaultValue: status.label })} />
+        <StatusPill style={status} label={dynamicT(`status.${ticket.status}`, { defaultValue: status.label })} />
         {ticket.priority !== 'normal' && (
-          <StatusPill style={priority} label={t(`priority.${ticket.priority}`, { defaultValue: priority.label })} />
+          <StatusPill style={priority} label={dynamicT(`priority.${ticket.priority}`, { defaultValue: priority.label })} />
         )}
         {ticket.cooking_station && (
           <span className="rounded-full bg-surface-2 px-3 py-1 text-sm font-medium text-fg-muted">

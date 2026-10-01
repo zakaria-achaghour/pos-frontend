@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import type { Restaurant } from '@/types/restaurant';
 
@@ -69,7 +70,7 @@ export default function RestaurantCard({
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
-            {t(`tenants.status.${status}`, { defaultValue: status })}
+            {dynamicT(`tenants.status.${status}`, { defaultValue: status })}
           </span>
         </div>
 

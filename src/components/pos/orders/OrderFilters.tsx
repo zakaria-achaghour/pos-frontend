@@ -21,7 +21,7 @@ interface OrderFiltersProps {
 }
 
 const ORDER_TYPES: OrderType[] = ['dine-in', 'takeout', 'delivery'];
-const TYPE_KEY: Record<OrderType, string> = {
+const TYPE_KEY: Record<OrderType, 'order.type.dineIn' | 'order.type.takeout' | 'order.type.delivery'> = {
   'dine-in': 'order.type.dineIn',
   takeout: 'order.type.takeout',
   delivery: 'order.type.delivery',

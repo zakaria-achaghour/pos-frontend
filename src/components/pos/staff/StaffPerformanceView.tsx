@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '@/lib/money';
 import type { StaffMember } from '@/types/staff';
@@ -25,7 +26,7 @@ export default function StaffPerformanceView({ staff }: StaffPerformanceViewProp
   const getPerformanceGrade = (member: StaffMember) => {
     const { customerRating, punctualityScore } = member.performance;
     const avgScore = (customerRating * 20 + punctualityScore) / 2; // Convert to 100 scale
-    
+
     if (avgScore >= 90) return { grade: 'A+', color: 'text-green-600', bg: 'bg-green-100' };
     if (avgScore >= 80) return { grade: 'A', color: 'text-green-600', bg: 'bg-green-100' };
     if (avgScore >= 70) return { grade: 'B', color: 'text-blue-600', bg: 'bg-blue-100' };
@@ -89,8 +90,8 @@ export default function StaffPerformanceView({ staff }: StaffPerformanceViewProp
             {sortedByPerformance.map((member, index) => {
               const grade = getPerformanceGrade(member);
               return (
-                <div 
-                  key={member.id} 
+                <div
+                  key={member.id}
                   className={`flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow ${
                     index < 3 ? 'border-yellow-200 bg-yellow-50' : 'border-gray-200'
                   }`}
@@ -107,14 +108,14 @@ export default function StaffPerformanceView({ staff }: StaffPerformanceViewProp
                       </div>
                       <div>
                         <div className="font-medium">{member.name}</div>
-                        <div className="text-sm text-gray-600">{t(`roles.${member.role}`, { defaultValue: member.role })}</div>
+                        <div className="text-sm text-gray-600">{dynamicT(`roles.${member.role}`, { defaultValue: member.role })}</div>
                       </div>
                     </div>
                     <div className={`px-2 py-1 rounded-full text-xs font-medium ${grade.bg} ${grade.color}`}>
                       {t('staffAdmin.performance.grade', { grade: grade.grade })}
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-4 gap-6 text-center">
                     <div>
                       <div className="text-lg font-bold">{member.performance.ordersCompleted}</div>

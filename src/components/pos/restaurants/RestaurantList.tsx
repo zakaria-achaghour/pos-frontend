@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import RestaurantCard from './RestaurantCard';
 import type { Restaurant } from '@/types/restaurant';
@@ -97,12 +98,11 @@ export default function RestaurantList({
                     type="checkbox"
                     aria-label={t('tenants.list.selectAll')}
                     className="h-4 w-4 text-blue-600 rounded"
+                    checked={restaurants.every(r => selectedRestaurants.includes(r.id))}
+                    ref={node => { if (node) node.indeterminate = restaurants.some(r => selectedRestaurants.includes(r.id)) && !restaurants.every(r => selectedRestaurants.includes(r.id)); }}
                     onChange={(e) => {
-                      if (e.target.checked) {
-                        restaurants.forEach(r => onSelectRestaurant(r.id));
-                      } else {
-                        restaurants.forEach(r => onSelectRestaurant(r.id));
-                      }
+                      restaurants.filter(r => selectedRestaurants.includes(r.id) !== e.target.checked)
+                        .forEach(r => onSelectRestaurant(r.id));
                     }}
                   />
                 </th>
@@ -160,7 +160,7 @@ export default function RestaurantList({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
-                      {t(`tenants.status.${status}`, { defaultValue: status })}
+                      {dynamicT(`tenants.status.${status}`, { defaultValue: status })}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -129,7 +130,7 @@ export default function OrderDetails() {
       if (!order) return;
 
       await orderAPI.updateOrderStatus(order.id, newStatus);
-      toast.success(t('orderDetails.toast.statusUpdated', { status: t(`status.${newStatus}`, { defaultValue: newStatus }) }));
+      toast.success(t('orderDetails.toast.statusUpdated', { status: dynamicT(`status.${newStatus}`, { defaultValue: newStatus }) }));
       fetchOrder(); // Refresh order data
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -183,7 +184,7 @@ export default function OrderDetails() {
 
   const typeLabel = (type: string) => {
     const key = type === 'dine-in' ? 'dineIn' : type;
-    return t(`order.type.${key}`, { defaultValue: type });
+    return dynamicT(`order.type.${key}`, { defaultValue: type });
   };
 
   const getTableDisplay = () => {
@@ -259,7 +260,7 @@ export default function OrderDetails() {
               {/* Order Status Badge */}
               <StatusPill
                 style={orderStatusStyle(order.status)}
-                label={t(`status.${order.status}`, { defaultValue: order.status })}
+                label={dynamicT(`status.${order.status}`, { defaultValue: order.status })}
               />
               {/* Payment Status Badge */}
               <span
@@ -292,7 +293,7 @@ export default function OrderDetails() {
           {order.priority && order.priority !== 'normal' && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${priorityStyle(order.priority).pill}`}>
-                {t('orderDetails.priority', { priority: t(`priority.${order.priority}`, { defaultValue: order.priority }) })}
+                {t('orderDetails.priority', { priority: dynamicT(`priority.${order.priority}`, { defaultValue: order.priority }) })}
               </span>
             </div>
           )}
@@ -315,7 +316,7 @@ export default function OrderDetails() {
                         </h4>
                         <StatusPill
                           style={orderStatusStyle(order.status)}
-                          label={t(`status.${order.status}`, { defaultValue: order.status })}
+                          label={dynamicT(`status.${order.status}`, { defaultValue: order.status })}
                           size="sm"
                         />
                       </div>

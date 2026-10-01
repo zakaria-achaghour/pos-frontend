@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import type { StaffScheduleViewProps } from '@/types/staff';
 import type { StaffMember } from '@/types/staff';
@@ -14,18 +15,18 @@ const days = [
 
 export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
   const { t } = useTranslation();
-  const dayLabel = (key: (typeof days)[number]['key']) => t(`staffAdmin.schedule.days.${key}`);
+  const dayLabel = (key: (typeof days)[number]['key']) => dynamicT(`staffAdmin.schedule.days.${key}`);
   // Get schedule summary for each day
   const getScheduleSummary = () => {
     return days.map(day => {
-      const workingStaff = staff.filter(member => 
+      const workingStaff = staff.filter(member =>
         member.shiftSchedule[day.key as keyof typeof member.shiftSchedule].isWorking
       );
-      
+
       const totalHours = workingStaff.reduce((sum, member) => {
         const shift = member.shiftSchedule[day.key as keyof typeof member.shiftSchedule];
         if (!shift.isWorking) return sum;
-        
+
         const start = new Date(`2000-01-01T${shift.start}:00`);
         const end = new Date(`2000-01-01T${shift.end}:00`);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -124,7 +125,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                           </div>
                           <div>
                             <div className="font-medium">{member.name}</div>
-                            <div className="text-xs text-gray-600">{t(`roles.${member.role}`, { defaultValue: member.role })}</div>
+                            <div className="text-xs text-gray-600">{dynamicT(`roles.${member.role}`, { defaultValue: member.role })}</div>
                           </div>
                         </div>
                       </td>
@@ -237,10 +238,10 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
           <div className="space-y-3">
             {(() => {
               const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() as keyof StaffMember['shiftSchedule'];
-              const todayStaff = staff.filter(member => 
+              const todayStaff = staff.filter(member =>
                 member.shiftSchedule[today]?.isWorking
               );
-              
+
               return todayStaff.length > 0 ? (
                 todayStaff.map((member) => {
                   const shift = member.shiftSchedule[today];
@@ -248,7 +249,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                     <div key={member.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{member.name}</span>
-                        <span className="text-xs text-gray-600">({t(`roles.${member.role}`, { defaultValue: member.role })})</span>
+                        <span className="text-xs text-gray-600">({dynamicT(`roles.${member.role}`, { defaultValue: member.role })})</span>
                       </div>
                       <span className="text-blue-600 text-sm">
                         {shift.start} - {shift.end}

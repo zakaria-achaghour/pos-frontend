@@ -1,4 +1,5 @@
-﻿import { Link } from 'react-router';
+import { dynamicT } from '@/i18n/dynamic';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuthRedux';
 
@@ -23,7 +24,7 @@ const Unauthorized = () => {
           </p>
           {user && (
             <p className="mt-1 text-center text-xs text-gray-500">
-              {t('auth.currentRole', { role: t(`roles.${user.role}`, { defaultValue: user.role }) })}
+              {t('auth.currentRole', { role: dynamicT(`roles.${user.role}`, { defaultValue: user.role }) })}
             </p>
           )}
         </div>

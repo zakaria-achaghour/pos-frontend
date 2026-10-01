@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '@/lib/money';
 import type { StaffMember, StaffStatus } from '@/types/staff';
@@ -80,7 +81,7 @@ export default function StaffCard({
                 member.role
               )}`}
             >
-              {t(`roles.${member.role}`, { defaultValue: member.role })}
+              {dynamicT(`roles.${member.role}`, { defaultValue: member.role })}
             </span>
             <div className="mt-1">
               <span
@@ -88,7 +89,7 @@ export default function StaffCard({
                   member.status
                 )}`}
               >
-                {t(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
+                {dynamicT(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
               </span>
             </div>
           </div>
