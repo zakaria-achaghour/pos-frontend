@@ -1,22 +1,23 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useSidebar } from "../hooks/useSidebarRedux";
 import { useTheme } from "../hooks/useThemeRedux";
 import { useAuth } from "../hooks/useAuthRedux";
+import { Suspense } from "react";
 import { Outlet, useLocation } from "react-router";
+import RouteFallback from "@/components/common/RouteFallback";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 
 const LayoutContent: React.FC = () => {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const { theme } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
 
   // Apply theme class to document root for table components
   useEffect(() => {
-    document.documentElement.className = theme;
+    // toggle only the theme class; don't wipe other classes on <html>
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
   // Determine if current page is table-related for enhanced styling
@@ -28,13 +29,12 @@ const LayoutContent: React.FC = () => {
   // Full-screen layout for kitchen staff and waiters (header only, no sidebar)
   if (isFullScreenRole) {
     return (
-      <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark'
-        ? 'bg-gray-900 text-white'
-        : 'bg-gray-50 text-gray-900'
-        }`}>
+      <div className="min-h-screen bg-bg text-fg transition-colors duration-300">
         <AppHeader />
         <div className="p-4">
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </div>
       </div>
     );
@@ -43,16 +43,11 @@ const LayoutContent: React.FC = () => {
   // Normal layout for other roles
   return (
 
-    <div className={`min-h-screen md:flex transition-colors duration-300 ${theme === 'dark'
-      ? 'bg-gray-900 text-white'
-      : 'bg-gray-50 text-gray-900'
-      } ${isTablePage ? 'table-management-layout' : ''}`}>
+    <div className={`min-h-screen md:flex bg-bg text-fg transition-colors duration-300 ${isTablePage ? 'table-management-layout' : ''}`}>
       <AppSidebar />
       <Backdrop />
-      <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "md:ml-25" : "md:ml-16"
-          } ${isMobileOpen ? "ml-0" : ""}`}
-      >
+      {/* The sidebar slot already takes its own width in the flex row: no extra margin here */}
+      <div className="min-w-0 flex-1">
         <AppHeader />
         <div className={`p-4 mx-auto max-w-7xl md:p-6 ${isTablePage ? 'table-management-content' : ''
           }`}>
@@ -64,7 +59,9 @@ const LayoutContent: React.FC = () => {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <Outlet />
+              <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
             </motion.div>
           </AnimatePresence>
         </div>

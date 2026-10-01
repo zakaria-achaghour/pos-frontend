@@ -1,4 +1,6 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import RouteFallback from "@/components/common/RouteFallback";
 import { ScrollToTop } from "@/components/common/ScrollToTop";
 import NotFound from "@/pages/OtherPage/NotFound";
 
@@ -11,40 +13,43 @@ import Unauthorized from "@/pages/Auth/Unauthorized";
 import RoleBasedRedirect from "@/components/auth/RoleBasedRedirect";
 
 // POS Pages
-import Dashboard from "@/pages/Dashboard/Dashboard";
-import OwnerDashboard from "@/pages/Dashboard/OwnerDashboard";
-import CashierDashboard from "@/pages/Dashboard/CashierDashboard";
-import Tables from "@/pages/Tables/Tables";
-import TableManagement from "@/pages/Tables/TableManagement";
-import EnhancedTableManagement from "@/pages/Tables/EnhancedTableManagement";
-import StaffManagement from "@/pages/Staff/StaffManagement";
-import CategoriesManagement from "@/pages/Menu/CategoriesManagement";
-import MenuItemsManagement from "@/pages/Menu/MenuItemsManagement";
-import MenuItemForm from "@/pages/Menu/MenuItemForm";
-import OrderCreate from "@/pages/Orders/QuickOrderCreate";
-import OrderDetails from "@/pages/Orders/OrderDetails";
-import OrdersManagement from "@/pages/Orders/OrdersManagement";
-import PaymentConfirmation from "@/pages/Orders/PaymentConfirmation";
-import ReceiptPreview from "@/pages/Orders/ReceiptPreview";
-import AdminTenants from "@/pages/Restaurant/AdminTenants";
-import AdminTenantOverview from "@/pages/Restaurant/AdminTenantOverview";
-import CreateRestaurant from "@/pages/Restaurant/CreateRestaurant";
-import EditRestaurant from "@/pages/Restaurant/EditRestaurant";
-import RestaurantDetails from "@/pages/Restaurant/RestaurantDetails";
-import RoleManagement from "@/pages/Admin/Roles/RoleManagement";
-import CreateRole from "@/pages/Admin/Roles/CreateRole";
-import EditRole from "@/pages/Admin/Roles/EditRole";
-import PermissionManagement from "@/pages/Admin/Permissions/PermissionManagement";
 
 // Protected Route Component
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { KitchenManagement } from './components/pos';
+
+// Pages are code-split: each route downloads when first visited
+const Dashboard = lazy(() => import("@/pages/Dashboard/Dashboard"));
+const OwnerDashboard = lazy(() => import("@/pages/Dashboard/OwnerDashboard"));
+const CashierDashboard = lazy(() => import("@/pages/Dashboard/CashierDashboard"));
+const Tables = lazy(() => import("@/pages/Tables/Tables"));
+const TableManagement = lazy(() => import("@/pages/Tables/TableManagement"));
+const EnhancedTableManagement = lazy(() => import("@/pages/Tables/EnhancedTableManagement"));
+const StaffManagement = lazy(() => import("@/pages/Staff/StaffManagement"));
+const CategoriesManagement = lazy(() => import("@/pages/Menu/CategoriesManagement"));
+const MenuItemsManagement = lazy(() => import("@/pages/Menu/MenuItemsManagement"));
+const MenuItemForm = lazy(() => import("@/pages/Menu/MenuItemForm"));
+const OrderCreate = lazy(() => import("@/pages/Orders/QuickOrderCreate"));
+const OrderDetails = lazy(() => import("@/pages/Orders/OrderDetails"));
+const OrdersManagement = lazy(() => import("@/pages/Orders/OrdersManagement"));
+const PaymentConfirmation = lazy(() => import("@/pages/Orders/PaymentConfirmation"));
+const ReceiptPreview = lazy(() => import("@/pages/Orders/ReceiptPreview"));
+const AdminTenants = lazy(() => import("@/pages/Restaurant/AdminTenants"));
+const AdminTenantOverview = lazy(() => import("@/pages/Restaurant/AdminTenantOverview"));
+const CreateRestaurant = lazy(() => import("@/pages/Restaurant/CreateRestaurant"));
+const EditRestaurant = lazy(() => import("@/pages/Restaurant/EditRestaurant"));
+const RestaurantDetails = lazy(() => import("@/pages/Restaurant/RestaurantDetails"));
+const RoleManagement = lazy(() => import("@/pages/Admin/Roles/RoleManagement"));
+const CreateRole = lazy(() => import("@/pages/Admin/Roles/CreateRole"));
+const EditRole = lazy(() => import("@/pages/Admin/Roles/EditRole"));
+const PermissionManagement = lazy(() => import("@/pages/Admin/Permissions/PermissionManagement"));
+const KitchenManagement = lazy(() => import("@/pages/Kitchen/KitchenManagement"));
 
 export default function App() {
   return (
     <>
       <Router>
         <ScrollToTop />
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public Auth Routes */}
           <Route path="/login" element={<Login />} />
@@ -222,6 +227,7 @@ export default function App() {
           {/* Fallback Routes */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </Router>
     </>
   );

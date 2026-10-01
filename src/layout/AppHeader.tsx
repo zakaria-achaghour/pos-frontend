@@ -2,15 +2,19 @@ import React, { useState } from "react";
 import { Link } from "react-router";
 import { useSidebar } from "../hooks/useSidebarRedux";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
-import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import { useAuth } from "../hooks/useAuthRedux";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../components/common/LanguageSwitcher";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  // Kitchen and waiter get a header-only layout: there is no sidebar to toggle
+  const hasSidebar = user?.role !== 'waiter' && user?.role !== 'kitchen';
 
   const restaurantName =
     user?.restaurant?.name ||
@@ -42,17 +46,17 @@ const AppHeader: React.FC = () => {
   const homeLink = user?.role === 'waiter' ? '/tables' : '/';
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 dark:border-gray-800 dark:bg-gray-900">
+    <header className="sticky top-0 z-50 w-full border-b border-line bg-surface text-fg">
       <div className="flex items-center justify-between w-full px-4 py-3 sm:px-6 lg:py-4 xl:flex-row">
         {/* Left Section: Toggle Button + Logo */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Toggle Sidebar Button - Hidden for waiters */}
-          {user?.role !== 'waiter' && (
+          {/* Toggle Sidebar Button - only for roles that have a sidebar */}
+          {hasSidebar && (
             <button
               className={`flex items-center justify-center w-10 h-10 md:w-11 md:h-11 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 md:border ${isMobileOpen ? "bg-gray-100 dark:bg-white/5" : ""
                 }`}
               onClick={handleToggle}
-              aria-label="Toggle Sidebar"
+              aria-label={t("nav.toggleSidebar")}
               aria-expanded={isMobileOpen}
             >
               {isMobileOpen ? (
@@ -96,13 +100,13 @@ const AppHeader: React.FC = () => {
             <Link
               to={homeLink}
               className="flex items-center gap-2 text-gray-900 dark:text-white"
-              aria-label={`${restaurantName || "Restaurant"} dashboard`}
+              aria-label={`${restaurantName || "Restaurant"} — ${t("nav.home")}`}
             >
               {restaurantLogo && (
                 <img
                   className="h-9 w-9 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
                   src={restaurantLogo}
-                  alt={`${restaurantName || "Restaurant"} Logo`}
+                  alt=""
                 />
               )}
               {restaurantName && (
@@ -119,8 +123,8 @@ const AppHeader: React.FC = () => {
           {/* Mobile Menu Toggle Button */}
           <button
             onClick={toggleApplicationMenu}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 xl:hidden"
-            aria-label="Toggle application menu"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+            aria-label={t("nav.toggleMenu")}
             aria-expanded={isApplicationMenuOpen}
           >
             <svg
@@ -140,10 +144,10 @@ const AppHeader: React.FC = () => {
             </svg>
           </button>
 
-          {/* Desktop Actions - Always visible on XL+ */}
-          <div className="items-center hidden gap-3 xl:flex">
+          {/* Actions are visible from tablet width up; phones use the menu button */}
+          <div className="items-center hidden gap-3 md:flex">
+            <LanguageSwitcher />
             <ThemeToggleButton />
-            <NotificationDropdown />
             <UserDropdown />
           </div>
         </div>
@@ -151,10 +155,10 @@ const AppHeader: React.FC = () => {
 
       {/* Mobile Actions Menu - Dropdown on mobile */}
       {isApplicationMenuOpen && (
-        <div className="flex items-center justify-between w-full gap-4 px-4 py-4 border-t border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 sm:px-6 xl:hidden">
+        <div className="flex items-center justify-between w-full gap-4 px-4 py-4 border-t border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-800 sm:px-6 md:hidden">
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <ThemeToggleButton />
-            <NotificationDropdown />
           </div>
           <UserDropdown />
         </div>

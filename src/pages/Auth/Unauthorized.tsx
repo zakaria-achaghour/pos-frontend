@@ -1,7 +1,9 @@
 ﻿import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuthRedux';
 
 const Unauthorized = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   return (
@@ -14,14 +16,14 @@ const Unauthorized = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Access Denied
+            {t('auth.accessDenied')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            You do not have permission to access this page.
+            {t('auth.noPermission')}
           </p>
           {user && (
             <p className="mt-1 text-center text-xs text-gray-500">
-              Current role: {user.role}
+              {t('auth.currentRole', { role: t(`roles.${user.role}`, { defaultValue: user.role }) })}
             </p>
           )}
         </div>
@@ -30,7 +32,7 @@ const Unauthorized = () => {
             to="/dashboard"
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Go to Dashboard
+            {t('auth.goToDashboard')}
           </Link>
         </div>
       </div>

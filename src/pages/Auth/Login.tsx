@@ -1,8 +1,10 @@
 ﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuthRedux';
 
 const Login = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
@@ -11,14 +13,9 @@ const Login = () => {
 
   // Check if user is already authenticated when component mounts
   useEffect(() => {
-    console.log('🔍 Login component mounted, checking existing auth...');
-    console.log('👤 Current user:', user);
-    console.log('⏳ Is loading:', isLoading);
     
     if (!isLoading && user) {
-      console.log('✅ User already authenticated, redirecting...');
       const redirectPath = getRoleBasedRedirect();
-      console.log('🧭 Redirect path:', redirectPath);
       navigate(redirectPath, { replace: true });
     }
   }, [user, isLoading, navigate, getRoleBasedRedirect]);
@@ -28,20 +25,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('🚀 Starting login process...');
       const result = await login(email, password);
-      console.log('📨 Login result:', result);
       
       if (result.success && result.redirectPath) {
-        console.log('✅ Login successful, redirect path provided:', result.redirectPath);
-        console.log('🧭 Navigating to:', result.redirectPath);
         navigate(result.redirectPath);
       } else if (result.success) {
         // Fallback to getRoleBasedRedirect if no redirectPath provided
-        console.log('✅ Login successful, getting redirect path from context...');
         const redirectPath = getRoleBasedRedirect();
-        console.log('🔀 Redirect path from context:', redirectPath);
-        console.log('🧭 Navigating to:', redirectPath);
         navigate(redirectPath);
       }
       // If login fails, the error will be handled by Redux and displayed via loginError
@@ -64,7 +54,7 @@ const Login = () => {
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Checking authentication...</p>
+            <p className="mt-4 text-gray-600">{t('auth.checking')}</p>
           </div>
         </div>
       </div>
@@ -76,10 +66,10 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            POS System Login
+            {t('auth.title')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
+            {t('auth.subtitle')}
           </p>
         </div>
         
@@ -92,7 +82,7 @@ const Login = () => {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-gray-700">{t('auth.email')}</label>
               <input
                 type="email"
                 value={email}
@@ -102,7 +92,7 @@ const Login = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-sm font-medium text-gray-700">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
@@ -119,52 +109,52 @@ const Login = () => {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('auth.signingIn') : t('auth.signIn')}
             </button>
           </div>
         </form>
 
         <div className="mt-6">
-          <p className="text-sm text-gray-600 mb-3">Quick Login (Demo):</p>
+          <p className="text-sm text-gray-600 mb-3">{t('auth.quickLogin')}</p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => quickLogin('superadmin@pos.com')}
               className="px-3 py-2 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
             >
-              Super Admin
+              {t('roles.superadmin')}
             </button>
             <button
               onClick={() => quickLogin('owner@restaurant.com')}
               className="px-3 py-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
             >
-              Owner
+              {t('roles.owner')}
             </button>
             <button
               onClick={() => quickLogin('manager@restaurant.com')}
               className="px-3 py-2 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
             >
-              Manager
+              {t('roles.manager')}
             </button>
             <button
               onClick={() => quickLogin('cashier@restaurant.com')}
               className="px-3 py-2 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
             >
-              Cashier
+              {t('roles.cashier')}
             </button>
             <button
               onClick={() => quickLogin('waiter@restaurant.com')}
               className="px-3 py-2 text-xs bg-pink-100 text-pink-700 rounded hover:bg-pink-200"
             >
-              Waiter
+              {t('roles.waiter')}
             </button>
             <button
               onClick={() => quickLogin('kitchen@restaurant.com')}
               className="px-3 py-2 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
             >
-              Kitchen
+              {t('roles.kitchen')}
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2">Password: password123</p>
+          <p className="text-xs text-gray-500 mt-2">{t('auth.demoPassword', { password: 'password123' })}</p>
         </div>
       </div>
     </div>
