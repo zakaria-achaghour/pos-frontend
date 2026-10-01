@@ -1,5 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import { refreshSession, expireSession } from './session';
+import { localizeApiError, localizeApiResponse } from '@/lib/apiMessages';
 import { apiConfig } from '../config';
 
 // Create axios instance with environment configuration
@@ -27,41 +29,31 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Retry each protected request once after refreshing the shared JWT.
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    return response;
-  },
-  (error: AxiosError) => {
-    // Handle common errors
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      
-      // Only redirect if not already on login page
-      const isOnLoginPage = window.location.pathname === '/login';
-      
-      if (!isOnLoginPage) {
-        window.location.href = '/login';
+  (response: AxiosResponse) => { localizeApiResponse(response.data); return response; },
+  async (error: AxiosError) => {
+    const config = error.config as (typeof error.config & { _retried?: boolean });
+    const sentToken = String(config?.headers?.Authorization ?? '').replace(/^Bearer /, '');
+    const currentToken = localStorage.getItem('auth_token');
+    const authRoute = /\/(?:login|refresh|logout)(?:\?|$)/.test(config?.url ?? '');
+    if (error.response?.status === 401 && config && !authRoute && sentToken && currentToken) {
+      if (!config._retried) {
+        config._retried = true;
+        try {
+          // Another request may already have rotated the token while this one was in flight.
+          const token = currentToken !== sentToken ? currentToken : await refreshSession(sentToken);
+          config.headers.Authorization = `Bearer ${token}`;
+          return apiClient.request(config);
+        } catch {
+          expireSession(sentToken);
+        }
+      } else {
+        expireSession(sentToken);
       }
     }
-    
-    if (error.response?.status === 403) {
-      // Access denied
-      console.error('Access denied:', error.response.data);
-    }
-    
-    if (error.response?.status === 422) {
-      // Validation errors
-      console.error('Validation errors:', error.response.data);
-    }
-    
-    if (error.response && error.response.status >= 500) {
-      // Server errors
-      console.error('Server error:', error.response.data);
-    }
-    
+    // Normalize all server messages at the boundary, including callers outside RTK Query.
+    localizeApiError(error);
     return Promise.reject(error);
   }
 );
@@ -90,46 +82,5 @@ export interface PaginatedResponse<T = unknown> {
   to?: number;
 }
 
-interface ErrorBody {
-  message?: string;
-  errors?: Record<string, string[]>;
-}
-
-// Error handler utility
-export const handleApiError = (error: AxiosError): string => {
-  // First check if there's a specific error message from the backend
-  const backendMessage = (error.response?.data as ErrorBody | undefined)?.message;
-  if (backendMessage) {
-    return backendMessage;
-  }
-  
-  if (error.response?.status === 401) {
-    return 'Your session has expired. Please log in again.';
-  }
-  
-  if (error.response?.status === 403) {
-    return 'You do not have permission to perform this action.';
-  }
-  
-  if (error.response?.status === 422) {
-    const errors = (error.response.data as ErrorBody | undefined)?.errors;
-    if (errors) {
-      return Object.values(errors).flat().join(', ');
-    }
-    return (error.response.data as ErrorBody | undefined)?.message || 'Validation failed.';
-  }
-  
-  if (error.response?.status === 404) {
-    return 'The requested resource was not found.';
-  }
-  
-  if (error.response?.status && error.response.status >= 500) {
-    return 'A server error occurred. Please try again later.';
-  }
-  
-  if (error.code === 'ECONNABORTED') {
-    return 'Request timeout. Please check your connection and try again.';
-  }
-  
-  return 'An unexpected error occurred. Please try again.';
-};
+// Error messages are localized by the response interceptor.
+export const handleApiError = (error: AxiosError): string => localizeApiError(error);

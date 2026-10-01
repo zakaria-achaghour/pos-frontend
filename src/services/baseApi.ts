@@ -14,7 +14,7 @@ export const toApiError = (e: unknown): ApiError => {
   const errors = err.response?.data?.errors;
   return {
     ...(status !== undefined && { status }),
-    message: err.response ? handleApiError(err) : err.message || 'An unexpected error occurred.',
+    message: handleApiError(err),
     ...(errors && { errors }),
   };
 };

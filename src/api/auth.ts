@@ -60,7 +60,7 @@ export const authAPI = {
     const response = await apiClient.post<LoginResponse>('/login', credentials);
     // Handle direct response format from Laravel backend
     const user = response.data.user;
-    
+
     // Convert roles array to single role for frontend compatibility
     if (user.roles && user.roles.length > 0) {
       const roleMapping: { [key: string]: string } = {
@@ -129,8 +129,8 @@ export const authAPI = {
    * Refresh JWT token
    */
   refresh: async (): Promise<RefreshResponse> => {
-    const response = await apiClient.post<ApiResponse<RefreshResponse>>('/refresh');
-    return response.data.data;
+    const response = await apiClient.post<{ access_token: string; token_type: string; expires_in: number }>('/refresh');
+    return { token: response.data.access_token, token_type: response.data.token_type, expires_in: response.data.expires_in };
   },
 
   /**
@@ -188,12 +188,12 @@ export const authAPI = {
     if (!user) return false;
 
     const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
-    
+
     // Check both role property and roles array
     if (user.role && roles.includes(user.role)) {
       return true;
     }
-    
+
     if (user.roles) {
       const roleMapping: { [key: string]: string } = {
         'SuperAdmin': 'superadmin',
@@ -203,13 +203,13 @@ export const authAPI = {
         'Waiter': 'waiter',
         'Kitchen': 'kitchen'
       };
-      
+
       return user.roles.some(backendRole => {
         const frontendRole = roleMapping[backendRole];
         return frontendRole && roles.includes(frontendRole);
       });
     }
-    
+
     return false;
   },
 
