@@ -49,6 +49,7 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   tax: number;
+  service_charge_amount?: number;
   tax_amount?: number; // Backend uses tax_amount
   discount: number;
   discount_amount?: number; // Backend uses discount_amount

@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -13,15 +14,12 @@ const formatTime = (iso: string, locale: string): string => {
     : date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 };
 
-/**
- * Active (not completed / cancelled) orders. The API cannot yet filter by the logged-in
- * waiter (waiter ids belong to the staff table, not users), so this lists all active orders.
- */
+/** Active orders assigned to the signed-in waiter, filtered before server pagination. */
 export const ActiveOrdersList: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { t, i18n } = useTranslation();
-  const { orders, loading, fetchOrders, updateOrderStatus } = useOrderManagement(50);
+  const { orders, loading, fetchOrders, updateOrderStatus } = useOrderManagement(50, { mine: true, initialStatus: 'active' });
 
   const activeOrders = orders.filter((order) => order.status !== 'completed' && order.status !== 'cancelled');
 
@@ -93,7 +91,7 @@ export const ActiveOrdersList: React.FC = () => {
               </button>
 
               <div className="flex shrink-0 flex-col items-end gap-2">
-                <StatusPill style={status} label={t(`status.${order.status}`, { defaultValue: status.label })} />
+                <StatusPill style={status} label={dynamicT(`status.${order.status}`, { defaultValue: status.label })} />
                 <p className="text-pos-price font-bold tabular-nums">{formatMoney(order.total)}</p>
                 <p className="text-sm text-fg-muted">{t('cart.itemCount', { count: order.items.length })}</p>
               </div>

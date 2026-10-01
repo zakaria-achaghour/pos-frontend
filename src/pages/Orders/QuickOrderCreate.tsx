@@ -417,7 +417,7 @@ export default function QuickOrderCreate() {
         table_id: orderType === 'dine-in' ? Number(selectedTable) : undefined,
         customer_name: customerName || undefined,
         priority: priority,
-        waiter_id: user?.id,
+        // The API resolves the signed-in waiter to a staff ID.
         items: cart.map(item => ({
           menu_item_id: item.menu_item_id,
           quantity: item.quantity,

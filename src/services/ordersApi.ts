@@ -10,6 +10,8 @@ export interface OrderListArgs {
   type?: string;
   table_id?: number;
   waiter_id?: number;
+  mine?: 0 | 1;
+  search?: string;
   date_from?: string;
   date_to?: string;
 }

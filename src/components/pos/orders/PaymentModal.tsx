@@ -1,3 +1,4 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
@@ -7,11 +8,8 @@ import { emitCashierDashboardRefresh } from '@/utils/cashierEvents';
 import { formatMoney, toCents } from '@/lib/money';
 import type { Order } from '@/types/order';
 
-/**
- * The backend's PATCH /orders/{id}/payment does not apply `discount_amount`: the order would keep its
- * full total while the cashier collected less. Keep this off until the API applies discounts.
- */
-const SUPPORTS_DISCOUNT = false;
+// Discounts are absolute amounts, recalculated by the backend.
+const SUPPORTS_DISCOUNT = true;
 
 type Method = 'cash' | 'card' | 'mobile';
 const METHODS: Method[] = ['cash', 'card', 'mobile'];
@@ -60,16 +58,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, order, onC
     setMethod(existing === 'cash' || existing === 'card' || existing === 'mobile' ? existing : 'cash');
     setAmountReceived(toCents(Number(order.total) || 0).toFixed(2));
     setTipAmount('0');
-    setDiscountAmount('0');
+    setDiscountAmount(String(order.discount_amount ?? order.discount ?? 0));
     setIsSuccess(false);
     setPaidAt(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, orderId]);
 
-  const orderTotal = toCents(Number(order?.total) || 0);
+  const orderTotal = toCents(Number(order?.subtotal ?? 0) + Number(order?.tax_amount ?? order?.tax ?? 0) + Number(order?.service_charge_amount ?? 0));
   const tip = toCents(parseFloat(tipAmount) || 0);
   const discount = SUPPORTS_DISCOUNT ? toCents(parseFloat(discountAmount) || 0) : 0;
-  const finalTotal = toCents(orderTotal + tip - discount);
+  const finalTotal = toCents(Math.max(0, orderTotal - discount) + tip);
   const received = toCents(parseFloat(amountReceived) || 0);
   const change = toCents(received - finalTotal);
   const shortBy = toCents(finalTotal - received);
@@ -92,7 +90,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, order, onC
         payment_status: 'completed',
         ...(method === 'cash' && { amount_received: received }),
         ...(tip > 0 && { tip_amount: tip }),
-        ...(discount > 0 && { discount_amount: discount }),
+        discount_amount: discount,
       });
       emitCashierDashboardRefresh();
       setPaidAt(new Date().toISOString());
@@ -138,7 +136,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, order, onC
               <Icon name="check" className="h-9 w-9" />
             </span>
             <p className="text-fg-muted">
-              {t('payment.completedBody', { order: orderLabel, method: t(`payment.method.${method}`) })}
+              {t('payment.completedBody', { order: orderLabel, method: dynamicT(`payment.method.${method}`) })}
             </p>
             {paidAt && <p className="text-sm text-fg-muted">{new Date(paidAt).toLocaleString()}</p>}
           </div>
@@ -210,7 +208,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, order, onC
                   method === m ? 'bg-primary text-primary-fg ring-primary' : 'bg-surface text-fg ring-line hover:bg-surface-2'
                 )}
               >
-                {t(`payment.method.${m}`)}
+                {dynamicT(`payment.method.${m}`)}
               </button>
             ))}
           </div>

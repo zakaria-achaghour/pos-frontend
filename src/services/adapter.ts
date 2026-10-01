@@ -129,6 +129,7 @@ export function normalizeOrder(raw: Dict): Order {
     items: itemsRaw.filter(isObject).map(normalizeOrderItem),
     subtotal: num(raw['subtotal']),
     tax: num(raw['tax_amount'] ?? raw['tax']),
+    service_charge_amount: num(raw['service_charge_amount']),
     tax_amount: num(raw['tax_amount'] ?? raw['tax']),
     discount: num(raw['discount_amount'] ?? raw['discount']),
     discount_amount: num(raw['discount_amount'] ?? raw['discount']),

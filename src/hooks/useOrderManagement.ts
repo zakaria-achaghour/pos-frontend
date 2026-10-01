@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   useGetOrdersQuery,
@@ -26,7 +27,6 @@ import type {
 
 const EMPTY_ORDERS: Order[] = [];
 
-const isActiveStatus = (status: OrderStatus) => status !== 'completed' && status !== 'cancelled';
 
 const calculateStats = (orders: Order[]): OrderStats => {
   const stats: OrderStats = {
@@ -63,7 +63,7 @@ const errorMessage = (err: unknown, fallback: string): string => {
  */
 export const useOrderManagement = (
   initialPerPage: number = 12,
-  options: { autoRefresh?: boolean } = {}
+  options: { autoRefresh?: boolean; mine?: boolean; initialStatus?: OrderFilter } = {}
 ): UseOrderManagementReturn => {
   const { autoRefresh = true } = options;
   // UI state
@@ -71,7 +71,7 @@ export const useOrderManagement = (
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [statusFilter, setStatusFilter] = useState<OrderFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<OrderFilter>(options.initialStatus ?? 'all');
   const [typeFilter, setTypeFilter] = useState<OrderTypeFilter>('all');
   const [tableFilter, setTableFilter] = useState<number | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -82,14 +82,16 @@ export const useOrderManagement = (
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Server filters. The API has no `search` and no "active" status, so those are applied below.
+  // Filtering happens before server pagination.
   const queryArgs = useMemo<OrderListArgs>(() => {
     const args: OrderListArgs = { page, per_page: perPage };
-    if (statusFilter !== 'all' && statusFilter !== 'active') args.status = statusFilter;
+    if (statusFilter !== 'all') args.status = statusFilter;
     if (typeFilter !== 'all') args.type = typeFilter;
     if (tableFilter !== 'all') args.table_id = tableFilter;
+    if (searchTerm.trim()) args.search = searchTerm.trim();
+    if (options.mine) args.mine = 1;
     return args;
-  }, [page, perPage, statusFilter, typeFilter, tableFilter]);
+  }, [page, perPage, statusFilter, typeFilter, tableFilter, searchTerm, options.mine]);
 
   const { data, isLoading, error: queryError, refetch } = useGetOrdersQuery(queryArgs, {
     pollingInterval: autoRefresh ? LIVE_POLL_MS : 0,
@@ -106,22 +108,7 @@ export const useOrderManagement = (
 
   const orders = data?.items ?? EMPTY_ORDERS;
 
-  const filteredOrders = useMemo(() => {
-    let list = orders;
-    if (statusFilter === 'active') list = list.filter((o) => isActiveStatus(o.status));
-    const term = searchTerm.trim().toLowerCase();
-    if (term) {
-      list = list.filter(
-        (o) =>
-          o.orderNumber.toLowerCase().includes(term) ||
-          String(o.id).includes(term) ||
-          o.customer?.name?.toLowerCase().includes(term) ||
-          o.table?.number?.toLowerCase().includes(term) ||
-          o.items.some((item) => item.menuItem?.name?.toLowerCase().includes(term))
-      );
-    }
-    return list;
-  }, [orders, statusFilter, searchTerm]);
+  const filteredOrders = orders;
 
   const orderStats = useMemo(() => calculateStats(filteredOrders), [filteredOrders]);
 
@@ -169,13 +156,13 @@ export const useOrderManagement = (
   }, [refetch]);
 
   const createOrder = (body: CreateOrderData): Promise<Order> =>
-    perform(() => createOrderMutation(body).unwrap(), 'Order created successfully!', 'Failed to create order');
+    perform(() => createOrderMutation(body).unwrap(), i18n.t('notifications.orderCreated'), i18n.t('notifications.orderFailed'));
 
   const updateOrder = async (id: number, body: UpdateOrderData) => {
     await perform(
       () => updateOrderMutation({ id, data: body as unknown as Record<string, unknown> }).unwrap(),
-      'Order updated successfully!',
-      'Failed to update order'
+      i18n.t('notifications.orderUpdated'),
+      i18n.t('notifications.orderFailed')
     );
   };
 
@@ -183,36 +170,36 @@ export const useOrderManagement = (
   const deleteOrder = async (id: number) => {
     await perform(
       () => updateStatusMutation({ id, status: 'cancelled' }).unwrap(),
-      'Order cancelled successfully!',
-      'Failed to cancel order'
+      i18n.t('notifications.orderCancelled'),
+      i18n.t('notifications.orderFailed')
     );
   };
 
   const updateOrderStatus = async (id: number, status: OrderStatus) => {
     await perform(
       () => updateStatusMutation({ id, status }).unwrap(),
-      `Order status updated to ${status}!`,
-      'Failed to update order status'
+      i18n.t('notifications.orderUpdated'),
+      i18n.t('notifications.orderFailed')
     );
   };
 
   const addOrderItem = async (orderId: number, item: AddOrderItemData) => {
-    await perform(() => addItemMutation({ orderId, item }).unwrap(), 'Item added to order!', 'Failed to add item to order');
+    await perform(() => addItemMutation({ orderId, item }).unwrap(), i18n.t('notifications.orderItemAdded'), i18n.t('notifications.orderFailed'));
   };
 
   const removeOrderItem = async (orderId: number, itemId: number) => {
     await perform(
       () => removeItemMutation({ orderId, itemId }).unwrap(),
-      'Item removed from order!',
-      'Failed to remove item from order'
+      i18n.t('notifications.orderItemRemoved'),
+      i18n.t('notifications.orderFailed')
     );
   };
 
   const closeOrder = async (orderId: number, paymentData: { payment_method: PaymentMethod; amount_paid: number }) => {
     await perform(
       () => closeOrderMutation({ orderId, ...paymentData }).unwrap(),
-      'Order closed successfully!',
-      'Failed to close order'
+      i18n.t('notifications.orderClosed'),
+      i18n.t('notifications.orderFailed')
     );
   };
 
@@ -244,7 +231,7 @@ export const useOrderManagement = (
     setPage(1);
   };
 
-  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch orders') : null);
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.orderFetch')) : null);
 
   return {
     // Data
@@ -294,7 +281,7 @@ export const useOrderManagement = (
     setStatusFilter: handleSetStatusFilter,
     setTypeFilter: handleSetTypeFilter,
     setTableFilter: handleSetTableFilter,
-    setSearchTerm,
+    setSearchTerm: (term: string) => { setSearchTerm(term); setPage(1); },
     clearError: () => setActionError(null),
     clearSuccessMessage: () => setSuccessMessage(null),
   };
