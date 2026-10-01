@@ -1,155 +1,112 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { Button, Skeleton, StatusPill, useToast } from '@/components/kit';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
-import { useAuth } from '@/hooks/useAuthRedux';
-import type { Order } from '@/types/order';
-import { getOrderStatusColor, getKitchenStatusIcon } from '@/utils/orderStatus';
+import { orderStatusStyle } from '@/design/status';
+import { formatMoney } from '@/lib/money';
 
+const formatTime = (iso: string, locale: string): string => {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+};
+
+/**
+ * Active (not completed / cancelled) orders. The API cannot yet filter by the logged-in
+ * waiter (waiter ids belong to the staff table, not users), so this lists all active orders.
+ */
 export const ActiveOrdersList: React.FC = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const {
-        orders,
-        loading,
-        fetchOrders,
-        updateOrderStatus,
-        statusFilter,
-        setStatusFilter
-    } = useOrderManagement(50); // Fetch more items per page for the list
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { t, i18n } = useTranslation();
+  const { orders, loading, fetchOrders, updateOrderStatus } = useOrderManagement(50);
 
-    // Refresh orders on mount and every 30 seconds
-    useEffect(() => {
-        fetchOrders();
-        const interval = setInterval(fetchOrders, 30000);
-        return () => clearInterval(interval);
-    }, [fetchOrders]);
+  const activeOrders = orders.filter((order) => order.status !== 'completed' && order.status !== 'cancelled');
 
-    // Filter orders for the current waiter and exclude completed/cancelled
-    const activeOrders = orders.filter(order => {
-        // If we have waiter ID in order, filter by it. 
-        // For now, we'll show all active orders if we can't filter by waiter strictly,
-        // or assume the API might handle it. 
-        // Let's filter by status 'active' (not completed/cancelled)
-        const isActive = order.status !== 'completed' && order.status !== 'cancelled';
-        return isActive;
-    });
-
-    const handleServeOrder = async (e: React.MouseEvent, orderId: number) => {
-        e.stopPropagation();
-        try {
-            await updateOrderStatus(orderId, 'served');
-            // fetchOrders will be called automatically or we can call it manually if needed
-            // but usually hooks handle state updates. 
-            // Let's force a refresh just in case to be snappy
-            fetchOrders();
-        } catch (error) {
-            console.error('Failed to update order status:', error);
-        }
-    };
-
-
-
-    if (loading && activeOrders.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-gray-500">Loading orders...</p>
-            </div>
-        );
+  const handleServeOrder = async (orderId: number) => {
+    try {
+      // The status mutation invalidates the orders cache, so the list refetches itself
+      await updateOrderStatus(orderId, 'served');
+    } catch {
+      toast.error(t('orders.serveFailed'));
     }
+  };
 
-    if (activeOrders.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-                <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No Active Orders</h3>
-                <p className="text-gray-500 max-w-xs mx-auto">
-                    You don't have any active orders right now. Create a new order from the Tables view.
-                </p>
-            </div>
-        );
-    }
-
-    const formatDate = (dateString: string) => {
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Just now';
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } catch (e) {
-            return 'Just now';
-        }
-    };
-
+  if (loading && activeOrders.length === 0) {
     return (
-        <div className="space-y-4 pb-20"> {/* pb-20 for bottom nav spacing if needed */}
-            {/* Refresh Button */}
-            <div className="flex justify-end px-2">
-                <button
-                    onClick={() => fetchOrders()}
-                    className="text-sm text-blue-600 font-medium flex items-center gap-1 hover:text-blue-800 active:scale-95 transition-all"
-                >
-                    🔄 Refresh
-                </button>
+      <div className="space-y-3" role="status" aria-label={t('common.loading')}>
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-32" />
+        ))}
+      </div>
+    );
+  }
+
+  if (activeOrders.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <h2 className="text-xl font-bold text-fg">{t('orders.noneTitle')}</h2>
+        <p className="mx-auto mt-2 max-w-xs text-fg-muted">{t('orders.noneHint')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button variant="ghost" size="md" onClick={() => void fetchOrders()}>
+          {t('common.refresh')}
+        </Button>
+      </div>
+
+      {activeOrders.map((order) => {
+        const status = orderStatusStyle(order.status);
+        return (
+          <article
+            key={order.id}
+            className={`rounded-2xl border-2 bg-surface p-4 shadow-sm ${status.border}`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/orders/${order.id}`)}
+                className="min-w-0 flex-1 text-start"
+                aria-label={t('orders.open', { n: order.orderNumber })}
+              >
+                <p className="text-lg font-bold text-fg">{t('orders.orderNumber', { n: order.orderNumber })}</p>
+                <p className="text-sm text-fg-muted">
+                  {t('order.tableNumber', { n: order.table?.number ?? '—' })}
+                  {order.createdAt ? ` · ${formatTime(order.createdAt, i18n.language)}` : ''}
+                </p>
+                <ul className="mt-2 space-y-0.5 text-sm text-fg">
+                  {order.items.slice(0, 2).map((item) => (
+                    <li key={item.id}>
+                      <span className="font-semibold">{item.quantity}×</span> {item.menuItem?.name}
+                    </li>
+                  ))}
+                  {order.items.length > 2 && (
+                    <li className="text-fg-muted">{t('orders.moreItems', { count: order.items.length - 2 })}</li>
+                  )}
+                </ul>
+              </button>
+
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <StatusPill style={status} label={t(`status.${order.status}`, { defaultValue: status.label })} />
+                <p className="text-pos-price font-bold tabular-nums">{formatMoney(order.total)}</p>
+                <p className="text-sm text-fg-muted">{t('cart.itemCount', { count: order.items.length })}</p>
+              </div>
             </div>
 
-            {activeOrders.map((order) => (
-                <div
-                    key={order.id}
-                    onClick={() => navigate(`/orders/${order.id}`)}
-                    className={`bg-white rounded-xl shadow-sm border-2 p-4 cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${getOrderStatusColor(order.status).replace('bg-', 'border-').replace('text-', 'border-opacity-50 ')}`}
-                >
-                    <div className="flex justify-between items-start mb-3">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-lg text-gray-900">
-                                    Order #{order.orderNumber || order.id}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${getOrderStatusColor(order.status)}`}>
-                                    {getKitchenStatusIcon(order.status)} {order.status.toUpperCase()}
-                                </span>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                                Table {order.table?.number || 'N/A'} • {formatDate(order.createdAt)}
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="font-bold text-lg text-blue-600">
-                                {Number(order.total).toFixed(2)} MAD
-                            </div>
-                            <div className="text-xs text-gray-500 mb-2">
-                                {order.items?.length || 0} items
-                            </div>
-                            {order.status === 'ready' && (
-                                <button
-                                    onClick={(e) => handleServeOrder(e, order.id)}
-                                    className="px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm"
-                                >
-                                    🍽️ Serve
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Order Items Preview (First 2 items) */}
-                    <div className="space-y-1 border-t pt-3">
-                        {order.items?.slice(0, 2).map((item, idx) => (
-                            <div key={idx} className="flex justify-between text-sm">
-                                <span className="text-gray-700">
-                                    <span className="font-medium text-gray-900">{item.quantity}x</span> {item.menuItem?.name}
-                                </span>
-                                <span className="text-gray-500">
-                                    {Number(item.totalPrice).toFixed(2)}
-                                </span>
-                            </div>
-                        ))}
-                        {(order.items?.length || 0) > 2 && (
-                            <div className="text-xs text-gray-500 italic mt-1">
-                                + {(order.items?.length || 0) - 2} more items...
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
+            {order.status === 'ready' && (
+              <Button size="lg" variant="success" fullWidth className="mt-3" onClick={() => void handleServeOrder(order.id)}>
+                {t('orders.serve')}
+              </Button>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
 };
