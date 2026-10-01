@@ -1,4 +1,5 @@
-import React from 'react';
+import { useId, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import type { StaffFormProps } from '@/types/staff';
@@ -7,18 +8,6 @@ import type { StaffFormData, StaffRole } from '@/types/staff';
 
 const roles: StaffRole[] = ['manager', 'cashier', 'waiter', 'kitchen'];
 
-const StaffSchema = Yup.object().shape({
-  first_name: Yup.string().trim().required('First name is required'),
-  last_name: Yup.string().trim().required('Last name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  phone: Yup.string().trim().optional(),
-  role: Yup.mixed<StaffRole>().oneOf(roles).required('Role is required'),
-  salary: Yup.number().min(0, 'Salary must be >= 0').required('Salary is required'),
-  hireDate: Yup.string().required('Hire date is required'),
-  password: Yup.string().min(6, 'Min 6 characters').optional(),
-  employee_id: Yup.string().optional(),
-});
-
 const defaultValues: StaffFormData = {
   first_name: '',
   last_name: '',
@@ -26,41 +15,58 @@ const defaultValues: StaffFormData = {
   phone: '',
   role: 'waiter',
   salary: 3000,
-  hireDate: new Date().toISOString().split('T')[0],
+  hireDate: new Date().toISOString().slice(0, 10),
   password: 'password123',
   employee_id: '',
 };
 
 export default function StaffForm({
-  initialValues = defaultValues,
+  initialValues,
   loading,
   onCancel,
   onSubmit,
   serverErrors,
   availableRoles,
 }: StaffFormProps) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
+  const StaffSchema = useMemo(() => Yup.object().shape({
+    first_name: Yup.string().trim().required(t('staffAdmin.validation.firstNameRequired')),
+    last_name: Yup.string().trim().required(t('staffAdmin.validation.lastNameRequired')),
+    email: Yup.string().email(t('staffAdmin.validation.emailInvalid')).required(t('staffAdmin.validation.emailRequired')),
+    phone: Yup.string().trim().optional(),
+    role: Yup.mixed<StaffRole>().oneOf(roles).required(t('staffAdmin.validation.roleRequired')),
+    salary: Yup.number().min(0, t('staffAdmin.validation.salaryMin')).required(t('staffAdmin.validation.salaryRequired')),
+    hireDate: Yup.string().required(t('staffAdmin.validation.hireDateRequired')),
+    password: Yup.string().min(6, t('staffAdmin.validation.passwordMin')).optional(),
+    employee_id: Yup.string().optional(),
+  }), [t]);
+
   // Use API roles if available, otherwise fall back to hardcoded roles
   const roleOptions = availableRoles && availableRoles.length > 0 
     ? availableRoles 
-    : roles.map(r => ({ name: r, label: r.charAt(0).toUpperCase() + r.slice(1) }));
+    : roles.map((r) => ({ name: r, label: t(`roles.${r}`) }));
+
+  const startValues: StaffFormData = { ...defaultValues, ...initialValues };
 
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={startValues}
       validationSchema={StaffSchema}
       onSubmit={async (values, { setSubmitting }) => {
         await onSubmit(values);
         setSubmitting(false);
       }}
     >
-      {({ isSubmitting, values }) => (
+      {({ isSubmitting }) => (
         <Form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-            <Field
-              name="employee_id"
+            <label htmlFor={fid('employee_id')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.employeeId')}</label>
+            <Field id={fid('employee_id')}
+name="employee_id"
               type="text"
-              placeholder="Will be auto-generated if empty"
+              placeholder={t('staffAdmin.form.employeeIdPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
             <ErrorMessage name="employee_id" component="div" className="text-red-500 text-xs mt-1" />
@@ -71,9 +77,9 @@ export default function StaffForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-              <Field
-                name="first_name"
+              <label htmlFor={fid('first_name')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.firstName')}</label>
+              <Field id={fid('first_name')}
+name="first_name"
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
@@ -83,9 +89,9 @@ export default function StaffForm({
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-              <Field
-                name="last_name"
+              <label htmlFor={fid('last_name')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.lastName')}</label>
+              <Field id={fid('last_name')}
+name="last_name"
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
@@ -97,9 +103,9 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-            <Field
-              name="email"
+            <label htmlFor={fid('email')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.email')}</label>
+            <Field id={fid('email')}
+name="email"
               type="email"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -110,9 +116,9 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <Field
-              name="phone"
+            <label htmlFor={fid('phone')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.phone')}</label>
+            <Field id={fid('phone')}
+name="phone"
               type="tel"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -123,15 +129,15 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Position *</label>
-            <Field
-              as="select"
+            <label htmlFor={fid('role')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.position')}</label>
+            <Field id={fid('role')}
+as="select"
               name="role"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               {roleOptions.map((r) => (
                 <option value={r.name} key={r.name}>
-                  {r.label}
+                  {t(`roles.${r.name}`, { defaultValue: r.label })}
                 </option>
               ))}
             </Field>
@@ -142,9 +148,9 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Salary (MAD)</label>
-            <Field
-              name="salary"
+            <label htmlFor={fid('salary')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.salary')}</label>
+            <Field id={fid('salary')}
+name="salary"
               type="number"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -155,9 +161,9 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-            <Field
-              name="hireDate"
+            <label htmlFor={fid('hireDate')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.hireDate')}</label>
+            <Field id={fid('hireDate')}
+name="hireDate"
               type="date"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -168,9 +174,9 @@ export default function StaffForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <Field
-              name="password"
+            <label htmlFor={fid('password')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.password')}</label>
+            <Field id={fid('password')}
+name="password"
               type="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
@@ -183,7 +189,7 @@ export default function StaffForm({
           {serverErrors?.user_id && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-700 text-sm">
-                <strong>User ID Error:</strong> {serverErrors.user_id[0]}
+                <strong>{t('staffAdmin.form.userIdError')}</strong> {serverErrors.user_id[0]}
               </p>
             </div>
           )}
@@ -195,14 +201,14 @@ export default function StaffForm({
               className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
               disabled={loading || isSubmitting}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
               disabled={loading || isSubmitting}
             >
-              {loading || isSubmitting ? 'Saving...' : 'Add Staff'}
+              {loading || isSubmitting ? t('staffAdmin.form.saving') : t('staffAdmin.form.submitAdd')}
             </button>
           </div>
         </Form>

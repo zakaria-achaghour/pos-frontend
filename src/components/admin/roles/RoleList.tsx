@@ -1,4 +1,4 @@
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Role } from '@/types/roles';
 import RoleCard from './RoleCard';
 
@@ -11,6 +11,7 @@ interface RoleListProps {
 }
 
 export default function RoleList({ roles, loading, onEdit, onDelete, onViewUsers }: RoleListProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -28,9 +29,9 @@ export default function RoleList({ roles, loading, onEdit, onDelete, onViewUsers
   if (roles.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow border p-12 text-center">
-        <div className="text-gray-400 text-6xl mb-4">🔐</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No roles found</h3>
-        <p className="text-gray-600">Create your first role to get started with access control.</p>
+        <div className="text-gray-400 text-6xl mb-4" aria-hidden="true">🔐</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('rbac.roleList.emptyTitle')}</h3>
+        <p className="text-gray-600">{t('rbac.roleList.emptyHint')}</p>
       </div>
     );
   }

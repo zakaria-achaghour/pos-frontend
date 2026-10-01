@@ -1,4 +1,4 @@
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Role } from '@/types/roles';
 
 interface RoleCardProps {
@@ -9,6 +9,7 @@ interface RoleCardProps {
 }
 
 export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCardProps) {
+  const { t } = useTranslation();
   const isProtected = role.name === 'SuperAdmin';
 
   return (
@@ -18,26 +19,27 @@ export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCa
           <h3 className="text-lg font-semibold text-gray-900">{role.name}</h3>
           <div className="flex items-center gap-3 mt-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {role.permissions.length} {role.permissions.length === 1 ? 'Permission' : 'Permissions'}
+              {t('rbac.roleCard.permissionCount', { count: role.permissions.length })}
             </span>
             <button
+              type="button"
               onClick={() => onViewUsers(role)}
               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
             >
-              {role.users_count} {role.users_count === 1 ? 'User' : 'Users'}
+              {t('rbac.roleCard.userCount', { count: role.users_count })}
             </button>
           </div>
         </div>
         {isProtected && (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            🔒 Protected
+            <span aria-hidden="true">🔒</span> {t('rbac.roles.protected')}
           </span>
         )}
       </div>
 
       {role.permissions.length > 0 && (
         <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">Permissions:</p>
+          <p className="text-sm text-gray-600 mb-2">{t('rbac.roleCard.permissions')}</p>
           <div className="flex flex-wrap gap-1">
             {role.permissions.slice(0, 5).map((permission) => (
               <span
@@ -49,7 +51,7 @@ export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCa
             ))}
             {role.permissions.length > 5 && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
-                +{role.permissions.length - 5} more
+                {t('rbac.roleCard.more', { count: role.permissions.length - 5 })}
               </span>
             )}
           </div>
@@ -58,6 +60,7 @@ export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCa
 
       <div className="flex gap-2 pt-4 border-t">
         <button
+          type="button"
           onClick={() => onEdit(role)}
           disabled={isProtected}
           className={`flex-1 px-4 py-2 rounded text-sm font-medium ${
@@ -66,9 +69,10 @@ export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCa
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          ✏️ Edit
+          <span aria-hidden="true">✏️</span> {t('rbac.edit')}
         </button>
         <button
+          type="button"
           onClick={() => onDelete(role.id)}
           disabled={isProtected}
           className={`flex-1 px-4 py-2 rounded text-sm font-medium ${
@@ -77,7 +81,7 @@ export default function RoleCard({ role, onEdit, onDelete, onViewUsers }: RoleCa
               : 'bg-red-600 text-white hover:bg-red-700'
           }`}
         >
-          🗑️ Delete
+          <span aria-hidden="true">🗑️</span> {t('rbac.delete')}
         </button>
       </div>
     </div>

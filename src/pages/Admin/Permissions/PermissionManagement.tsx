@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useId } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
@@ -8,8 +9,11 @@ import { usePermissionManagement } from '@/hooks/usePermissionManagement';
 import PermissionList from '@/components/admin/permissions/PermissionList';
 import PermissionForm from '@/components/admin/permissions/PermissionForm';
 import type { Permission } from '@/types/roles';
+import type { PermissionFormData } from '@/types/roles';
 
 export default function PermissionManagement() {
+  const { t } = useTranslation();
+  const searchId = useId();
   const {
     permissions,
     loading,
@@ -30,7 +34,7 @@ export default function PermissionManagement() {
   const [permissionToDelete, setPermissionToDelete] = useState<Permission | null>(null);
 
   // Handle create
-  const handleCreateSubmit = async (formData: any) => {
+  const handleCreateSubmit = async (formData: PermissionFormData) => {
     try {
       await createPermission(formData);
       setShowCreateModal(false);
@@ -40,7 +44,7 @@ export default function PermissionManagement() {
   };
 
   // Handle edit
-  const handleEditSubmit = async (formData: any) => {
+  const handleEditSubmit = async (formData: PermissionFormData) => {
     if (!editingPermission) return;
     try {
       await updatePermission(editingPermission.id, formData);
@@ -50,7 +54,7 @@ export default function PermissionManagement() {
   };
 
   // Handle delete
-  const handleDeleteRequest = (id: number, name: string) => {
+  const handleDeleteRequest = (id: number, _name: string) => {
     const permission = permissions.find((p) => p.id === id);
     if (permission) {
       setPermissionToDelete(permission);
@@ -76,32 +80,32 @@ export default function PermissionManagement() {
 
   return (
     <div className="space-y-6">
-      <PageMeta title="Permission Management | POS System" description="Manage system permissions" />
-      <PageBreadcrumb pageTitle="Permission Management" />
+      <PageMeta title={t('rbac.permissions.metaTitle')} description={t('rbac.permissions.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('rbac.permissions.title')} />
 
       {/* Success Message */}
       {successMessage && (
-        <Alert variant="success" title="Success!" message={successMessage} />
+        <Alert variant="success" title={t('rbac.successTitle')} message={successMessage} />
       )}
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="error" title={t('rbac.errorTitle')} message={error} />
       )}
 
       {/* Header */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Permission Management</h1>
-            <p className="text-gray-600">Define and manage system permissions</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('rbac.permissions.title')}</h1>
+            <p className="text-gray-600">{t('rbac.permissions.subtitle')}</p>
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{pagination.total}</div>
-              <div className="text-sm text-gray-600">Total Permissions</div>
+              <div className="text-sm text-gray-600">{t('rbac.permissions.total')}</div>
             </div>
           </div>
         </div>
@@ -111,18 +115,21 @@ export default function PermissionManagement() {
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="w-full md:w-96">
+            <label htmlFor={searchId} className="sr-only">{t('rbac.permissions.searchLabel')}</label>
             <input
+              id={searchId}
               type="text"
-              placeholder="Search permissions..."
+              placeholder={t('rbac.permissions.searchPlaceholder')}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
             className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
-            ➕ Create New Permission
+            <span aria-hidden="true">➕</span> {t('rbac.permissions.create')}
           </button>
         </div>
       </div>
@@ -150,7 +157,7 @@ export default function PermissionManagement() {
       <Modal
         isOpen={showCreateModal}
         onClose={closeModals}
-        title="Create New Permission"
+        title={t('rbac.permissions.createTitle')}
         size="md"
       >
         <PermissionForm
@@ -165,7 +172,7 @@ export default function PermissionManagement() {
       <Modal
         isOpen={!!editingPermission}
         onClose={closeModals}
-        title="Edit Permission"
+        title={t('rbac.permissions.editTitle')}
         size="md"
       >
         {editingPermission && (
@@ -184,13 +191,16 @@ export default function PermissionManagement() {
       <Modal
         isOpen={!!permissionToDelete}
         onClose={() => setPermissionToDelete(null)}
-        title="Confirm Deletion"
+        title={t('rbac.deleteTitle')}
         size="sm"
       >
         <div className="space-y-6">
           <p className="text-gray-700">
-            Are you sure you want to delete the permission{' '}
-            <span className="font-semibold">{permissionToDelete?.name}</span>?
+            <Trans
+              i18nKey="rbac.permissions.deleteConfirm"
+              values={{ name: permissionToDelete?.name }}
+              components={{ strong: <span className="font-semibold" /> }}
+            />
           </p>
           <div className="flex justify-end gap-3">
             <button
@@ -198,14 +208,14 @@ export default function PermissionManagement() {
               disabled={loading}
               className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleConfirmDelete}
               disabled={loading}
               className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
             >
-              {loading ? 'Deleting...' : 'Delete Permission'}
+              {loading ? t('rbac.deleting') : t('rbac.permissions.deleteAction')}
             </button>
           </div>
         </div>

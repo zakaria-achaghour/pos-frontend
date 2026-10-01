@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import { formatMoney } from '@/lib/money';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import DemoDataBanner from '@/components/common/DemoDataBanner';
 
 // Mock data
 const mockTenantOverview = {
@@ -27,6 +30,7 @@ interface TenantOverview {
 }
 
 export default function AdminTenantOverview() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [tenant, setTenant] = useState<TenantOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,8 +59,8 @@ export default function AdminTenantOverview() {
   if (loading) {
     return (
       <div>
-        <PageMeta title="Restaurant Overview | Admin" description="Restaurant overview" />
-        <PageBreadcrumb pageTitle="Restaurant Overview" />
+        <PageMeta title={t('tenants.overview.metaTitle')} description={t('tenants.overview.metaDescription')} />
+        <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl shadow animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
@@ -78,10 +82,10 @@ export default function AdminTenantOverview() {
   if (!tenant) {
     return (
       <div>
-        <PageMeta title="Restaurant Overview | Admin" description="Restaurant overview" />
-        <PageBreadcrumb pageTitle="Restaurant Overview" />
+        <PageMeta title={t('tenants.overview.metaTitle')} description={t('tenants.overview.metaDescription')} />
+        <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">Restaurant not found</p>
+          <p className="text-red-600">{t('tenants.notFound')}</p>
         </div>
       </div>
     );
@@ -89,46 +93,47 @@ export default function AdminTenantOverview() {
 
   return (
     <div>
-      <PageMeta title={`${tenant.name} Overview | Admin`} description="Restaurant overview" />
-      <PageBreadcrumb pageTitle="Restaurant Overview" />
+      <PageMeta title={t('tenants.overview.metaTitleNamed', { name: tenant.name })} description={t('tenants.overview.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
+      <DemoDataBanner />
       
       <div className="space-y-6">
         {/* Restaurant Info */}
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{tenant.name}</h2>
-          <p className="text-gray-600">Located in {tenant.city}</p>
+          <p className="text-gray-600">{t('tenants.overview.locatedIn', { city: tenant.city })}</p>
         </div>
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Tables */}
           <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Tables</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.tables')}</h3>
             <p className="text-3xl font-bold text-gray-900">{tenant.tables}</p>
           </div>
 
           {/* Categories */}
           <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Categories</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.categories')}</h3>
             <p className="text-3xl font-bold text-gray-900">{tenant.categories}</p>
           </div>
 
           {/* Menu Items */}
           <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Menu Items</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.menuItems')}</h3>
             <p className="text-3xl font-bold text-gray-900">{tenant.items}</p>
           </div>
 
           {/* Orders Today */}
           <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Orders Today</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.ordersToday')}</h3>
             <p className="text-3xl font-bold text-blue-600">{tenant.orders_today}</p>
           </div>
 
           {/* Sales Today */}
           <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Sales Today</h3>
-            <p className="text-3xl font-bold text-green-600">{tenant.sales_today.toFixed(2)} MAD</p>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.salesToday')}</h3>
+            <p className="text-3xl font-bold text-green-600">{formatMoney(tenant.sales_today)}</p>
           </div>
         </div>
       </div>

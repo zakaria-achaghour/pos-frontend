@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PermissionFormProps } from '@/types/roles';
 
 export default function PermissionForm({
@@ -9,6 +10,8 @@ export default function PermissionForm({
   isLoading = false,
   serverErrors = {},
 }: PermissionFormProps) {
+  const { t } = useTranslation();
+  const nameId = useId();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
   });
@@ -22,9 +25,9 @@ export default function PermissionForm({
     // Validation
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) {
-      errors['name'] = 'Permission name is required';
+      errors['name'] = t('rbac.permissionForm.nameRequired');
     } else if (!/^[a-z0-9-]+$/.test(formData.name)) {
-      errors['name'] = 'Permission name must be lowercase letters, numbers, and hyphens only';
+      errors['name'] = t('rbac.permissionForm.nameFormat');
     }
 
     if (Object.keys(errors).length > 0) {
@@ -53,22 +56,24 @@ export default function PermissionForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Permission Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Permission Name <span className="text-red-500">*</span>
+        <label htmlFor={nameId} className="block text-sm font-medium text-gray-700 mb-1">
+          {t('rbac.permissionForm.name')} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          id="name"
+          id={nameId}
+          aria-required="true"
+          aria-invalid={getErrorMessage('name') ? true : undefined}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase() })}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
             getErrorMessage('name') ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="e.g. manage-inventory"
+          placeholder={t('rbac.permissionForm.namePlaceholder')}
           disabled={isLoading}
         />
         <p className="mt-1 text-xs text-gray-500">
-          Use lowercase letters, numbers, and hyphens only (e.g., view-menu, manage-orders)
+          {t('rbac.permissionForm.hint')}
         </p>
         {getErrorMessage('name') && (
           <p className="mt-1 text-sm text-red-600">{getErrorMessage('name')}</p>
@@ -77,7 +82,7 @@ export default function PermissionForm({
 
       {/* Common Permission Examples */}
       <div className="bg-blue-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">📝 Common Permission Examples:</h4>
+        <h4 className="text-sm font-medium text-blue-900 mb-2"><span aria-hidden="true">📝</span> {t('rbac.permissionForm.examples')}</h4>
         <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
           <div>• view-menu</div>
           <div>• manage-menu</div>
@@ -98,14 +103,14 @@ export default function PermissionForm({
           disabled={isLoading}
           className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-60"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
         >
-          {isLoading ? 'Saving...' : isEdit ? 'Update Permission' : 'Create Permission'}
+          {isLoading ? t('rbac.saving') : isEdit ? t('rbac.permissionForm.update') : t('rbac.permissionForm.create')}
         </button>
       </div>
     </form>

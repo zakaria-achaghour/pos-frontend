@@ -1,12 +1,14 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
 import { useRoleManagement } from '@/hooks/useRoleManagement';
 import RoleForm from '@/components/admin/roles/RoleForm';
+import type { RoleFormData } from '@/types/roles';
 
 export default function CreateRole() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     loading,
@@ -14,10 +16,9 @@ export default function CreateRole() {
     validationErrors,
     availablePermissions,
     createRole,
-    clearError,
   } = useRoleManagement();
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: RoleFormData) => {
     try {
       await createRole(formData);
       navigate('/admin/roles');
@@ -28,26 +29,26 @@ export default function CreateRole() {
 
   return (
     <div className="space-y-6">
-      <PageMeta title="Create Role | POS System" description="Create a new user role" />
+      <PageMeta title={t('rbac.roles.createMetaTitle')} description={t('rbac.roles.createMetaDescription')} />
       <PageBreadcrumb 
-        pageTitle="Create Role"
-        items={[
-          { label: 'Admin', link: '/admin' },
-          { label: 'Roles', link: '/admin/roles' },
-          { label: 'Create' }
+        pageTitle={t('rbac.roles.createTitle')}
+        breadcrumbItems={[
+          { label: t('rbac.breadcrumb.admin'), href: '/admin' },
+          { label: t('rbac.breadcrumb.roles'), href: '/admin/roles' },
+          { label: t('rbac.breadcrumb.create') }
         ]}
       />
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="error" title={t('rbac.errorTitle')} message={error} />
       )}
 
       {/* Form Card */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Create New Role</h1>
-          <p className="text-gray-600 mt-1">Define a new role with custom permissions</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('rbac.roles.createHeading')}</h1>
+          <p className="text-gray-600 mt-1">{t('rbac.roles.createSubtitle')}</p>
         </div>
 
         <RoleForm

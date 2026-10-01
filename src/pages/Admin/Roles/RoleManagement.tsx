@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useId } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
@@ -11,6 +12,8 @@ import RoleUsersDrawer from '@/components/admin/roles/RoleUsersDrawer';
 import type { Role } from '@/types/roles';
 
 export default function RoleManagement() {
+  const { t } = useTranslation();
+  const searchId = useId();
   const navigate = useNavigate();
   const {
     roles,
@@ -25,14 +28,13 @@ export default function RoleManagement() {
     goToPage,
     handleSearch,
     setSelectedRole,
-    clearError,
   } = useRoleManagement();
 
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [showUsersDrawer, setShowUsersDrawer] = useState(false);
 
   // Handle delete confirmation
-  const handleDeleteRequest = (id: number, name: string) => {
+  const handleDeleteRequest = (id: number, _name: string) => {
     const role = roles.find((r) => r.id === id);
     if (role) {
       setRoleToDelete(role);
@@ -58,32 +60,32 @@ export default function RoleManagement() {
 
   return (
     <div className="space-y-6">
-      <PageMeta title="Role Management | POS System" description="Manage user roles and permissions" />
-      <PageBreadcrumb pageTitle="Role Management" />
+      <PageMeta title={t('rbac.roles.metaTitle')} description={t('rbac.roles.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('rbac.roles.title')} />
 
       {/* Success Message */}
       {successMessage && (
-        <Alert variant="success" title="Success!" message={successMessage} />
+        <Alert variant="success" title={t('rbac.successTitle')} message={successMessage} />
       )}
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" title="Error" message={error} onClose={clearError} />
+        <Alert variant="error" title={t('rbac.errorTitle')} message={error} />
       )}
 
       {/* Header */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Role Management</h1>
-            <p className="text-gray-600">Create and manage user roles with custom permissions</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('rbac.roles.title')}</h1>
+            <p className="text-gray-600">{t('rbac.roles.subtitle')}</p>
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{pagination.total}</div>
-              <div className="text-sm text-gray-600">Total Roles</div>
+              <div className="text-sm text-gray-600">{t('rbac.roles.total')}</div>
             </div>
           </div>
         </div>
@@ -93,18 +95,21 @@ export default function RoleManagement() {
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="w-full md:w-96">
+            <label htmlFor={searchId} className="sr-only">{t('rbac.roles.searchLabel')}</label>
             <input
+              id={searchId}
               type="text"
-              placeholder="Search roles..."
+              placeholder={t('rbac.roles.searchPlaceholder')}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <button
+            type="button"
             onClick={() => navigate('/admin/roles/create')}
             className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
-            ➕ Create New Role
+            <span aria-hidden="true">➕</span> {t('rbac.roles.create')}
           </button>
         </div>
       </div>
@@ -140,16 +145,19 @@ export default function RoleManagement() {
       <Modal
         isOpen={!!roleToDelete}
         onClose={() => setRoleToDelete(null)}
-        title="Confirm Deletion"
+        title={t('rbac.deleteTitle')}
         size="sm"
       >
         <div className="space-y-6">
           <p className="text-gray-700">
-            Are you sure you want to delete the role{' '}
-            <span className="font-semibold">{roleToDelete?.name}</span>?
+            <Trans
+              i18nKey="rbac.roles.deleteConfirm"
+              values={{ name: roleToDelete?.name }}
+              components={{ strong: <span className="font-semibold" /> }}
+            />
             {roleToDelete && roleToDelete.users_count > 0 && (
               <span className="block mt-2 text-red-600">
-                ⚠️ This role has {roleToDelete.users_count} assigned user(s). Please reassign them first.
+                <span aria-hidden="true">⚠️</span> {t('rbac.roles.assignedWarning', { count: roleToDelete.users_count })}
               </span>
             )}
           </p>
@@ -159,14 +167,14 @@ export default function RoleManagement() {
               disabled={loading}
               className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleConfirmDelete}
               disabled={loading}
               className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
             >
-              {loading ? 'Deleting...' : 'Delete Role'}
+              {loading ? t('rbac.deleting') : t('rbac.roles.deleteAction')}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
@@ -9,8 +10,10 @@ import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
 import { restaurantAPI } from '../../api/restaurants';
 import type { Restaurant, UpdateRestaurantData } from '@/types/restaurant';
+import type { AxiosError } from 'axios';
 
 export default function EditRestaurant() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -57,14 +60,14 @@ export default function EditRestaurant() {
       setFormData({
         name: data.name || '',
         description: data.description || '',
-        address: data.address || '',
+        address: typeof data.address === 'string' ? data.address : (data.address?.street || ''),
         city: data.city || '',
         country: data.country || 'Morocco',
         phone: data.phone || '',
         email: data.email || '',
         website: data.website || '',
         license_number: data.license_number || '',
-        tax_number: data.tax_number || data.tax_rate || '', // Try both field names
+        tax_number: data.tax_number || '',
         owner_name: owner?.name || data.owner_name || '',
         owner_email: owner?.email || data.owner_email || '',
         owner_phone: data.owner_phone || '',
@@ -73,8 +76,9 @@ export default function EditRestaurant() {
         currency: data.currency || 'MAD',
         status: data.is_active ? 'active' : 'inactive' // Convert boolean to string
       });
-    } catch (error: any) {
-      setError(`Failed to load restaurant data: ${error.response?.data?.message || error.message}`);
+    } catch (error) {
+      const e = error as AxiosError<{ message?: string }>;
+      setError(t('tenants.edit.loadFailed', { message: e.response?.data?.message || e.message }));
     } finally {
       setLoading(false);
     }
@@ -99,23 +103,23 @@ export default function EditRestaurant() {
     try {
       // Validate required fields
       if (!formData.name?.trim()) {
-        setError('Restaurant name is required');
+        setError(t('tenants.errors.nameRequired'));
         return;
       }
       if (!formData.address?.trim()) {
-        setError('Address is required');
+        setError(t('tenants.errors.addressRequired'));
         return;
       }
       if (!formData.city?.trim()) {
-        setError('City is required');
+        setError(t('tenants.errors.cityRequired'));
         return;
       }
       if (!formData.owner_name?.trim()) {
-        setError('Owner name is required');
+        setError(t('tenants.errors.ownerNameRequired'));
         return;
       }
       if (!formData.owner_email?.trim()) {
-        setError('Owner email is required');
+        setError(t('tenants.errors.ownerEmailRequired'));
         return;
       }
 
@@ -156,12 +160,8 @@ export default function EditRestaurant() {
         cleanedData.owner_phone = formData.owner_phone.trim();
       }
 
-      console.log('🔄 Updating restaurant with data:', cleanedData);
-      console.log('🔄 Restaurant ID:', restaurant.id);
-      console.log('🔄 Payload being sent:', JSON.stringify(cleanedData, null, 2));
       
       const response = await restaurantAPI.updateRestaurant(restaurant.id, cleanedData);
-      console.log('📡 Update response:', response);
       
       // Check if response has a message property (from your API response)
       if (response && typeof response === 'object' && 'message' in response) {
@@ -172,7 +172,7 @@ export default function EditRestaurant() {
           setSuccessMessage(null);
         }, 5000);
       } else {
-        setSuccessMessage('Restaurant updated successfully!');
+        setSuccessMessage(t('tenants.edit.success'));
         setTimeout(() => {
           setSuccessMessage(null);
         }, 5000);
@@ -180,16 +180,17 @@ export default function EditRestaurant() {
       
       // Don't navigate immediately, let user see the success message
       // navigate('/admin/tenants');
-    } catch (error: any) {
+    } catch (error) {
+      const e = error as AxiosError<{ message?: string; errors?: Record<string, string[]> }>;
       // Handle validation errors (422)
-      if (error.response?.status === 422 && error.response?.data?.errors) {
-        const validationErrors = error.response.data.errors;
+      if (e.response?.status === 422 && e.response?.data?.errors) {
+        const validationErrors = e.response.data.errors;
         const errorMessages = Object.keys(validationErrors).map(field => 
-          `${field}: ${validationErrors[field].join(', ')}`
+          `${field}: ${validationErrors[field]?.join(', ')}`
         ).join('\n');
-        setError(`Validation errors:\n${errorMessages}`);
+        setError(t('tenants.errors.validation', { details: errorMessages }));
       } else {
-        setError(error.response?.data?.message || error.message || 'Failed to update restaurant');
+        setError(e.response?.data?.message || e.message || t('tenants.edit.failed'));
       }
     } finally {
       setSaving(false);
@@ -199,12 +200,12 @@ export default function EditRestaurant() {
   if (loading) {
     return (
       <div>
-        <PageMeta title="Edit Restaurant | Admin" description="Edit restaurant information" />
+        <PageMeta title={t('tenants.edit.metaTitle')} description={t('tenants.edit.metaDescription')} />
         <PageBreadcrumb 
-          pageTitle="Edit Restaurant" 
+          pageTitle={t('tenants.edit.title')}
           breadcrumbItems={[
-            { label: 'Restaurants', href: '/admin/tenants' },
-            { label: 'Edit' }
+            { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
+            { label: t('tenants.breadcrumb.edit') }
           ]}
         />
         
@@ -230,16 +231,16 @@ export default function EditRestaurant() {
   if (!restaurant) {
     return (
       <div>
-        <PageMeta title="Restaurant Not Found | Admin" description="Restaurant not found" />
+        <PageMeta title={t('tenants.notFoundMeta')} description={t('tenants.notFound')} />
         <div className="bg-white rounded-xl shadow p-6">
           <div className="text-center py-8">
-            <p className="text-gray-500">Restaurant not found</p>
+            <p className="text-gray-500">{t('tenants.notFound')}</p>
             <Button
               variant="primary"
               onClick={() => navigate('/admin/tenants')}
               className="mt-4"
             >
-              Back to Restaurants
+              {t('tenants.backToList')}
             </Button>
           </div>
         </div>
@@ -249,13 +250,13 @@ export default function EditRestaurant() {
 
   return (
     <div>
-      <PageMeta title={`Edit ${restaurant.name} | Admin`} description="Edit restaurant information" />
+      <PageMeta title={t('tenants.edit.metaTitleNamed', { name: restaurant.name })} description={t('tenants.edit.metaDescription')} />
       <PageBreadcrumb 
-        pageTitle={`Edit ${restaurant.name}`}
+        pageTitle={t('tenants.edit.titleNamed', { name: restaurant.name })}
         breadcrumbItems={[
-          { label: 'Restaurants', href: '/admin/tenants' },
+          { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
           { label: restaurant.name, href: `/admin/restaurants/${restaurant.id}` },
-          { label: 'Edit' }
+          { label: t('tenants.breadcrumb.edit') }
         ]}
       />
       
@@ -264,7 +265,7 @@ export default function EditRestaurant() {
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success!"
+            title={t('tenants.successTitle')}
             message={successMessage}
           />
         </div>
@@ -272,7 +273,7 @@ export default function EditRestaurant() {
       
       <div className="bg-white rounded-xl shadow">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Edit Restaurant Information</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('tenants.edit.sectionTitle')}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
@@ -285,10 +286,10 @@ export default function EditRestaurant() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
               
               <div>
-                <Label htmlFor="name">Restaurant Name *</Label>
+                <Label htmlFor="name">{t('tenants.form.name')}</Label>
                 <Input
                   id="name"
                   name="name"
@@ -296,12 +297,12 @@ export default function EditRestaurant() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter restaurant name"
+                  placeholder={t('tenants.form.namePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('tenants.form.description')}</Label>
                 <textarea
                   id="description"
                   name="description"
@@ -309,12 +310,12 @@ export default function EditRestaurant() {
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Brief description of the restaurant"
+                  placeholder={t('tenants.form.descriptionPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t('tenants.form.address')}</Label>
                 <Input
                   id="address"
                   name="address"
@@ -322,13 +323,13 @@ export default function EditRestaurant() {
                   value={formData.address}
                   onChange={handleInputChange}
                   required
-                  placeholder="Full address"
+                  placeholder={t('tenants.form.addressPh')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t('tenants.form.city')}</Label>
                   <Input
                     id="city"
                     name="city"
@@ -336,11 +337,11 @@ export default function EditRestaurant() {
                     value={formData.city}
                     onChange={handleInputChange}
                     required
-                    placeholder="City"
+                    placeholder={t('tenants.form.cityPh')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="country">Country *</Label>
+                  <Label htmlFor="country">{t('tenants.form.country')}</Label>
                   <select
                     id="country"
                     name="country"
@@ -349,54 +350,54 @@ export default function EditRestaurant() {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Morocco">Morocco</option>
-                    <option value="France">France</option>
-                    <option value="Spain">Spain</option>
-                    <option value="Tunisia">Tunisia</option>
-                    <option value="Algeria">Algeria</option>
+                    <option value="Morocco">{t('tenants.form.countries.morocco')}</option>
+                    <option value="France">{t('tenants.form.countries.france')}</option>
+                    <option value="Spain">{t('tenants.form.countries.spain')}</option>
+                    <option value="Tunisia">{t('tenants.form.countries.tunisia')}</option>
+                    <option value="Algeria">{t('tenants.form.countries.algeria')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('tenants.form.phone')}</Label>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="+212 123 456 789"
+                    placeholder={t('tenants.form.phonePh')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('tenants.form.email')}</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="restaurant@example.com"
+                    placeholder={t('tenants.form.emailPh')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="website">Website</Label>
+                <Label htmlFor="website">{t('tenants.form.website')}</Label>
                 <Input
                   id="website"
                   name="website"
                   type="url"
                   value={formData.website}
                   onChange={handleInputChange}
-                  placeholder="https://restaurant.com"
+                  placeholder={t('tenants.form.websitePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('tenants.form.status')}</Label>
                 <select
                   id="status"
                   name="status"
@@ -404,42 +405,42 @@ export default function EditRestaurant() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="active">{t('tenants.status.active')}</option>
+                  <option value="inactive">{t('tenants.status.inactive')}</option>
                 </select>
               </div>
             </div>
 
             {/* Business & Owner Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Business & Owner Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
               
               <div>
-                <Label htmlFor="license_number">Business License</Label>
+                <Label htmlFor="license_number">{t('tenants.form.license')}</Label>
                 <Input
                   id="license_number"
                   name="license_number"
                   type="text"
                   value={formData.license_number}
                   onChange={handleInputChange}
-                  placeholder="Business license number"
+                  placeholder={t('tenants.form.licensePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="tax_number">Tax Number</Label>
+                <Label htmlFor="tax_number">{t('tenants.form.taxNumber')}</Label>
                 <Input
                   id="tax_number"
                   name="tax_number"
                   type="text"
                   value={formData.tax_number}
                   onChange={handleInputChange}
-                  placeholder="Tax identification number"
+                  placeholder={t('tenants.form.taxNumberPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_name">Owner Name *</Label>
+                <Label htmlFor="owner_name">{t('tenants.form.ownerName')}</Label>
                 <Input
                   id="owner_name"
                   name="owner_name"
@@ -447,12 +448,12 @@ export default function EditRestaurant() {
                   value={formData.owner_name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Owner full name"
+                  placeholder={t('tenants.form.ownerNamePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_email">Owner Email *</Label>
+                <Label htmlFor="owner_email">{t('tenants.form.ownerEmail')}</Label>
                 <Input
                   id="owner_email"
                   name="owner_email"
@@ -460,24 +461,24 @@ export default function EditRestaurant() {
                   value={formData.owner_email}
                   onChange={handleInputChange}
                   required
-                  placeholder="owner@example.com"
+                  placeholder={t('tenants.form.ownerEmailPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_phone">Owner Phone</Label>
+                <Label htmlFor="owner_phone">{t('tenants.form.ownerPhone')}</Label>
                 <Input
                   id="owner_phone"
                   name="owner_phone"
                   type="tel"
                   value={formData.owner_phone}
                   onChange={handleInputChange}
-                  placeholder="+212 123 456 789"
+                  placeholder={t('tenants.form.phonePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="subscription_plan">Subscription Plan</Label>
+                <Label htmlFor="subscription_plan">{t('tenants.form.plan')}</Label>
                 <select
                   id="subscription_plan"
                   name="subscription_plan"
@@ -485,15 +486,15 @@ export default function EditRestaurant() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="basic">Basic</option>
-                  <option value="premium">Premium</option>
-                  <option value="enterprise">Enterprise</option>
+                  <option value="basic">{t('tenants.plan.basic')}</option>
+                  <option value="premium">{t('tenants.plan.premium')}</option>
+                  <option value="enterprise">{t('tenants.plan.enterprise')}</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="timezone">{t('tenants.form.timezone')}</Label>
                   <select
                     id="timezone"
                     name="timezone"
@@ -508,7 +509,7 @@ export default function EditRestaurant() {
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label htmlFor="currency">{t('tenants.form.currency')}</Label>
                   <select
                     id="currency"
                     name="currency"
@@ -516,9 +517,9 @@ export default function EditRestaurant() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="MAD">MAD (Moroccan Dirham)</option>
-                    <option value="EUR">EUR (Euro)</option>
-                    <option value="USD">USD (US Dollar)</option>
+                    <option value="MAD">{t('tenants.form.currencies.mad')}</option>
+                    <option value="EUR">{t('tenants.form.currencies.eur')}</option>
+                    <option value="USD">{t('tenants.form.currencies.usd')}</option>
                   </select>
                 </div>
               </div>
@@ -526,21 +527,21 @@ export default function EditRestaurant() {
           </div>
 
           {/* Form Actions */}
-          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-4">
+          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end gap-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => navigate('/admin/tenants')}
               disabled={saving}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={saving}
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('tenants.edit.saving') : t('tenants.edit.submit')}
             </Button>
           </div>
         </form>

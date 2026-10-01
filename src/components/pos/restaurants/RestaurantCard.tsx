@@ -1,4 +1,4 @@
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Restaurant } from '@/types/restaurant';
 
 interface RestaurantCardProps {
@@ -20,6 +20,7 @@ export default function RestaurantCard({
   isSelected = false,
   onSelect,
 }: RestaurantCardProps) {
+  const { t } = useTranslation();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -46,12 +47,13 @@ export default function RestaurantCard({
       <div className="p-6">
         {/* Header with checkbox and status */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-start space-x-3 flex-1">
+          <div className="flex items-start gap-3 flex-1">
             {onSelect && (
               <input
                 type="checkbox"
                 checked={isSelected}
                 onChange={onSelect}
+                aria-label={t('tenants.card.select', { name: restaurant.name })}
                 className="mt-1 h-4 w-4 text-blue-600 rounded"
               />
             )}
@@ -67,7 +69,7 @@ export default function RestaurantCard({
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {t(`tenants.status.${status}`, { defaultValue: status })}
           </span>
         </div>
 
@@ -75,26 +77,26 @@ export default function RestaurantCard({
         <div className="space-y-2 mb-4">
           {restaurant.city && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="mr-2">📍</span>
+              <span className="me-2" aria-hidden="true">📍</span>
               <span>{restaurant.city}</span>
             </div>
           )}
           {restaurant.phone && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="mr-2">📞</span>
+              <span className="me-2" aria-hidden="true">📞</span>
               <span>{restaurant.phone}</span>
             </div>
           )}
           {restaurant.email && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="mr-2">📧</span>
+              <span className="me-2" aria-hidden="true">📧</span>
               <span>{restaurant.email}</span>
             </div>
           )}
           {restaurant.owner_name && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="mr-2">👤</span>
-              <span>Owner: {restaurant.owner_name}</span>
+              <span className="me-2" aria-hidden="true">👤</span>
+              <span>{t('tenants.card.owner', { name: restaurant.owner_name })}</span>
             </div>
           )}
         </div>
@@ -102,33 +104,33 @@ export default function RestaurantCard({
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-b border-gray-100">
           <div className="text-center">
-            <div className="text-sm text-gray-500">Tables</div>
+            <div className="text-sm text-gray-500">{t('tenants.card.tables')}</div>
             <div className="text-lg font-semibold text-gray-900">
               {restaurant.tableCount || 0}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-500">Staff</div>
+            <div className="text-sm text-gray-500">{t('tenants.card.staff')}</div>
             <div className="text-lg font-semibold text-gray-900">
               {restaurant.staffCount || 0}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-500">Rating</div>
+            <div className="text-sm text-gray-500">{t('tenants.card.rating')}</div>
             <div className="text-lg font-semibold text-gray-900">
-              ⭐ {restaurant.averageRating?.toFixed(1) || 'N/A'}
+              <span aria-hidden="true">⭐</span> {restaurant.averageRating?.toFixed(1) || t('tenants.notAvailable')}
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between space-x-2">
+        <div className="flex items-center justify-between gap-2">
           {onView && (
             <button
               onClick={() => onView(restaurant.id)}
               className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
             >
-              View
+              {t('tenants.actions.view')}
             </button>
           )}
           {onEdit && (
@@ -136,7 +138,7 @@ export default function RestaurantCard({
               onClick={() => onEdit(restaurant.id)}
               className="flex-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
             >
-              Edit
+              {t('tenants.actions.edit')}
             </button>
           )}
           {onStatusChange && (
@@ -148,7 +150,7 @@ export default function RestaurantCard({
                   : 'bg-green-50 text-green-600 hover:bg-green-100'
               }`}
             >
-              {status === 'active' ? 'Deactivate' : 'Activate'}
+              {status === 'active' ? t('tenants.actions.deactivate') : t('tenants.actions.activate')}
             </button>
           )}
           {onDelete && (
@@ -156,7 +158,7 @@ export default function RestaurantCard({
               onClick={() => onDelete(restaurant.id)}
               className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
             >
-              Delete
+              {t('tenants.actions.delete')}
             </button>
           )}
         </div>

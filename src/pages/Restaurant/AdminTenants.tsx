@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
@@ -10,6 +11,7 @@ import { RestaurantList, RestaurantFilters } from '@/components/pos/restaurants'
 import type { Restaurant } from '@/types/restaurant';
 
 export default function AdminTenants() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Destructure data and actions from the useRestaurantManagement hook
@@ -38,7 +40,7 @@ export default function AdminTenants() {
     
     // Computed values
     restaurantStats = { total: 0, active: 0, inactive: 0, pending: 0, suspended: 0 },
-  } = useRestaurantManagement(10) as any; // 10 restaurants per page
+  } = useRestaurantManagement(10); // 10 restaurants per page
 
   // Local modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -69,7 +71,7 @@ export default function AdminTenants() {
     try {
       const status = restaurantToToggle.status || (restaurantToToggle.is_active ? 'active' : 'inactive');
       const newStatus = status === 'active' ? 'inactive' : 'active';
-      await updateRestaurantStatus(restaurantToToggle.id, newStatus as any);
+      await updateRestaurantStatus(restaurantToToggle.id, newStatus);
       setShowStatusModal(false);
       setRestaurantToToggle(null);
     } catch (error) {
@@ -99,15 +101,15 @@ export default function AdminTenants() {
 
   return (
     <div>
-      <PageMeta title="Restaurants | Admin" description="Manage restaurants" />
-      <PageBreadcrumb pageTitle="Restaurants" />
+      <PageMeta title={t('tenants.list.metaTitle')} description={t('tenants.list.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('tenants.breadcrumb.restaurants')} />
       
       {/* Success Alert */}
       {successMessage && (
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success!"
+            title={t('tenants.successTitle')}
             message={successMessage}
           />
         </div>
@@ -118,7 +120,7 @@ export default function AdminTenants() {
         <div className="mb-6">
           <Alert
             variant="error"
-            title="Error"
+            title={t('tenants.errorTitle')}
             message={error}
           />
         </div>
@@ -126,12 +128,12 @@ export default function AdminTenants() {
 
       {/* Header with Add Button */}
       <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Restaurant Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('tenants.list.heading')}</h1>
         <button
           onClick={() => navigate('/admin/restaurants/create')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
-          + Add Restaurant
+          {t('tenants.list.add')}
         </button>
       </div>
 
@@ -178,10 +180,10 @@ export default function AdminTenants() {
           setRestaurantToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title="Delete Restaurant"
-        message={`Are you sure you want to delete "${restaurantToDelete?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('tenants.list.deleteTitle')}
+        message={t('tenants.list.deleteMessage', { name: restaurantToDelete?.name })}
+        confirmText={t('tenants.actions.delete')}
+        cancelText={t('common.cancel')}
         type="danger"
       />
 
@@ -192,10 +194,10 @@ export default function AdminTenants() {
           setRestaurantToToggle(null);
         }}
         onConfirm={confirmStatusToggle}
-        title={`${restaurantToToggle?.status === 'active' ? 'Deactivate' : 'Activate'} Restaurant`}
-        message={`Are you sure you want to ${restaurantToToggle?.status === 'active' ? 'deactivate' : 'activate'} "${restaurantToToggle?.name}"?`}
-        confirmText={restaurantToToggle?.status === 'active' ? 'Deactivate' : 'Activate'}
-        cancelText="Cancel"
+        title={restaurantToToggle?.status === 'active' ? t('tenants.list.deactivateTitle') : t('tenants.list.activateTitle')}
+        message={t(restaurantToToggle?.status === 'active' ? 'tenants.list.deactivateMessage' : 'tenants.list.activateMessage', { name: restaurantToToggle?.name })}
+        confirmText={restaurantToToggle?.status === 'active' ? t('tenants.actions.deactivate') : t('tenants.actions.activate')}
+        cancelText={t('common.cancel')}
         type="warning"
       />
     </div>

@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
 import { useRoleManagement } from '@/hooks/useRoleManagement';
 import RoleForm from '@/components/admin/roles/RoleForm';
 import { rolesAPI } from '@/api/roles';
+import type { Role, RoleFormData } from '@/types/roles';
 
 export default function EditRole() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const {
@@ -18,7 +21,7 @@ export default function EditRole() {
     updateRole,
   } = useRoleManagement();
 
-  const [roleData, setRoleData] = React.useState<any>(null);
+  const [roleData, setRoleData] = React.useState<Role | null>(null);
   const [fetchLoading, setFetchLoading] = React.useState(true);
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function EditRole() {
     fetchRole();
   }, [id]);
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: RoleFormData) => {
     if (!id) return;
     try {
       await updateRole(Number(id), formData);
@@ -51,7 +54,7 @@ export default function EditRole() {
   if (fetchLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div role="status" aria-label={t('common.loading')} className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -59,12 +62,13 @@ export default function EditRole() {
   if (!roleData) {
     return (
       <div className="space-y-6">
-        <Alert variant="error" title="Error" message="Role not found" />
+        <Alert variant="error" title={t('rbac.errorTitle')} message={t('rbac.roles.notFound')} />
         <button
+          type="button"
           onClick={() => navigate('/admin/roles')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          Back to Roles
+          {t('rbac.roles.back')}
         </button>
       </div>
     );
@@ -76,36 +80,36 @@ export default function EditRole() {
   if (isProtected) {
     return (
       <div className="space-y-6">
-        <PageMeta title={`${roleData.name} | POS System`} description="View protected role details" />
+        <PageMeta title={t('rbac.roles.metaTitleNamed', { name: roleData.name })} description={t('rbac.roles.protectedMetaDescription')} />
         <PageBreadcrumb 
           pageTitle={roleData.name}
-          items={[
-            { label: 'Admin', link: '/admin' },
-            { label: 'Roles', link: '/admin/roles' },
+          breadcrumbItems={[
+            { label: t('rbac.breadcrumb.admin'), href: '/admin' },
+            { label: t('rbac.breadcrumb.roles'), href: '/admin/roles' },
             { label: roleData.name }
           ]}
         />
 
         <Alert 
           variant="warning" 
-          title="Protected Role" 
-          message={`The ${roleData.name} role is protected and cannot be edited. This role has system-level permissions that are essential for platform security.`}
+          title={t('rbac.roles.protectedTitle')} 
+          message={t('rbac.roles.protectedMessage', { name: roleData.name })}
         />
 
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{roleData.name}</h1>
-              <p className="text-gray-600 mt-1">System protected role</p>
+              <p className="text-gray-600 mt-1">{t('rbac.roles.systemProtected')}</p>
             </div>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              🔒 Protected
+              <span aria-hidden="true">🔒</span> {t('rbac.roles.protected')}
             </span>
           </div>
 
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Permissions ({roleData.permissions.length})</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('rbac.roles.permissionsHeading', { n: roleData.permissions.length })}</h3>
               <div className="flex flex-wrap gap-2">
                 {roleData.permissions.map((permission: string) => (
                   <span
@@ -124,7 +128,7 @@ export default function EditRole() {
               onClick={() => navigate('/admin/roles')}
               className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
-              ← Back to Roles
+              <span aria-hidden="true" className="inline-block rtl:rotate-180">←</span> {t('rbac.roles.back')}
             </button>
           </div>
         </div>
@@ -134,26 +138,26 @@ export default function EditRole() {
 
   return (
     <div className="space-y-6">
-      <PageMeta title={`Edit ${roleData.name} | POS System`} description="Edit role details and permissions" />
+      <PageMeta title={t('rbac.roles.editMetaTitleNamed', { name: roleData.name })} description={t('rbac.roles.editMetaDescription')} />
       <PageBreadcrumb 
-        pageTitle={`Edit ${roleData.name}`}
-        items={[
-          { label: 'Admin', link: '/admin' },
-          { label: 'Roles', link: '/admin/roles' },
-          { label: 'Edit' }
+        pageTitle={t('rbac.roles.editTitleNamed', { name: roleData.name })}
+        breadcrumbItems={[
+          { label: t('rbac.breadcrumb.admin'), href: '/admin' },
+          { label: t('rbac.breadcrumb.roles'), href: '/admin/roles' },
+          { label: t('rbac.breadcrumb.edit') }
         ]}
       />
 
       {/* Error Message */}
       {error && (
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="error" title={t('rbac.errorTitle')} message={error} />
       )}
 
       {/* Form Card */}
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Role</h1>
-          <p className="text-gray-600 mt-1">Update role details and permissions</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('rbac.roles.editHeading')}</h1>
+          <p className="text-gray-600 mt-1">{t('rbac.roles.editSubtitle')}</p>
         </div>
 
         <RoleForm
