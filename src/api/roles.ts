@@ -1,5 +1,6 @@
 import apiClient from './client';
-import type { ApiResponse, PaginatedResponse } from './client';
+import type { PaginatedResponse } from './client';
+import { asApiError } from '@/utils/apiError';
 
 // API Response Types (what backend returns)
 interface ApiPermission {
@@ -68,7 +69,6 @@ export const rolesAPI = {
     page?: number;
   } = {}): Promise<PaginatedResponse<Role>> => {
     try {
-      console.log('🔍 Fetching roles with filters:', filters);
       const params = new URLSearchParams();
       
       if (filters.search) params.append('search', filters.search);
@@ -76,7 +76,6 @@ export const rolesAPI = {
       if (filters.page) params.append('page', filters.page.toString());
       
       const response = await apiClient.get(`/admin/roles?${params}`);
-      console.log('📡 Roles API response:', response.data);
       
       const apiResponse = response.data as PaginatedResponse<ApiRole>;
       
@@ -85,7 +84,8 @@ export const rolesAPI = {
         ...apiResponse,
         data: apiResponse.data.map(transformApiRole),
       };
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching roles:', error);
       throw error;
     }
@@ -96,13 +96,12 @@ export const rolesAPI = {
    */
   getRole: async (id: number): Promise<Role> => {
     try {
-      console.log('🔍 Fetching role with ID:', id);
       const response = await apiClient.get(`/admin/roles/${id}`);
-      console.log('📡 Single role API response:', response.data);
       
       const apiRole = response.data.data || response.data;
       return transformApiRole(apiRole as ApiRole);
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching role:', error);
       throw error;
     }
@@ -113,13 +112,12 @@ export const rolesAPI = {
    */
   createRole: async (roleData: CreateRoleData): Promise<Role> => {
     try {
-      console.log('➕ Creating role:', roleData);
       const response = await apiClient.post('/admin/roles', roleData);
-      console.log('📡 Create role API response:', response.data);
       
       const apiRole = response.data.data || response.data;
       return transformApiRole(apiRole as ApiRole);
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error creating role:', error);
       throw error;
     }
@@ -130,13 +128,12 @@ export const rolesAPI = {
    */
   updateRole: async (id: number, updates: UpdateRoleData): Promise<Role> => {
     try {
-      console.log('🔄 Updating role:', id, updates);
       const response = await apiClient.patch(`/admin/roles/${id}`, updates);
-      console.log('📡 Update role API response:', response.data);
       
       const apiRole = response.data.data || response.data;
       return transformApiRole(apiRole as ApiRole);
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating role:', error);
       throw error;
     }
@@ -147,10 +144,9 @@ export const rolesAPI = {
    */
   deleteRole: async (id: number): Promise<void> => {
     try {
-      console.log('🗑️ Deleting role:', id);
       await apiClient.delete(`/admin/roles/${id}`);
-      console.log('✅ Role deleted successfully');
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error deleting role:', error);
       throw error;
     }
@@ -161,12 +157,11 @@ export const rolesAPI = {
    */
   getRoleUsers: async (id: number): Promise<RoleUser[]> => {
     try {
-      console.log('👥 Fetching users for role:', id);
       const response = await apiClient.get(`/admin/roles/${id}/users`);
-      console.log('📡 Role users API response:', response.data);
       
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching role users:', error);
       throw error;
     }

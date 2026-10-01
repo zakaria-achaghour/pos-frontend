@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
-import Modal from '@/components/common/Modal';
+import { Button, Modal } from '@/components/kit';
 import { useCategoryManagement } from '@/hooks/useCategoryManagement';
 import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
 import CategoryList from '@/components/pos/menu/CategoryList';
 import CategoryModal from '@/components/pos/menu/CategoryModal';
-import type { Category } from '@/types/menu';
+import type { Category, CategoryFilter, CreateCategoryData, UpdateCategoryData } from '@/types/menu';
 
 export default function CategoriesManagement() {
+  const { t } = useTranslation();
+  const searchId = useId();
+  const statusId = useId();
   const {
     // Data
     categories,
@@ -45,7 +49,7 @@ export default function CategoriesManagement() {
   const [categoryToToggle, setCategoryToToggle] = useState<Category | null>(null);
 
   // Handle form submissions
-  const handleAddCategory = async (data: any) => {
+  const handleAddCategory = async (data: CreateCategoryData) => {
     try {
       await createCategory(data);
       setShowAddModal(false);
@@ -54,7 +58,7 @@ export default function CategoriesManagement() {
     }
   };
 
-  const handleEditCategory = async (data: any) => {
+  const handleEditCategory = async (data: UpdateCategoryData) => {
     if (!editingCategory) return;
     try {
       await updateCategory(editingCategory.id, data);
@@ -115,15 +119,15 @@ export default function CategoriesManagement() {
 
   return (
     <div>
-      <PageMeta title="Categories | POS System" description="Manage menu categories" />
-      <PageBreadcrumb pageTitle="Categories" />
+      <PageMeta title={t('categoriesAdmin.metaTitle')} description={t('categoriesAdmin.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('categoriesAdmin.breadcrumb')} />
 
       {/* Success Alert */}
       {successMessage && (
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success!"
+            title={t('categoriesAdmin.successTitle')}
             message={successMessage}
           />
         </div>
@@ -134,7 +138,7 @@ export default function CategoriesManagement() {
         <div className="mb-6">
           <Alert
             variant="error"
-            title="Error"
+            title={t('categoriesAdmin.errorTitle')}
             message={error}
           />
         </div>
@@ -143,16 +147,17 @@ export default function CategoriesManagement() {
       {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Categories</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('categoriesAdmin.heading')}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Organize your menu items into categories • {categoryStats.total} total
+            {t('categoriesAdmin.subtitle', { total: categoryStats.total })}
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
-          + Add Category
+          {t('categoriesAdmin.add')}
         </button>
       </div>
 
@@ -161,10 +166,11 @@ export default function CategoriesManagement() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label htmlFor={searchId} className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
             <input
+              id={searchId}
               type="text"
-              placeholder="Search categories..."
+              placeholder={t('categoriesAdmin.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -173,22 +179,23 @@ export default function CategoriesManagement() {
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label htmlFor={statusId} className="block text-sm font-medium text-gray-700 mb-2">{t('categoriesAdmin.status')}</label>
             <select
+              id={statusId}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as CategoryFilter)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All ({categoryStats.total})</option>
-              <option value="active">Active ({categoryStats.active})</option>
-              <option value="inactive">Inactive ({categoryStats.inactive})</option>
+              <option value="all">{t('categoriesAdmin.filterAll', { count: categoryStats.total })}</option>
+              <option value="active">{t('categoriesAdmin.filterActive', { count: categoryStats.active })}</option>
+              <option value="inactive">{t('categoriesAdmin.filterInactive', { count: categoryStats.inactive })}</option>
             </select>
           </div>
 
           {/* Stats */}
           <div className="flex items-end">
             <div className="text-sm text-gray-600">
-              Showing {filteredCategories.length} of {categoryStats.total} categories
+              {t('categoriesAdmin.showing', { shown: filteredCategories.length, total: categoryStats.total })}
             </div>
           </div>
         </div>
@@ -231,28 +238,21 @@ export default function CategoriesManagement() {
         <Modal
           isOpen={true}
           onClose={() => setCategoryToDelete(null)}
-          title="Delete Category"
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to delete <strong>{categoryToDelete.name}</strong>? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setCategoryToDelete(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={loading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Deleting...' : 'Delete'}
-              </button>
+          title={t('categoriesAdmin.delete.title')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setCategoryToDelete(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="danger" onClick={handleConfirmDelete} disabled={loading}>
+                {loading ? t('categoriesAdmin.delete.deleting') : t('categoriesAdmin.delete.confirm')}
+              </Button>
             </div>
-          </div>
+          }
+        >
+          <p className="text-gray-600">{t('categoriesAdmin.delete.body', { name: categoryToDelete.name })}</p>
         </Modal>
       )}
 
@@ -261,33 +261,33 @@ export default function CategoriesManagement() {
         <Modal
           isOpen={true}
           onClose={() => setCategoryToToggle(null)}
-          title={`${categoryToToggle.is_active ? 'Deactivate' : 'Activate'} Category`}
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to {categoryToToggle.is_active ? 'deactivate' : 'activate'}{' '}
-              <strong>{categoryToToggle.name}</strong>?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setCategoryToToggle(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
+          title={categoryToToggle.is_active ? t('categoriesAdmin.toggle.deactivateTitle') : t('categoriesAdmin.toggle.activateTitle')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setCategoryToToggle(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant={categoryToToggle.is_active ? 'danger' : 'success'}
                 onClick={handleConfirmToggleStatus}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
-                  categoryToToggle.is_active
-                    ? 'bg-orange-600 hover:bg-orange-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
               >
-                {loading ? 'Processing...' : categoryToToggle.is_active ? 'Deactivate' : 'Activate'}
-              </button>
+                {loading
+                  ? t('categoriesAdmin.toggle.processing')
+                  : categoryToToggle.is_active
+                    ? t('categoriesAdmin.toggle.deactivate')
+                    : t('categoriesAdmin.toggle.activate')}
+              </Button>
             </div>
-          </div>
+          }
+        >
+          <p className="text-gray-600">
+            {categoryToToggle.is_active
+              ? t('categoriesAdmin.toggle.deactivateBody', { name: categoryToToggle.name })
+              : t('categoriesAdmin.toggle.activateBody', { name: categoryToToggle.name })}
+          </p>
         </Modal>
       )}
     </div>

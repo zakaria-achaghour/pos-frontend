@@ -1,4 +1,4 @@
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RestaurantFilter } from '@/hooks/useRestaurantManagement';
 
 interface RestaurantFiltersProps {
@@ -22,10 +22,11 @@ export default function RestaurantFilters({
   onSearchChange,
   stats,
 }: RestaurantFiltersProps) {
+  const { t } = useTranslation();
   const filters: Array<{ key: RestaurantFilter; label: string; icon: string }> = [
-    { key: 'all', label: 'All', icon: '🏪' },
-    { key: 'active', label: 'Active', icon: '✅' },
-    { key: 'inactive', label: 'Inactive', icon: '🔴' },
+    { key: 'all', label: t('tenants.filters.all'), icon: '🏪' },
+    { key: 'active', label: t('tenants.status.active'), icon: '✅' },
+    { key: 'inactive', label: t('tenants.status.inactive'), icon: '🔴' },
   ];
 
   return (
@@ -33,32 +34,34 @@ export default function RestaurantFilters({
       {/* Search Bar */}
       <div>
         <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-          Search Restaurants
+          {t('tenants.filters.search')}
         </label>
         <div className="relative">
           <input
             type="text"
             id="search"
-            placeholder="Search by name, city, or owner..."
+            placeholder={t('tenants.filters.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400">🔍</span>
+          <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
+            <span className="text-gray-400" aria-hidden="true">🔍</span>
           </div>
         </div>
       </div>
 
       {/* Status Filter Buttons */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by Status
-        </label>
-        <div className="flex flex-wrap gap-2">
+        <span id="tenant-status-filter-label" className="block text-sm font-medium text-gray-700 mb-2">
+          {t('tenants.filters.byStatus')}
+        </span>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="tenant-status-filter-label">
           {filters.map((filter) => (
             <button
               key={filter.key}
+              type="button"
+              aria-pressed={statusFilter === filter.key}
               onClick={() => onStatusFilterChange(filter.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 statusFilter === filter.key
@@ -66,9 +69,9 @@ export default function RestaurantFilters({
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {filter.icon} {filter.label}
+              <span aria-hidden="true">{filter.icon}</span> {filter.label}
               {stats && (
-                <span className="ml-1.5 text-xs opacity-75">
+                <span className="ms-1.5 text-xs opacity-75">
                   ({filter.key === 'all' ? stats.total : stats[filter.key as keyof typeof stats]})
                 </span>
               )}
@@ -82,15 +85,15 @@ export default function RestaurantFilters({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-500">Total</div>
+            <div className="text-sm text-gray-500">{t('tenants.filters.total')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            <div className="text-sm text-gray-500">Active</div>
+            <div className="text-sm text-gray-500">{t('tenants.status.active')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">{stats.inactive}</div>
-            <div className="text-sm text-gray-500">Inactive</div>
+            <div className="text-sm text-gray-500">{t('tenants.status.inactive')}</div>
           </div>
         </div>
       )}

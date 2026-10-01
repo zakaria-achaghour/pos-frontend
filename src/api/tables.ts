@@ -6,6 +6,7 @@ import type {
   UpdateTableRequest,
   TableAnalytics 
 } from '../types/table';
+import { asApiError } from '@/utils/apiError';
 
 // Table API service
 export const tableAPI = {
@@ -26,7 +27,6 @@ export const tableAPI = {
     assigned_waiter?: number;
   } = {}): Promise<PaginatedResponse<Table>> => {
     try {
-      console.log('🔍 Fetching tables with params:', params);
       const searchParams = new URLSearchParams();
       
       // Add all parameters using Object.entries
@@ -40,7 +40,6 @@ export const tableAPI = {
       const url = queryString ? `/tables?${queryString}` : '/tables';
       
       const response = await apiClient.get<PaginatedResponse<Table>>(url);
-      console.log('📡 Tables API response:', response.data);
       
       // Handle both direct response and wrapped response
       if (response.data.data && Array.isArray(response.data.data)) {
@@ -59,7 +58,8 @@ export const tableAPI = {
       }
       
       return response.data as PaginatedResponse<Table>;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching tables:', error);
       throw error;
     }
@@ -79,11 +79,10 @@ export const tableAPI = {
    */
   getTableAnalyticsById: async (tableId: number): Promise<TableAnalytics | null> => {
     try {
-      console.log('🔍 Fetching analytics for table:', tableId);
       const response = await apiClient.get<ApiResponse<TableAnalytics>>(`/tables/${tableId}/analytics`);
-      console.log('📡 Table analytics by ID API response:', response.data);
       return response.data.data || response.data || null;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error fetching analytics for table ${tableId}:`, error);
       return null;
     }
@@ -92,13 +91,12 @@ export const tableAPI = {
   /**
    * Get table occupancy rates
    */
-  getTableOccupancyRates: async (): Promise<any> => {
+  getTableOccupancyRates: async (): Promise<Record<string, unknown>> => {
     try {
-      console.log('🔍 Fetching table occupancy rates');
-      const response = await apiClient.get<ApiResponse<any>>('/tables/occupancy-rates');
-      console.log('📡 Table occupancy rates API response:', response.data);
+      const response = await apiClient.get<ApiResponse<Record<string, unknown>>>('/tables/occupancy-rates');
       return response.data.data || response.data || {};
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching table occupancy rates:', error);
       return {};
     }
@@ -107,13 +105,12 @@ export const tableAPI = {
   /**
    * Get revenue per table
    */
-  getTableRevenue: async (): Promise<any> => {
+  getTableRevenue: async (): Promise<Record<string, unknown>> => {
     try {
-      console.log('🔍 Fetching table revenue');
-      const response = await apiClient.get<ApiResponse<any>>('/tables/revenue-per-table');
-      console.log('📡 Table revenue API response:', response.data);
+      const response = await apiClient.get<ApiResponse<Record<string, unknown>>>('/tables/revenue-per-table');
       return response.data.data || response.data || {};
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching table revenue:', error);
       return {};
     }
@@ -124,11 +121,10 @@ export const tableAPI = {
    */
   getTable: async (id: number): Promise<Table> => {
     try {
-      console.log('🔍 Fetching table:', id);
       const response = await apiClient.get<ApiResponse<Table>>(`/tables/${id}`);
-      console.log('📡 Table API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error fetching table ${id}:`, error);
       throw error;
     }
@@ -139,11 +135,10 @@ export const tableAPI = {
    */
   createTable: async (tableData: CreateTableRequest): Promise<Table> => {
     try {
-      console.log('➕ Creating table with data:', tableData);
       const response = await apiClient.post<ApiResponse<Table>>('/tables', tableData);
-      console.log('📡 Create table API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error creating table:', error);
       throw error;
     }
@@ -154,11 +149,10 @@ export const tableAPI = {
    */
   updateTable: async (id: number, updates: Partial<UpdateTableRequest>): Promise<Table> => {
     try {
-      console.log('🔄 Updating table:', id, 'with updates:', updates);
       const response = await apiClient.put<ApiResponse<Table>>(`/tables/${id}`, updates);
-      console.log('📡 Update table API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error updating table ${id}:`, error);
       throw error;
     }
@@ -169,10 +163,9 @@ export const tableAPI = {
    */
   deleteTable: async (id: number): Promise<void> => {
     try {
-      console.log('🗑️ Deleting table:', id);
       await apiClient.delete(`/tables/${id}`);
-      console.log('✅ Table deleted successfully');
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error deleting table ${id}:`, error);
       throw error;
     }
@@ -183,11 +176,10 @@ export const tableAPI = {
    */
   updateTableStatus: async (id: number, status: Table['status']): Promise<Table> => {
     try {
-      console.log('🔄 Updating table status:', id, 'to:', status);
       const response = await apiClient.patch<ApiResponse<Table>>(`/tables/${id}/status`, { status });
-      console.log('📡 Update table status API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error updating table ${id} status:`, error);
       throw error;
     }
@@ -198,14 +190,13 @@ export const tableAPI = {
    */
   bulkUpdateStatus: async (tableIds: number[], status: Table['status']): Promise<Table[]> => {
     try {
-      console.log('🔄 Bulk updating table statuses:', tableIds, 'to:', status);
       const response = await apiClient.patch<ApiResponse<Table[]>>('/tables/bulk-status', { 
         table_ids: tableIds, 
         status 
       });
-      console.log('📡 Bulk update status API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error bulk updating table statuses:', error);
       throw error;
     }
@@ -216,7 +207,7 @@ export const tableAPI = {
    * Get table performance analytics (individual table metrics)
    * Returns performance metrics for each table from /api/tables/analytics
    */
-  getTablePerformanceAnalytics: async (period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
+  getTablePerformanceAnalytics: async (_period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
     console.warn('⚠️ tableAPI.getTablePerformanceAnalytics is deprecated - endpoint /tables/analytics no longer exists');
     return [];
   },
@@ -226,7 +217,7 @@ export const tableAPI = {
    * Get table analytics overview (comprehensive analytics)
    * Legacy method - kept for backward compatibility
    */
-  getAnalytics: async (period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
+  getAnalytics: async (_period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics[]> => {
     console.warn('⚠️ tableAPI.getAnalytics is deprecated - endpoint /tables/analytics no longer exists');
     return [];
   },
@@ -236,11 +227,10 @@ export const tableAPI = {
    */
   getSpecificTableAnalytics: async (id: number, period: 'today' | 'week' | 'month' = 'today'): Promise<TableAnalytics> => {
     try {
-      console.log('🔍 Fetching analytics for table:', id, 'period:', period);
       const response = await apiClient.get<ApiResponse<TableAnalytics>>(`/tables/${id}/analytics?period=${period}`);
-      console.log('📡 Specific table analytics API response:', response.data);
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error(`❌ Error fetching analytics for table ${id}:`, error);
       throw error;
     }
@@ -251,10 +241,9 @@ export const tableAPI = {
    */
   updateLayout: async (tables: { id: number; coordinates: { x: number; y: number } }[]): Promise<void> => {
     try {
-      console.log('🔄 Updating table layout:', tables);
       await apiClient.put('/tables/layout', { tables });
-      console.log('✅ Table layout updated successfully');
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating table layout:', error);
       throw error;
     }

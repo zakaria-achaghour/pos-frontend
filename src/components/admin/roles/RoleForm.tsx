@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RoleFormProps } from '@/types/roles';
 
 export default function RoleForm({
@@ -10,6 +11,9 @@ export default function RoleForm({
   serverErrors = {},
   availablePermissions,
 }: RoleFormProps) {
+  const { t } = useTranslation();
+  const nameId = useId();
+  const permsId = useId();
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     permissions: initialData?.permissions || [],
@@ -24,10 +28,10 @@ export default function RoleForm({
     // Validation
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) {
-      errors.name = 'Role name is required';
+      errors.name = t('rbac.roleForm.nameRequired');
     }
     if (formData.permissions.length === 0) {
-      errors.permissions = 'At least one permission is required';
+      errors.permissions = t('rbac.roleForm.permissionsRequired');
     }
 
     if (Object.keys(errors).length > 0) {
@@ -82,18 +86,20 @@ export default function RoleForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Role Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Role Name <span className="text-red-500">*</span>
+        <label htmlFor={nameId} className="block text-sm font-medium text-gray-700 mb-1">
+          {t('rbac.roleForm.name')} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          id="name"
+          id={nameId}
+          aria-required="true"
+          aria-invalid={getErrorMessage('name') ? true : undefined}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
             getErrorMessage('name') ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="e.g. Inventory Manager"
+          placeholder={t('rbac.roleForm.namePlaceholder')}
           disabled={isLoading}
         />
         {getErrorMessage('name') && (
@@ -104,9 +110,9 @@ export default function RoleForm({
       {/* Permissions */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Permissions <span className="text-red-500">*</span>
-          </label>
+          <span id={permsId} className="block text-sm font-medium text-gray-700">
+            {t('rbac.roleForm.permissions')} <span className="text-red-500">*</span>
+          </span>
           <div className="flex gap-2">
             <button
               type="button"
@@ -114,29 +120,29 @@ export default function RoleForm({
               className="text-xs text-blue-600 hover:text-blue-700 font-medium"
               disabled={isLoading}
             >
-              Select All
+              {t('rbac.roleForm.selectAll')}
             </button>
-            <span className="text-gray-300">|</span>
+            <span className="text-gray-300" aria-hidden="true">|</span>
             <button
               type="button"
               onClick={deselectAllPermissions}
               className="text-xs text-blue-600 hover:text-blue-700 font-medium"
               disabled={isLoading}
             >
-              Clear All
+              {t('rbac.roleForm.clearAll')}
             </button>
           </div>
         </div>
         
-        <div className="border border-gray-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
+        <div role="group" aria-labelledby={permsId} className="border border-gray-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
           {availablePermissions.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No permissions available</p>
+            <p className="text-sm text-gray-500 text-center py-4">{t('rbac.roleForm.noPermissions')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {availablePermissions.map((permission) => (
                 <label
                   key={permission.id}
-                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -153,7 +159,7 @@ export default function RoleForm({
         </div>
         
         <p className="mt-1 text-xs text-gray-500">
-          Selected: {formData.permissions.length} permission(s)
+          {t('rbac.roleForm.selected', { count: formData.permissions.length })}
         </p>
         {getErrorMessage('permissions') && (
           <p className="mt-1 text-sm text-red-600">{getErrorMessage('permissions')}</p>
@@ -168,14 +174,14 @@ export default function RoleForm({
           disabled={isLoading}
           className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-60"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
         >
-          {isLoading ? 'Saving...' : isEdit ? 'Update Role' : 'Create Role'}
+          {isLoading ? t('rbac.saving') : isEdit ? t('rbac.roleForm.update') : t('rbac.roleForm.create')}
         </button>
       </div>
     </form>

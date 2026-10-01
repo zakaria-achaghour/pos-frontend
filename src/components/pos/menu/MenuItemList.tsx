@@ -1,4 +1,6 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatMoney } from '@/lib/money';
 import type { MenuItemListProps } from '@/types/menu';
 
 const MenuItemList: React.FC<MenuItemListProps> = ({
@@ -12,12 +14,14 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
   onUploadImage,
   hasFilters,
 }) => {
+  const { t } = useTranslation();
+
   // Use menuItems or items, whichever is provided
   const itemsToDisplay = menuItems || items || [];
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div role="status" aria-label={t('common.loading')} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg shadow animate-pulse">
             <div className="h-48 bg-gray-200 rounded-t-lg"></div>
@@ -35,14 +39,12 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
   if (itemsToDisplay.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">🍽️</div>
+        <div className="text-6xl mb-4" aria-hidden="true">🍽️</div>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          {hasFilters ? 'No items found' : 'No menu items yet'}
+          {hasFilters ? t('menuAdmin.list.emptyFiltered') : t('menuAdmin.list.emptyNone')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400">
-          {hasFilters 
-            ? 'Try adjusting your filters to see more results.' 
-            : 'Start by adding your first menu item.'}
+          {hasFilters ? t('menuAdmin.list.emptyFilteredHint') : t('menuAdmin.list.emptyNoneHint')}
         </p>
       </div>
     );
@@ -78,31 +80,33 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
             {/* Upload Image Button */}
             {onUploadImage && (
               <button
+                type="button"
                 onClick={() => onUploadImage(item.id)}
-                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                title="Upload image"
+                className="absolute top-2 end-2 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title={t('menuAdmin.list.uploadImage')}
+                aria-label={t('menuAdmin.list.uploadImage')}
               >
-                <svg className="w-4 h-4 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               </button>
             )}
             
             {/* Status Badges */}
-            <div className="absolute bottom-2 left-2 flex gap-2">
+            <div className="absolute bottom-2 start-2 flex gap-2">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 item.is_active 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
               }`}>
-                {item.is_active ? 'Active' : 'Inactive'}
+                {item.is_active ? t('menuAdmin.list.active') : t('menuAdmin.list.inactive')}
               </span>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 item.is_available 
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' 
                   : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
               }`}>
-                {item.is_available ? 'Available' : 'Out of Stock'}
+                {item.is_available ? t('menuAdmin.list.available') : t('menuAdmin.list.outOfStock')}
               </span>
             </div>
           </div>
@@ -116,16 +120,16 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
                   {item.name}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {item.category?.name || 'No category'}
+                  {item.category?.name || t('menuAdmin.list.noCategory')}
                 </p>
               </div>
-              <div className="text-right ml-2">
+              <div className="text-end ms-2">
                 <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                  {Number(item.price).toFixed(2)} MAD
+                  {formatMoney(item.price)}
                 </div>
                 {item.cost && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Cost: {Number(item.cost).toFixed(2)} MAD
+                    {t('menuAdmin.list.cost', { amount: formatMoney(item.cost) })}
                   </div>
                 )}
               </div>
@@ -145,7 +149,7 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {item.preparation_time}min
+                  {t('menuAdmin.list.minutes', { count: item.preparation_time })}
                 </div>
               )}
               {item.allergens && item.allergens.length > 0 && (
@@ -153,7 +157,7 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
-                  {item.allergens.length} allergen{item.allergens.length !== 1 ? 's' : ''}
+                  {t('menuAdmin.list.allergens', { count: item.allergens.length })}
                 </div>
               )}
             </div>
@@ -165,30 +169,32 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
                 {/* Active/Inactive Button */}
                 {onToggleStatus && (
                   <button
-                    onClick={() => onToggleStatus(item.id, item.is_active, item.name)}
+                    type="button"
+                    onClick={() => onToggleStatus(item.id, item.is_active ?? false, item.name)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       item.is_active
                         ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                     }`}
-                    title={item.is_active ? 'Deactivate item' : 'Activate item'}
+                    title={item.is_active ? t('menuAdmin.list.deactivateItem') : t('menuAdmin.list.activateItem')}
                   >
-                    {item.is_active ? '🟢 Active' : '⚫ Inactive'}
+                    {item.is_active ? `🟢 ${t('menuAdmin.list.active')}` : `⚫ ${t('menuAdmin.list.inactive')}`}
                   </button>
                 )}
                 
                 {/* Available/Unavailable Button */}
                 {onToggleAvailability && (
                   <button
-                    onClick={() => onToggleAvailability(item.id, item.is_available)}
+                    type="button"
+                    onClick={() => onToggleAvailability(item.id, item.is_available ?? false)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       item.is_available
                         ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800'
                         : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
                     }`}
-                    title={item.is_available ? 'Mark as unavailable' : 'Mark as available'}
+                    title={item.is_available ? t('menuAdmin.list.markUnavailable') : t('menuAdmin.list.markAvailable')}
                   >
-                    {item.is_available ? '✅ Available' : '🚫 Unavailable'}
+                    {item.is_available ? `✅ ${t('menuAdmin.list.available')}` : `🚫 ${t('menuAdmin.list.unavailable')}`}
                   </button>
                 )}
               </div>
@@ -196,16 +202,18 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
               {/* Edit and Delete Row */}
               <div className="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   onClick={() => onEdit(item)}
                   className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
                 >
-                  ✏️ Edit
+                  {t('menuAdmin.list.edit')}
                 </button>
                 <button
+                  type="button"
                   onClick={() => onDelete(item.id, item.name)}
                   className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
                 >
-                  🗑️ Delete
+                  {t('menuAdmin.list.delete')}
                 </button>
               </div>
             </div>

@@ -1,5 +1,15 @@
-import { useState, useEffect } from 'react';
-import { menuAPI } from '../api/menu';
+import i18n from '@/i18n';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useGetMenuItemsQuery,
+  useGetCategoriesQuery,
+  useCreateMenuItemMutation,
+  useUpdateMenuItemMutation,
+  useDeleteMenuItemMutation,
+  useUploadMenuItemImageMutation,
+  type MenuItemsArgs,
+} from '@/services/menuApi';
+import { errorMessage, validationErrors as getValidationErrors } from '@/lib/errors';
 import type {
   MenuItem,
   Category,
@@ -10,12 +20,11 @@ import type {
   UseMenuItemManagementReturn
 } from '../types/menu';
 
+const NO_ITEMS: MenuItem[] = [];
+const NO_CATEGORIES: Category[] = [];
 
 export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemManagementReturn => {
-  // Data State
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  // Selection / editing state
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -26,23 +35,60 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPageState] = useState(initialPerPage);
+  const [pendingActions, setPendingActions] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: initialPerPage,
-    total: 0,
+
+  // Server data
+  const queryArgs = useMemo(() => {
+    const params: NonNullable<MenuItemsArgs> = { page, limit: perPage };
+    if (searchTerm) params.search = searchTerm;
+    if (statusFilter !== 'all') params.is_active = statusFilter === 'active';
+    if (categoryFilter !== 'all') params.category_id = categoryFilter;
+    if (availabilityFilter !== 'all') params.is_available = availabilityFilter === 'available';
+    return params;
+  }, [page, perPage, searchTerm, statusFilter, categoryFilter, availabilityFilter]);
+
+  const { data, isLoading, error: queryError, refetch } = useGetMenuItemsQuery(queryArgs, {
+    refetchOnMountOrArgChange: true,
   });
-  const [menuItemStats, setMenuItemStats] = useState<MenuItemStats>({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    available: 0,
-    unavailable: 0,
-  });
+  const { data: categoriesData } = useGetCategoriesQuery({}, { refetchOnMountOrArgChange: true });
+
+  const [createItem] = useCreateMenuItemMutation();
+  const [updateItem] = useUpdateMenuItemMutation();
+  const [deleteItem] = useDeleteMenuItemMutation();
+  const [uploadImage] = useUploadMenuItemImageMutation();
+
+  const menuItems = data?.data ?? NO_ITEMS;
+  const categories = categoriesData?.data ?? NO_CATEGORIES;
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: data ? data.page || 1 : page,
+      lastPage: data?.totalPages || 1,
+      perPage: data?.limit || perPage,
+      total: data?.total ?? 0,
+    }),
+    [data, page, perPage]
+  );
+
+  const menuItemStats = useMemo<MenuItemStats>(
+    () => ({
+      total: menuItems.length,
+      active: menuItems.filter((item) => item.is_active).length,
+      inactive: menuItems.filter((item) => !item.is_active).length,
+      available: menuItems.filter((item) => item.is_available).length,
+      unavailable: menuItems.filter((item) => !item.is_available).length,
+    }),
+    [menuItems]
+  );
+
+  // Loading is true for the first load or an action, not for background refetches
+  const loading = isLoading || pendingActions > 0;
+  const error = actionError ?? (queryError ? errorMessage(queryError, i18n.t('notifications.menuItemFetch')) : null);
 
   // Auto-clear success messages
   useEffect(() => {
@@ -53,79 +99,38 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
     return;
   }, [successMessage]);
 
-  const clearError = () => setError(null);
+  const clearError = () => setActionError(null);
   const clearSuccessMessage = () => setSuccessMessage(null);
 
-  // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await menuAPI.getCategories();
-        const categoriesData = Array.isArray(response) ? response : response.data || [];
-        setCategories(categoriesData);
-      } catch (err: any) {
-        console.error('Failed to fetch categories:', err);
-      }
-    };
-    fetchCategories();
-  }, []);
+  const fetchMenuItems = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
-  // Fetch menu items
-  const fetchMenuItems = async () => {
-    setLoading(true);
-    setError(null);
+  // Run a mutation with loading / error / success / validation handling
+  const perform = async (
+    action: () => Promise<unknown>,
+    opts: { success: string; fallback: string; validate?: boolean }
+  ) => {
+    setPendingActions((n) => n + 1);
+    setActionError(null);
+    if (opts.validate) setValidationErrors({});
     try {
-      const params: any = {
-        page: pagination.currentPage,
-        limit: pagination.perPage,
-      };
-
-      if (searchTerm) params.search = searchTerm;
-      if (statusFilter !== 'all') params.is_active = statusFilter === 'active';
-      if (categoryFilter !== 'all') params.category_id = categoryFilter;
-      if (availabilityFilter !== 'all') params.is_available = availabilityFilter === 'available';
-
-      const response = await menuAPI.getItems(params);
-
-      const itemsData = Array.isArray(response) ? response : response.data || [];
-      setMenuItems(itemsData);
-
-      // Calculate stats
-      const stats: MenuItemStats = {
-        total: itemsData.length,
-        active: itemsData.filter((item: MenuItem) => item.is_active).length,
-        inactive: itemsData.filter((item: MenuItem) => !item.is_active).length,
-        available: itemsData.filter((item: MenuItem) => item.is_available).length,
-        unavailable: itemsData.filter((item: MenuItem) => !item.is_available).length,
-      };
-      setMenuItemStats(stats);
-
-      // Update pagination
-      if (!Array.isArray(response) && response.total !== undefined) {
-        setPagination({
-          currentPage: response.page || 1,
-          lastPage: response.totalPages || 1,
-          perPage: response.limit || pagination.perPage,
-          total: response.total,
-        });
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to fetch menu items');
+      await action();
+      setSuccessMessage(opts.success);
+    } catch (err) {
+      const fieldErrors = opts.validate ? getValidationErrors(err) : undefined;
+      if (fieldErrors) setValidationErrors(fieldErrors);
+      setActionError(errorMessage(err, opts.fallback));
+      throw err;
     } finally {
-      setLoading(false);
+      setPendingActions((n) => n - 1);
     }
   };
 
-  // Fetch on mount and when filters change
-  useEffect(() => {
-    fetchMenuItems();
-  }, [statusFilter, categoryFilter, availabilityFilter, pagination.currentPage, pagination.perPage, searchTerm]);
-
-  // Filter menu items
-  useEffect(() => {
+  // Client-side filtering on top of the server page
+  const filteredMenuItems = useMemo(() => {
     let filtered = [...menuItems];
 
-    // Apply filters
     if (statusFilter !== 'all') {
       filtered = filtered.filter(item =>
         statusFilter === 'active' ? item.is_active : !item.is_active
@@ -150,167 +155,62 @@ export const useMenuItemManagement = (initialPerPage: number = 12): UseMenuItemM
       );
     }
 
-    setFilteredMenuItems(filtered);
+    return filtered;
   }, [menuItems, statusFilter, categoryFilter, availabilityFilter, searchTerm]);
 
   // Pagination actions
-  const goToPage = (page: number) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
+  const goToPage = (nextPage: number) => {
+    setPage(nextPage);
   };
 
-  const setPerPage = (perPage: number) => {
-    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
+  const setPerPage = (next: number) => {
+    setPerPageState(next);
+    setPage(1);
   };
 
-  // Create menu item
-  const createMenuItem = async (data: MenuItemFormData) => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-    try {
-      // Create item first
-      const newItem = await menuAPI.createItem(data);
+  const createMenuItem = (formData: MenuItemFormData) =>
+    perform(() => createItem(formData).unwrap(), {
+      success: i18n.t('notifications.menuItemCreated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
+      validate: true,
+    });
 
-      // If there's an image file, upload it
-      if (data.imageFile) {
-        try {
-          await menuAPI.uploadItemImage(newItem.id, data.imageFile);
-          // Refresh to get the image URL
-          const updatedItem = await menuAPI.getItem(newItem.id);
-          setMenuItems(prev => [updatedItem, ...prev]);
-        } catch (imageErr) {
-          console.error('Failed to upload image:', imageErr);
-          // Still add the item but maybe show a warning?
-          setMenuItems(prev => [newItem, ...prev]);
-        }
-      } else {
-        setMenuItems(prev => [newItem, ...prev]);
+  const updateMenuItem = (id: number, formData: MenuItemFormData) =>
+    perform(
+      async () => {
+        await updateItem({ id, data: formData }).unwrap();
+        if (editingMenuItem?.id === id) setEditingMenuItem(null);
+      },
+      {
+        success: i18n.t('notifications.menuItemUpdated'),
+        fallback: i18n.t('notifications.menuItemFailed'),
+        validate: true,
       }
+    );
 
-      setSuccessMessage(`Menu item "${data.name}" created successfully!`);
-      await fetchMenuItems();
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      setError(err.response?.data?.message || err.message || 'Failed to create menu item');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deleteMenuItem = (id: number) =>
+    perform(() => deleteItem(id).unwrap(), {
+      success: i18n.t('notifications.menuItemDeleted'),
+      fallback: i18n.t('notifications.menuItemFailed'),
+    });
 
-  // Update menu item
-  const updateMenuItem = async (id: number, data: MenuItemFormData) => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-    try {
-      // Update item details
-      const updatedItem = await menuAPI.updateItem(id, data);
+  const updateMenuItemStatus = (id: number, isActive: boolean) =>
+    perform(() => updateItem({ id, data: { is_active: isActive } }).unwrap(), {
+      success: i18n.t('notifications.menuItemUpdated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
+    });
 
-      // If there's an image file, upload it
-      if (data.imageFile) {
-        try {
-          await menuAPI.uploadItemImage(id, data.imageFile);
-          // Refresh to get the new image URL
-          const refreshedItem = await menuAPI.getItem(id);
-          setMenuItems(prev => prev.map(item => item.id === id ? refreshedItem : item));
-        } catch (imageErr) {
-          console.error('Failed to upload image:', imageErr);
-          // Still update the item details
-          setMenuItems(prev => prev.map(item => item.id === id ? updatedItem : item));
-        }
-      } else {
-        setMenuItems(prev => prev.map(item => item.id === id ? updatedItem : item));
-      }
+  const updateMenuItemAvailability = (id: number, isAvailable: boolean) =>
+    perform(() => updateItem({ id, data: { is_available: isAvailable } }).unwrap(), {
+      success: i18n.t('notifications.menuItemUpdated'),
+      fallback: i18n.t('notifications.menuItemFailed'),
+    });
 
-      setSuccessMessage(`Menu item "${data.name}" updated successfully!`);
-      if (editingMenuItem?.id === id) {
-        setEditingMenuItem(null);
-      }
-      await fetchMenuItems();
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      setError(err.response?.data?.message || err.message || 'Failed to update menu item');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete menu item
-  const deleteMenuItem = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await menuAPI.deleteItem(id);
-      setMenuItems(prev => prev.filter(item => item.id !== id));
-      setSuccessMessage('Menu item deleted successfully!');
-      await fetchMenuItems();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete menu item');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update menu item status
-  const updateMenuItemStatus = async (id: number, isActive: boolean) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await menuAPI.updateItem(id, { is_active: isActive });
-      setMenuItems(prev => prev.map(item =>
-        item.id === id ? { ...item, is_active: isActive } : item
-      ));
-      setSuccessMessage(`Menu item ${isActive ? 'activated' : 'deactivated'} successfully!`);
-      await fetchMenuItems();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to update menu item status');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update menu item availability
-  const updateMenuItemAvailability = async (id: number, isAvailable: boolean) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await menuAPI.updateItem(id, { is_available: isAvailable });
-      setMenuItems(prev => prev.map(item =>
-        item.id === id ? { ...item, is_available: isAvailable } : item
-      ));
-      setSuccessMessage(`Menu item marked as ${isAvailable ? 'available' : 'unavailable'}!`);
-      await fetchMenuItems();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to update menu item availability');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Upload menu item image
-  const uploadMenuItemImage = async (id: number, file: File) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await menuAPI.uploadItemImage(id, file);
-      setSuccessMessage('Image uploaded successfully!');
-      await fetchMenuItems();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to upload image');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const uploadMenuItemImage = (id: number, file: File) =>
+    perform(() => uploadImage({ id, file }).unwrap(), {
+      success: i18n.t('notifications.menuItemUploaded'),
+      fallback: i18n.t('notifications.menuItemFetch'),
+    });
 
   // Selection actions
   const toggleItemSelection = (id: number) => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Permission } from '@/types/roles';
 
 interface PermissionListProps {
@@ -9,6 +9,7 @@ interface PermissionListProps {
 }
 
 export default function PermissionList({ permissions, loading, onEdit, onDelete }: PermissionListProps) {
+  const { t, i18n } = useTranslation();
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -30,9 +31,9 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
   if (permissions.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow border p-12 text-center">
-        <div className="text-gray-400 text-6xl mb-4">🔑</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No permissions found</h3>
-        <p className="text-gray-600">Create your first permission to define access controls.</p>
+        <div className="text-gray-400 text-6xl mb-4" aria-hidden="true">🔑</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('rbac.permissionList.emptyTitle')}</h3>
+        <p className="text-gray-600">{t('rbac.permissionList.emptyHint')}</p>
       </div>
     );
   }
@@ -42,14 +43,14 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Permission Name
+            <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('rbac.permissionList.colName')}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Created At
+            <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('rbac.permissionList.colCreated')}
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+            <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('rbac.permissionList.colActions')}
             </th>
           </tr>
         </thead>
@@ -64,21 +65,23 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {new Date(permission.created_at).toLocaleDateString()}
+                {new Date(permission.created_at).toLocaleDateString(i18n.language)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
                 <div className="flex justify-end gap-2">
                   <button
+                    type="button"
                     onClick={() => onEdit(permission)}
                     className="text-blue-600 hover:text-blue-900"
                   >
-                    ✏️ Edit
+                    <span aria-hidden="true">✏️</span> {t('rbac.edit')}
                   </button>
                   <button
+                    type="button"
                     onClick={() => onDelete(permission.id, permission.name)}
                     className="text-red-600 hover:text-red-900"
                   >
-                    🗑️ Delete
+                    <span aria-hidden="true">🗑️</span> {t('rbac.delete')}
                   </button>
                 </div>
               </td>

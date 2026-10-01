@@ -1,21 +1,36 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 import type { Table } from '@/types/table';
 
+type OrderType = 'dine-in' | 'takeout' | 'delivery';
+type Priority = 'normal' | 'rush' | 'urgent';
+
 interface OrderFiltersProps {
-  orderType: 'dine-in' | 'takeout' | 'delivery';
+  orderType: OrderType;
   selectedTable: number | '';
   customerName: string;
-  priority: 'normal' | 'high' | 'urgent';
+  priority: Priority;
   searchTerm: string;
   tables: Table[];
-  onOrderTypeChange: (type: 'dine-in' | 'takeout' | 'delivery') => void;
+  onOrderTypeChange: (type: OrderType) => void;
   onTableChange: (tableId: number) => void;
   onCustomerNameChange: (name: string) => void;
-  onPriorityChange: (priority: 'normal' | 'high' | 'urgent') => void;
+  onPriorityChange: (priority: Priority) => void;
   onSearchChange: (term: string) => void;
 }
 
-const OrderFiltersComponent: React.FC<OrderFiltersProps> = ({
+const ORDER_TYPES: OrderType[] = ['dine-in', 'takeout', 'delivery'];
+const TYPE_KEY: Record<OrderType, 'order.type.dineIn' | 'order.type.takeout' | 'order.type.delivery'> = {
+  'dine-in': 'order.type.dineIn',
+  takeout: 'order.type.takeout',
+  delivery: 'order.type.delivery',
+};
+
+const field =
+  'h-12 w-full rounded-xl border border-line bg-surface px-3 text-base text-fg placeholder:text-fg-muted';
+
+const OrderFiltersComponent = ({
   orderType,
   selectedTable,
   customerName,
@@ -27,63 +42,82 @@ const OrderFiltersComponent: React.FC<OrderFiltersProps> = ({
   onCustomerNameChange,
   onPriorityChange,
   onSearchChange,
-}) => {
+}: OrderFiltersProps) => {
+  const { t } = useTranslation();
+
   return (
-    <div className="p-4 border-b space-y-3">
-      {/* Quick Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-        <select
-          value={orderType}
-          onChange={(e) => onOrderTypeChange(e.target.value as any)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="dine-in">🍽️ Dine-in</option>
-          <option value="takeout">🥡 Takeout</option>
-          <option value="delivery">🚚 Delivery</option>
-        </select>
-
-        {orderType === 'dine-in' && (
-          <select
-            value={selectedTable}
-            onChange={(e) => onTableChange(Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Table</option>
-            {tables.map(table => (
-              <option key={table.id} value={table.id}>
-                Table {table.number}
-              </option>
-            ))}
-          </select>
-        )}
-
-        <select
-          value={priority}
-          onChange={(e) => onPriorityChange(e.target.value as any)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="normal">🔵 Normal</option>
-          <option value="high">🟡 High Priority</option>
-          <option value="urgent">🔴 Urgent</option>
-        </select>
-
-        <input
-          type="text"
-          value={customerName}
-          onChange={(e) => onCustomerNameChange(e.target.value)}
-          placeholder="Customer name"
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-        />
+    <div className="space-y-3">
+      {/* Order type: one tap, large targets */}
+      <div role="radiogroup" aria-label={t('order.typeLabel')} className="grid grid-cols-3 gap-2">
+        {ORDER_TYPES.map((type) => {
+          const selected = orderType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onOrderTypeChange(type)}
+              className={twMerge(
+                'min-h-12 rounded-xl px-2 text-base font-semibold ring-1 transition-colors',
+                selected ? 'bg-primary text-primary-fg ring-primary' : 'bg-surface text-fg ring-line hover:bg-surface-2'
+              )}
+            >
+              {t(TYPE_KEY[type])}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Search */}
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="🔍 Search items..."
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500"
-      />
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-3">
+        {orderType === 'dine-in' && (
+          <label className="flex flex-col gap-1 text-sm font-medium text-fg-muted">
+            {t('order.table')}
+            <select
+              value={selectedTable}
+              onChange={(e) => onTableChange(Number(e.target.value))}
+              className={field}
+            >
+              <option value="">{t('order.selectTable')}</option>
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  {t('order.tableNumber', { n: table.number })}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-fg-muted">
+          {t('order.priority')}
+          <select value={priority} onChange={(e) => onPriorityChange(e.target.value as Priority)} className={field}>
+            <option value="normal">{t('priority.normal')}</option>
+            <option value="rush">{t('priority.rush')}</option>
+            <option value="urgent">{t('priority.urgent')}</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium text-fg-muted">
+          {t('order.customer')}
+          <input
+            type="text"
+            value={customerName}
+            onChange={(e) => onCustomerNameChange(e.target.value)}
+            className={field}
+          />
+        </label>
+      </div>
+
+      <label className="flex flex-col gap-1 text-sm font-medium text-fg-muted">
+        <span className="sr-only">{t('menu.search')}</span>
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={t('menu.search')}
+          className={twMerge(field, 'text-lg')}
+        />
+      </label>
     </div>
   );
 };

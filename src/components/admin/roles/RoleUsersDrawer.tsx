@@ -1,4 +1,5 @@
-import React from 'react';
+import { useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RoleUser } from '@/types/roles';
 import { MODAL_BACKDROP_CLASS } from '@/utils/modalStyles';
 
@@ -17,6 +18,8 @@ export default function RoleUsersDrawer({
   users,
   loading = false,
 }: RoleUsersDrawerProps) {
+  const { t } = useTranslation();
+  const titleId = useId();
   if (!isOpen) return null;
 
   return (
@@ -25,24 +28,32 @@ export default function RoleUsersDrawer({
       <div
         className={`fixed inset-0 z-40 transition-opacity ${MODAL_BACKDROP_CLASS}`}
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-xl z-50 transform transition-transform">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="fixed inset-y-0 end-0 w-full max-w-md bg-white shadow-xl z-50 transform transition-transform"
+      >
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="px-6 py-4 border-b flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{roleName} Users</h2>
+              <h2 id={titleId} className="text-lg font-semibold text-gray-900">{t('rbac.drawer.title', { name: roleName })}</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {users.length} {users.length === 1 ? 'user' : 'users'} assigned to this role
+                {t('rbac.drawer.count', { count: users.length })}
               </p>
             </div>
             <button
+              type="button"
+              aria-label={t('common.close')}
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -61,8 +72,8 @@ export default function RoleUsersDrawer({
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-gray-400 text-5xl mb-4">👥</div>
-                <p className="text-gray-600">No users assigned to this role yet</p>
+                <div className="text-gray-400 text-5xl mb-4" aria-hidden="true">👥</div>
+                <p className="text-gray-600">{t('rbac.drawer.empty')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -82,10 +93,11 @@ export default function RoleUsersDrawer({
           {/* Footer */}
           <div className="px-6 py-4 border-t">
             <button
+              type="button"
               onClick={onClose}
               className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>

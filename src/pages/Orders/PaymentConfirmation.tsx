@@ -1,14 +1,19 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import { downloadReceipt, printReceipt } from '../../api/receipts';
 import { fetchOrderById } from '../../api/orders';
 import type { Order } from '../../types/order';
+import { Button } from '@/components/kit';
+import { formatMoney } from '@/lib/money';
 
 export default function PaymentConfirmation() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,33 +30,34 @@ export default function PaymentConfirmation() {
         setLoading(true);
         setError(null);
         const orderData = await fetchOrderById(parseInt(id));
-        
+
         // Check if order is paid or completed
         if (orderData.status !== 'completed' && orderData.status !== 'served') {
-          setError('This order has not been completed yet.');
+          setError(t('paymentConfirmation.errors.notCompleted'));
         } else {
           setOrder(orderData);
         }
       } catch (err) {
         console.error('Error loading order:', err);
-        setError('Failed to load order details. Please try again.');
+        setError(t('paymentConfirmation.errors.load'));
       } finally {
         setLoading(false);
       }
     };
 
     loadOrder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
   const handlePrintReceipt = async () => {
     if (!id) return;
-    
+
     try {
       setActionLoading('print');
       await printReceipt(parseInt(id));
     } catch (err) {
       console.error('Error printing receipt:', err);
-      setError('Failed to print receipt. Please try again.');
+      setError(t('paymentConfirmation.errors.print'));
     } finally {
       setActionLoading(null);
     }
@@ -59,13 +65,13 @@ export default function PaymentConfirmation() {
 
   const handleDownloadPDF = async () => {
     if (!id) return;
-    
+
     try {
       setActionLoading('download');
       await downloadReceipt(parseInt(id), 'pdf');
     } catch (err) {
       console.error('Error downloading receipt:', err);
-      setError('Failed to download receipt. Please try again.');
+      setError(t('paymentConfirmation.errors.download'));
     } finally {
       setActionLoading(null);
     }
@@ -84,15 +90,15 @@ export default function PaymentConfirmation() {
   if (loading) {
     return (
       <div>
-        <PageMeta 
-          title="Payment Confirmation | Restaurant POS" 
-          description="Order payment confirmation page"
+        <PageMeta
+          title={t('paymentConfirmation.meta.title')}
+          description={t('paymentConfirmation.meta.loading')}
         />
-        <PageBreadcrumb pageTitle="Payment Confirmation" />
+        <PageBreadcrumb pageTitle={t('paymentConfirmation.title')} />
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
+          <div role="status" className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading order details...</p>
+            <p className="text-gray-600">{t('paymentConfirmation.loading')}</p>
           </div>
         </div>
       </div>
@@ -102,11 +108,11 @@ export default function PaymentConfirmation() {
   if (error || !order) {
     return (
       <div>
-        <PageMeta 
-          title="Payment Confirmation | Restaurant POS" 
-          description="Payment confirmation error"
+        <PageMeta
+          title={t('paymentConfirmation.meta.title')}
+          description={t('paymentConfirmation.meta.error')}
         />
-        <PageBreadcrumb pageTitle="Payment Confirmation" />
+        <PageBreadcrumb pageTitle={t('paymentConfirmation.title')} />
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center max-w-md">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
@@ -123,15 +129,10 @@ export default function PaymentConfirmation() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
-              <p className="text-gray-600">{error || 'Order not found'}</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('paymentConfirmation.errorTitle')}</h3>
+              <p role="alert" className="text-gray-600">{error || t('paymentConfirmation.notFound')}</p>
             </div>
-            <button
-              onClick={handleBackToOrders}
-              className="btn btn-primary"
-            >
-              Back to Orders
-            </button>
+            <Button onClick={handleBackToOrders}>{t('paymentConfirmation.backToOrders')}</Button>
           </div>
         </div>
       </div>
@@ -140,11 +141,11 @@ export default function PaymentConfirmation() {
 
   return (
     <div>
-      <PageMeta 
-        title="Payment Confirmation | Restaurant POS" 
-        description="Order payment successful"
+      <PageMeta
+        title={t('paymentConfirmation.meta.title')}
+        description={t('paymentConfirmation.meta.success')}
       />
-      <PageBreadcrumb pageTitle="Payment Confirmation" />
+      <PageBreadcrumb pageTitle={t('paymentConfirmation.title')} />
 
       <div className="max-w-2xl mx-auto">
         {/* Success Message */}
@@ -165,146 +166,68 @@ export default function PaymentConfirmation() {
                 />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Payment Successful!</h2>
-            <p className="text-green-50 text-lg">Thank you for your payment</p>
+            <h2 className="text-3xl font-bold text-white mb-2">{t('paymentConfirmation.successTitle')}</h2>
+            <p className="text-green-50 text-lg">{t('paymentConfirmation.thanks')}</p>
           </div>
 
           {/* Order Details */}
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-sm text-gray-500">Order Number</p>
+                <p className="text-sm text-gray-500">{t('paymentConfirmation.orderNumber')}</p>
                 <p className="text-lg font-semibold text-gray-900">{order.orderNumber}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Table</p>
+                <p className="text-sm text-gray-500">{t('paymentConfirmation.table')}</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {order.table?.number || 'N/A'}
+                  {order.table?.number || t('paymentConfirmation.notAvailable')}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Payment Method</p>
-                <p className="text-lg font-semibold text-gray-900 capitalize">
-                  {order.payment_method || order.paymentMethod || 'Cash'}
+                <p className="text-sm text-gray-500">{t('paymentConfirmation.paymentMethod')}</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {dynamicT(`payment.method.${order.payment_method || order.paymentMethod || 'cash'}`, {
+                    defaultValue: String(order.payment_method || order.paymentMethod),
+                  })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Total Amount</p>
+                <p className="text-sm text-gray-500">{t('paymentConfirmation.totalAmount')}</p>
                 <p className="text-lg font-semibold text-green-600">
-                  {order.total.toFixed(2)} MAD
+                  {formatMoney(order.total)}
                 </p>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Receipt Options</h3>
-              
-              <button
-                onClick={handleViewReceipt}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
-                View Receipt
-              </button>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('paymentConfirmation.receiptOptions')}</h3>
 
-              <button
+              <Button fullWidth onClick={handleViewReceipt}>
+                {t('paymentConfirmation.viewReceipt')}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="secondary"
                 onClick={handlePrintReceipt}
-                disabled={actionLoading === 'print'}
-                className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={actionLoading === 'print'}
               >
-                {actionLoading === 'print' ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Printing...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                      />
-                    </svg>
-                    Print Receipt
-                  </>
-                )}
-              </button>
+                {actionLoading === 'print' ? t('paymentConfirmation.printing') : t('paymentConfirmation.printReceipt')}
+              </Button>
 
-              <button
+              <Button
+                fullWidth
+                variant="secondary"
                 onClick={handleDownloadPDF}
-                disabled={actionLoading === 'download'}
-                className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={actionLoading === 'download'}
               >
-                {actionLoading === 'download' ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Download PDF
-                  </>
-                )}
-              </button>
+                {actionLoading === 'download' ? t('paymentConfirmation.downloading') : t('paymentConfirmation.downloadPdf')}
+              </Button>
 
-              <button
-                onClick={handleBackToOrders}
-                className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-                Back to Orders
-              </button>
+              <Button fullWidth variant="ghost" onClick={handleBackToOrders}>
+                {t('paymentConfirmation.backToOrders')}
+              </Button>
             </div>
           </div>
         </div>
@@ -326,11 +249,8 @@ export default function PaymentConfirmation() {
               />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-blue-800 font-medium mb-1">Receipt Information</p>
-              <p className="text-sm text-blue-700">
-                Your receipt has been generated and can be printed or downloaded at any time. 
-                You can also access it later from the order details page.
-              </p>
+              <p className="text-sm text-blue-800 font-medium mb-1">{t('paymentConfirmation.infoTitle')}</p>
+              <p className="text-sm text-blue-700">{t('paymentConfirmation.infoBody')}</p>
             </div>
           </div>
         </div>

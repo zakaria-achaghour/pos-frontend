@@ -10,6 +10,7 @@ import type {
   ClockOutData,
   AttendanceSummary
 } from '../types/staff';
+import { asApiError } from '@/utils/apiError';
 
 // Staff API service
 export const staffAPI = {
@@ -23,7 +24,6 @@ export const staffAPI = {
     per_page?: number;
   } = {}): Promise<PaginatedResponse<Staff>> => {
     try {
-      console.log('🔍 Fetching staff with filters:', filters);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -32,7 +32,6 @@ export const staffAPI = {
       });
       
       const response = await apiClient.get(`/staff?${params}`);
-      console.log('📡 Staff API response:', response.data);
       
       // Handle both direct response and wrapped response
       if (response.data.data && Array.isArray(response.data.data)) {
@@ -51,7 +50,8 @@ export const staffAPI = {
       }
       
       return response.data as PaginatedResponse<Staff>;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching staff:', error);
       throw error;
     }
@@ -62,13 +62,12 @@ export const staffAPI = {
    */
   getStaffMember: async (id: number): Promise<Staff> => {
     try {
-      console.log('🔍 Fetching staff member with ID:', id);
       const response = await apiClient.get(`/staff/${id}`);
-      console.log('📡 Single staff API response:', response.data);
       
       // Handle both direct response and wrapped response
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching staff member:', error);
       throw error;
     }
@@ -79,13 +78,12 @@ export const staffAPI = {
    */
   createStaff: async (staffData: CreateStaffData): Promise<Staff> => {
     try {
-      console.log('➕ Creating staff member:', staffData);
       const response = await apiClient.post('/staff', staffData);
-      console.log('📡 Create staff API response:', response.data);
       
       // Handle both direct response and wrapped response
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error creating staff member:', error);
       throw error;
     }
@@ -96,13 +94,12 @@ export const staffAPI = {
    */
   updateStaff: async (id: number, updates: UpdateStaffData): Promise<Staff> => {
     try {
-      console.log('🔄 Updating staff member:', id, updates);
       const response = await apiClient.put(`/staff/${id}`, updates);
-      console.log('📡 Update staff API response:', response.data);
       
       // Handle both direct response and wrapped response
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating staff member:', error);
       throw error;
     }
@@ -113,10 +110,9 @@ export const staffAPI = {
    */
   deleteStaff: async (id: number): Promise<void> => {
     try {
-      console.log('🗑️ Deleting staff member:', id);
       await apiClient.delete(`/staff/${id}`);
-      console.log('✅ Staff member deleted successfully');
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error deleting staff member:', error);
       throw error;
     }

@@ -1,11 +1,11 @@
 import apiClient from './client';
 import type { ApiResponse, PaginatedResponse } from './client';
-import type { 
-  Order, 
+import type {
+  Order,
   OrderItem,
-  CreateOrderData, 
-  AddOrderItemData, 
-  PaymentMethod 
+  CreateOrderData,
+  AddOrderItemData,
+  PaymentMethod
 } from '../types/order';
 
 // Re-export types for backward compatibility
@@ -38,6 +38,8 @@ export const orderAPI = {
     type?: string;
     table_id?: number;
     search?: string;
+    mine?: 0 | 1;
+    waiter_id?: number;
     date_from?: string;
     date_to?: string;
     page?: number;
@@ -49,7 +51,7 @@ export const orderAPI = {
         params.append(key, value.toString());
       }
     });
-    
+
     const response = await apiClient.get<PaginatedResponse<Order>>(`/orders?${params}`);
     return response.data;
   },
@@ -109,10 +111,18 @@ export const orderAPI = {
   },
 
   /**
+   * Update order fields (PUT /orders/{id})
+   */
+  updateOrder: async (orderId: number, data: Record<string, unknown>): Promise<Order> => {
+    const response = await apiClient.put(`/orders/${orderId}`, data);
+    return unwrapResponse<Order>(response.data);
+  },
+
+  /**
    * Update order status
    */
   updateOrderStatus: async (orderId: number, status: string): Promise<Order> => {
-    const response = await apiClient.put(`/orders/${orderId}`, { status });
+    const response = await apiClient.patch(`/orders/${orderId}/status`, { status });
     return unwrapResponse<Order>(response.data);
   },
 

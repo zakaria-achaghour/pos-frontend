@@ -1,4 +1,5 @@
-import React from 'react';
+import { dynamicT } from '@/i18n/dynamic';
+import { useTranslation } from 'react-i18next';
 import RestaurantCard from './RestaurantCard';
 import type { Restaurant } from '@/types/restaurant';
 
@@ -25,6 +26,7 @@ export default function RestaurantList({
   onSelectRestaurant,
   loading = false,
 }: RestaurantListProps) {
+  const { t } = useTranslation();
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -57,9 +59,9 @@ export default function RestaurantList({
   if (restaurants.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-gray-400 text-6xl mb-4">🏪</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No restaurants found</h3>
-        <p className="text-gray-500">Try adjusting your search or filters</p>
+        <div className="text-gray-400 text-6xl mb-4" aria-hidden="true">🏪</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('tenants.list.emptyTitle')}</h3>
+        <p className="text-gray-500">{t('tenants.list.emptyHint')}</p>
       </div>
     );
   }
@@ -91,37 +93,37 @@ export default function RestaurantList({
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               {onSelectRestaurant && (
-                <th className="px-6 py-3 text-left">
+                <th className="px-6 py-3 text-start">
                   <input
                     type="checkbox"
+                    aria-label={t('tenants.list.selectAll')}
                     className="h-4 w-4 text-blue-600 rounded"
+                    checked={restaurants.every(r => selectedRestaurants.includes(r.id))}
+                    ref={node => { if (node) node.indeterminate = restaurants.some(r => selectedRestaurants.includes(r.id)) && !restaurants.every(r => selectedRestaurants.includes(r.id)); }}
                     onChange={(e) => {
-                      if (e.target.checked) {
-                        restaurants.forEach(r => onSelectRestaurant(r.id));
-                      } else {
-                        restaurants.forEach(r => onSelectRestaurant(r.id));
-                      }
+                      restaurants.filter(r => selectedRestaurants.includes(r.id) !== e.target.checked)
+                        .forEach(r => onSelectRestaurant(r.id));
                     }}
                   />
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colId')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colName')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                City
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colCity')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Owner
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colOwner')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colStatus')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('tenants.list.colActions')}
               </th>
             </tr>
           </thead>
@@ -136,6 +138,7 @@ export default function RestaurantList({
                         type="checkbox"
                         checked={selectedRestaurants.includes(restaurant.id)}
                         onChange={() => onSelectRestaurant(restaurant.id)}
+                        aria-label={t('tenants.card.select', { name: restaurant.name })}
                         className="h-4 w-4 text-blue-600 rounded"
                       />
                     </td>
@@ -150,24 +153,24 @@ export default function RestaurantList({
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {restaurant.city || 'N/A'}
+                    {restaurant.city || t('tenants.notAvailable')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {restaurant.owner_name || 'N/A'}
+                    {restaurant.owner_name || t('tenants.notAvailable')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {dynamicT(`tenants.status.${status}`, { defaultValue: status })}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       {onView && (
                         <button
                           onClick={() => onView(restaurant.id)}
                           className="text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          View
+                          {t('tenants.actions.view')}
                         </button>
                       )}
                       {onEdit && (
@@ -175,7 +178,7 @@ export default function RestaurantList({
                           onClick={() => onEdit(restaurant.id)}
                           className="text-green-600 hover:text-green-800 font-medium"
                         >
-                          Edit
+                          {t('tenants.actions.edit')}
                         </button>
                       )}
                       {onStatusChange && (
@@ -187,7 +190,7 @@ export default function RestaurantList({
                               : 'text-green-600 hover:text-green-800'
                           }`}
                         >
-                          {status === 'active' ? 'Deactivate' : 'Activate'}
+                          {status === 'active' ? t('tenants.actions.deactivate') : t('tenants.actions.activate')}
                         </button>
                       )}
                       {onDelete && (
@@ -195,7 +198,7 @@ export default function RestaurantList({
                           onClick={() => onDelete(restaurant.id)}
                           className="text-red-600 hover:text-red-800 font-medium"
                         >
-                          Delete
+                          {t('tenants.actions.delete')}
                         </button>
                       )}
                     </div>

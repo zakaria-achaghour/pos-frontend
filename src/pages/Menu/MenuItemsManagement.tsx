@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
-import Modal from '@/components/common/Modal';
+import { Button, Modal } from '@/components/kit';
 import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
 import MenuItemList from '@/components/pos/menu/MenuItemList';
 import { useMenuItemManagement } from '@/hooks/useMenuItemManagement';
-import type { MenuItem } from '@/types/menu';
+import type { MenuItem, MenuItemFilter } from '@/types/menu';
 
 export default function MenuItemsManagement() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const searchId = useId();
+  const categoryId = useId();
+  const statusId = useId();
+  const availabilityId = useId();
   const {
     // Data
     filteredMenuItems,
@@ -107,15 +113,15 @@ export default function MenuItemsManagement() {
 
   return (
     <div>
-      <PageMeta title="Menu Items | POS System" description="Manage menu items" />
-      <PageBreadcrumb pageTitle="Menu Items" />
+      <PageMeta title={t('menuAdmin.metaTitle')} description={t('menuAdmin.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('menuAdmin.breadcrumb')} />
 
       {/* Success Alert */}
       {successMessage && (
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success!"
+            title={t('menuAdmin.successTitle')}
             message={successMessage}
           />
         </div>
@@ -126,7 +132,7 @@ export default function MenuItemsManagement() {
         <div className="mb-6">
           <Alert
             variant="error"
-            title="Error"
+            title={t('menuAdmin.errorTitle')}
             message={error}
           />
         </div>
@@ -135,16 +141,17 @@ export default function MenuItemsManagement() {
       {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Items</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('menuAdmin.heading')}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Manage your restaurant menu items • {menuItemStats.total} total
+            {t('menuAdmin.subtitle', { total: menuItemStats.total })}
           </p>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/menu/items/add')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
         >
-          + Add Menu Item
+          {t('menuAdmin.add')}
         </button>
       </div>
 
@@ -153,10 +160,11 @@ export default function MenuItemsManagement() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label htmlFor={searchId} className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
             <input
+              id={searchId}
               type="text"
-              placeholder="Search items..."
+              placeholder={t('menuAdmin.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -165,13 +173,14 @@ export default function MenuItemsManagement() {
 
           {/* Category Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.category')}</label>
             <select
+              id={categoryId}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t('menuAdmin.allCategories')}</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -180,29 +189,31 @@ export default function MenuItemsManagement() {
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label htmlFor={statusId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.status')}</label>
             <select
+              id={statusId}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as MenuItemFilter)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All</option>
-              <option value="active">Active ({menuItemStats.active})</option>
-              <option value="inactive">Inactive ({menuItemStats.inactive})</option>
+              <option value="all">{t('common.all')}</option>
+              <option value="active">{t('menuAdmin.filterActive', { count: menuItemStats.active })}</option>
+              <option value="inactive">{t('menuAdmin.filterInactive', { count: menuItemStats.inactive })}</option>
             </select>
           </div>
 
           {/* Availability Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+            <label htmlFor={availabilityId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.availability')}</label>
             <select
+              id={availabilityId}
               value={availabilityFilter}
-              onChange={(e) => setAvailabilityFilter(e.target.value as any)}
+              onChange={(e) => setAvailabilityFilter(e.target.value as 'all' | 'available' | 'unavailable')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All</option>
-              <option value="available">Available ({menuItemStats.available})</option>
-              <option value="unavailable">Out of Stock ({menuItemStats.unavailable})</option>
+              <option value="all">{t('common.all')}</option>
+              <option value="available">{t('menuAdmin.filterAvailable', { count: menuItemStats.available })}</option>
+              <option value="unavailable">{t('menuAdmin.filterOutOfStock', { count: menuItemStats.unavailable })}</option>
             </select>
           </div>
         </div>
@@ -237,28 +248,21 @@ export default function MenuItemsManagement() {
         <Modal
           isOpen={true}
           onClose={() => setItemToDelete(null)}
-          title="Delete Menu Item"
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to delete <strong>{itemToDelete.name}</strong>? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setItemToDelete(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={loading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Deleting...' : 'Delete'}
-              </button>
+          title={t('menuAdmin.delete.title')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setItemToDelete(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="danger" onClick={handleConfirmDelete} disabled={loading}>
+                {loading ? t('menuAdmin.delete.deleting') : t('menuAdmin.delete.confirm')}
+              </Button>
             </div>
-          </div>
+          }
+        >
+          <p className="text-gray-600">{t('menuAdmin.delete.body', { name: itemToDelete.name })}</p>
         </Modal>
       )}
 
@@ -267,33 +271,33 @@ export default function MenuItemsManagement() {
         <Modal
           isOpen={true}
           onClose={() => setItemToToggleAvailability(null)}
-          title={`Mark as ${itemToToggleAvailability.is_available ? 'Unavailable' : 'Available'}`}
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to mark <strong>{itemToToggleAvailability.name}</strong> as{' '}
-              {itemToToggleAvailability.is_available ? 'unavailable' : 'available'}?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setItemToToggleAvailability(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
+          title={itemToToggleAvailability.is_available ? t('menuAdmin.availabilityToggle.unavailableTitle') : t('menuAdmin.availabilityToggle.availableTitle')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setItemToToggleAvailability(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant={itemToToggleAvailability.is_available ? 'danger' : 'success'}
                 onClick={handleConfirmToggleAvailability}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
-                  itemToToggleAvailability.is_available
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
               >
-                {loading ? 'Processing...' : itemToToggleAvailability.is_available ? 'Mark Unavailable' : 'Mark Available'}
-              </button>
+                {loading
+                  ? t('menuAdmin.processing')
+                  : itemToToggleAvailability.is_available
+                    ? t('menuAdmin.availabilityToggle.markUnavailable')
+                    : t('menuAdmin.availabilityToggle.markAvailable')}
+              </Button>
             </div>
-          </div>
+          }
+        >
+          <p className="text-gray-600">
+            {itemToToggleAvailability.is_available
+              ? t('menuAdmin.availabilityToggle.unavailableBody', { name: itemToToggleAvailability.name })
+              : t('menuAdmin.availabilityToggle.availableBody', { name: itemToToggleAvailability.name })}
+          </p>
         </Modal>
       )}
 
@@ -302,33 +306,33 @@ export default function MenuItemsManagement() {
         <Modal
           isOpen={true}
           onClose={() => setItemToToggleStatus(null)}
-          title={`${itemToToggleStatus.is_active ? 'Deactivate' : 'Activate'} Menu Item`}
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to {itemToToggleStatus.is_active ? 'deactivate' : 'activate'}{' '}
-              <strong>{itemToToggleStatus.name}</strong>?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setItemToToggleStatus(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
+          title={itemToToggleStatus.is_active ? t('menuAdmin.statusToggle.deactivateTitle') : t('menuAdmin.statusToggle.activateTitle')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setItemToToggleStatus(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant={itemToToggleStatus.is_active ? 'danger' : 'primary'}
                 onClick={handleConfirmToggleStatus}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg text-white transition-colors disabled:opacity-50 ${
-                  itemToToggleStatus.is_active
-                    ? 'bg-orange-600 hover:bg-orange-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
               >
-                {loading ? 'Processing...' : itemToToggleStatus.is_active ? 'Deactivate' : 'Activate'}
-              </button>
+                {loading
+                  ? t('menuAdmin.processing')
+                  : itemToToggleStatus.is_active
+                    ? t('menuAdmin.statusToggle.deactivate')
+                    : t('menuAdmin.statusToggle.activate')}
+              </Button>
             </div>
-          </div>
+          }
+        >
+          <p className="text-gray-600">
+            {itemToToggleStatus.is_active
+              ? t('menuAdmin.statusToggle.deactivateBody', { name: itemToToggleStatus.name })
+              : t('menuAdmin.statusToggle.activateBody', { name: itemToToggleStatus.name })}
+          </p>
         </Modal>
       )}
     </div>

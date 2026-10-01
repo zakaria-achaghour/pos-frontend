@@ -40,7 +40,8 @@ export interface UseResourceManagementReturn<
   TFormData,
   TStatus,
   TFilter,
-  TStats
+  TStats,
+  TViewMode extends string = 'grid' | 'list'
 > {
   // Data
   items: TResource[];
@@ -49,7 +50,7 @@ export interface UseResourceManagementReturn<
   editingItem: TResource | null;
 
   // UI State
-  viewMode: 'grid' | 'list';
+  viewMode: TViewMode;
   filter: TFilter;
   loading: boolean;
   error: string | null;
@@ -68,7 +69,7 @@ export interface UseResourceManagementReturn<
   goToPage: (page: number) => void;
 
   // UI Actions
-  setViewMode: (mode: 'grid' | 'list') => void;
+  setViewMode: (mode: TViewMode) => void;
   setFilter: (filter: TFilter) => void;
   setSelectedItem: (item: TResource | null) => void;
   setEditingItem: (item: TResource | null) => void;
@@ -212,8 +213,8 @@ export interface SearchBarProps {
 }
 
 export interface FilterBarProps {
-  filters: Record<string, any>;
-  onFilterChange: (key: string, value: any) => void;
+  filters: Record<string, string | number | boolean | undefined>;
+  onFilterChange: (key: string, value: string | number | undefined) => void;
   onClearFilters: () => void;
   children?: React.ReactNode;
   className?: string;
@@ -225,3 +226,5 @@ export interface SortProps {
   onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   options: Array<{ value: string; label: string }>;
 }
+
+export type { PaginationInfo };

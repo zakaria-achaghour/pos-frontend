@@ -1,8 +1,17 @@
-import { useState, useCallback, useEffect } from 'react';
-import { tableAPI } from '../api/tables';
-import type { 
-  Table, 
-  TableFormData, 
+import i18n from '@/i18n';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import {
+  useGetAdminTablesQuery,
+  useCreateTableMutation,
+  useUpdateTableMutation,
+  useDeleteTableMutation,
+  useUpdateAdminTableStatusMutation,
+  type AdminTableListArgs,
+} from '@/services/tableAdminApi';
+import type { ApiError } from '@/services/baseApi';
+import type {
+  Table,
+  TableFormData,
   TableStatus,
   CreateTableRequest,
   UpdateTableRequest
@@ -54,155 +63,178 @@ interface UseTableManagementReturn extends UseResourceManagementReturn<
   setPerPage: (perPage: number) => void;
 }
 
+const EMPTY_TABLES: Table[] = [];
+
+const messageOf = (err: unknown, fallback: string): string => {
+  const e = err as Partial<ApiError> | undefined;
+  return e?.message || fallback;
+};
+
+/**
+ * Table admin (CRUD + server-side filters/pagination). Server state lives in RTK Query;
+ * mutations invalidate the shared 'Tables' tag, so the waiter board refreshes too.
+ */
 export const useTableManagement = (initialPerPage: number = 5): UseTableManagementReturn => {
-  const [tables, setTables] = useState<Table[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  
+
   // UI State
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [statusFilter, setStatusFilter] = useState<TableFilter>('all');
-  const [shapeFilter, setShapeFilter] = useState<string>('all');
-  const [sectionFilter, setSectionFilter] = useState<string>('');
-  const [minCapacityFilter, setMinCapacityFilter] = useState<number | null>(null);
-  const [maxCapacityFilter, setMaxCapacityFilter] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilterState] = useState<TableFilter>('all');
+  const [shapeFilter, setShapeFilterState] = useState<string>('all');
+  const [sectionFilter, setSectionFilterState] = useState<string>('');
+  const [minCapacityFilter, setMinCapacityFilterState] = useState<number | null>(null);
+  const [maxCapacityFilter, setMaxCapacityFilterState] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPageState] = useState(initialPerPage);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [dismissedQueryError, setDismissedQueryError] = useState<unknown>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: initialPerPage,
-    total: 0,
+
+  // Server-side filters; changing one goes back to page 1
+  const queryArgs = useMemo<AdminTableListArgs>(() => {
+    const args: AdminTableListArgs = { page, per_page: perPage };
+    if (statusFilter !== 'all') args.status = statusFilter;
+    if (shapeFilter && shapeFilter !== 'all') args.shape = shapeFilter;
+    if (sectionFilter && sectionFilter.trim()) args.section = sectionFilter.trim();
+    if (minCapacityFilter !== null && minCapacityFilter > 0) args.min_capacity = minCapacityFilter;
+    if (maxCapacityFilter !== null && maxCapacityFilter > 0) args.max_capacity = maxCapacityFilter;
+    return args;
+  }, [page, perPage, statusFilter, shapeFilter, sectionFilter, minCapacityFilter, maxCapacityFilter]);
+
+  const { data, isLoading, error: queryError, refetch } = useGetAdminTablesQuery(queryArgs, {
+    refetchOnMountOrArgChange: true,
   });
-  const [tableStats, setTableStats] = useState<TableStats>({
-    total: 0,
-    available: 0,
-    occupied: 0,
-    reserved: 0,
-    maintenance: 0,
-    totalCapacity: 0,
-    occupancyRate: 0,
-  });
+
+  const [createTableMutation] = useCreateTableMutation();
+  const [updateTableMutation] = useUpdateTableMutation();
+  const [deleteTableMutation] = useDeleteTableMutation();
+  const [updateStatusMutation] = useUpdateAdminTableStatusMutation();
+
+  const tables = data?.data ?? EMPTY_TABLES;
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: Number(data?.current_page ?? page) || page,
+      lastPage: Number(data?.last_page ?? 1) || 1,
+      perPage: Number(data?.per_page ?? tables.length) || tables.length || perPage,
+      total: Number(data?.total ?? tables.length) || tables.length,
+    }),
+    [data, page, perPage, tables.length]
+  );
+
+  const tableStats = useMemo<TableStats>(() => {
+    const occupied = tables.filter((t) => t.status === 'occupied').length;
+    return {
+      total: data?.total || tables.length,
+      available: tables.filter((t) => t.status === 'available').length,
+      occupied,
+      reserved: tables.filter((t) => t.status === 'reserved').length,
+      maintenance: tables.filter((t) => ['maintenance', 'out-of-order', 'cleaning'].includes(t.status || '')).length,
+      totalCapacity: tables.reduce((sum, t) => sum + (t.capacity || 0), 0),
+      occupancyRate: tables.length > 0 ? Math.round((occupied / tables.length) * 100) : 0,
+    };
+  }, [data, tables]);
+
+  const queryErrorMessage =
+    queryError && queryError !== dismissedQueryError ? messageOf(queryError, i18n.t('notifications.tableFetch')) : null;
+  const error = actionError ?? queryErrorMessage;
 
   // Auto-clear messages
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
+    if (!successMessage) return undefined;
+    const timer = setTimeout(() => setSuccessMessage(null), 3000);
+    return () => clearTimeout(timer);
   }, [successMessage]);
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+    if (!error) return undefined;
+    const timer = setTimeout(() => {
+      setActionError(null);
+      setDismissedQueryError(queryError);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error, queryError]);
 
-  const clearError = () => setError(null);
+  const clearError = () => {
+    setActionError(null);
+    setDismissedQueryError(queryError);
+  };
   const clearSuccessMessage = () => setSuccessMessage(null);
 
-  // Load tables from API with server-side pagination and filtering
-  const fetchTables = useCallback(async (page?: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const currentPage = page || pagination.currentPage;
-      
-      // Build API params with filters
-      const apiParams: any = {
-        page: currentPage,
-        per_page: pagination.perPage,
-      };
-      
-      // Add status filter if not 'all'
-      if (statusFilter !== 'all') {
-        apiParams.status = statusFilter;
+  // Runs a mutation with shared loading / error / success handling (never throws)
+  const perform = useCallback(
+    async (action: () => Promise<unknown>, success: string, failure: string): Promise<void> => {
+      setActionLoading(true);
+      setActionError(null);
+      try {
+        await action();
+        if (success) setSuccessMessage(success);
+      } catch (err) {
+        setActionError(messageOf(err, failure));
+        const apiErr = err as Partial<ApiError>;
+        if (apiErr.errors) setValidationErrors(apiErr.errors);
+      } finally {
+        setActionLoading(false);
       }
-      
-      // Add shape filter if not 'all'
-      if (shapeFilter && shapeFilter !== 'all') {
-        apiParams.shape = shapeFilter;
+    },
+    []
+  );
+
+  const fetchTables = useCallback(
+    async (nextPage?: number) => {
+      if (nextPage && nextPage !== page) {
+        setPage(nextPage);
+        return;
       }
-      
-      // Add section filter if provided
-      if (sectionFilter && sectionFilter.trim()) {
-        apiParams.section = sectionFilter.trim();
-      }
-      
-      // Add capacity filters
-      if (minCapacityFilter !== null && minCapacityFilter > 0) {
-        apiParams.min_capacity = minCapacityFilter;
-      }
-      
-      if (maxCapacityFilter !== null && maxCapacityFilter > 0) {
-        apiParams.max_capacity = maxCapacityFilter;
-      }
-      
-      const response = await tableAPI.getTables(apiParams);
+      await refetch();
+    },
+    [page, refetch]
+  );
 
-      const tablesData = response.data || [];
-
-      setTables(tablesData);
-      setPagination({
-        currentPage: Number(response.current_page ?? currentPage) || currentPage,
-        lastPage: Number(response.last_page ?? 1) || 1,
-        perPage: Number(response.per_page ?? tablesData.length) || tablesData.length || pagination.perPage,
-        total: Number(response.total ?? tablesData.length) || tablesData.length,
-      });
-      
-      // Calculate stats
-      setTableStats({
-        total: response.total || tablesData.length,
-        available: tablesData.filter((t: Table) => t.status === 'available').length,
-        occupied: tablesData.filter((t: Table) => t.status === 'occupied').length,
-        reserved: tablesData.filter((t: Table) => t.status === 'reserved').length,
-        maintenance: tablesData.filter((t: Table) => ['maintenance', 'out-of-order', 'cleaning'].includes(t.status || '')).length,
-        totalCapacity: tablesData.reduce((sum: number, t: Table) => sum + (t.capacity || 0), 0),
-        occupancyRate: tablesData.length > 0 ? Math.round((tablesData.filter((t: Table) => t.status === 'occupied').length / tablesData.length) * 100) : 0,
-      });
-    } catch (err: any) {
-      console.error('Error fetching tables:', err);
-      setError(err.message || 'Failed to load tables');
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.currentPage, pagination.perPage, statusFilter, shapeFilter, sectionFilter, minCapacityFilter, maxCapacityFilter]);
-
-  // Load data on mount and when filter changes
-  useEffect(() => {
-    fetchTables(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, shapeFilter, sectionFilter, minCapacityFilter, maxCapacityFilter]);
-
-  // Filtered tables (client-side backup if needed)
-  const filteredTables = tables;
-
-  // Pagination helper
-  const goToPage = (page: number) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
-    fetchTables(page);
+  // Filter setters reset to the first page
+  const setStatusFilter = (filter: TableFilter) => {
+    setStatusFilterState(filter);
+    setPage(1);
+  };
+  const setShapeFilter = (shape: string) => {
+    setShapeFilterState(shape);
+    setPage(1);
+  };
+  const setSectionFilter = (section: string) => {
+    setSectionFilterState(section);
+    setPage(1);
+  };
+  const setMinCapacityFilter = (capacity: number | null) => {
+    setMinCapacityFilterState(capacity);
+    setPage(1);
+  };
+  const setMaxCapacityFilter = (capacity: number | null) => {
+    setMaxCapacityFilterState(capacity);
+    setPage(1);
   };
 
-  // Set items per page
-  const setPerPage = (perPage: number) => {
-    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
-    // Will trigger refetch via useEffect
+  // Filtered tables (filters are applied server-side)
+  const filteredTables = tables;
+
+  const goToPage = (next: number) => setPage(next);
+
+  const setPerPage = (next: number) => {
+    setPerPageState(next);
+    setPage(1);
   };
 
   // Create new table
-  const createTable = useCallback(async (formData: TableFormData): Promise<void> => {
-    if (!formData.number.trim()) {
-      setError('Please enter a table number');
-      return;
-    }
+  const createTable = useCallback(
+    async (formData: TableFormData): Promise<void> => {
+      if (!formData.number.trim()) {
+        setActionError('Please enter a table number');
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
       const createData: CreateTableRequest = {
         number: formData.number.trim(),
         capacity: formData.capacity,
@@ -211,154 +243,134 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
         location: {
           section: formData.section,
           floor: formData.floor,
-          ...(formData.coordinates && { coordinates: formData.coordinates })
+          ...(formData.coordinates && { coordinates: formData.coordinates }),
         },
-        features: formData.features || []
+        features: formData.features || [],
       };
 
       if (formData.description?.trim()) {
         createData.description = formData.description.trim();
       }
 
-      const newTable = await tableAPI.createTable(createData);
-      setSuccessMessage(`Table "${newTable.number}" created successfully!`);
-      await fetchTables(pagination.currentPage);
-    } catch (error: any) {
-      console.error('Error creating table:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to create table';
-      setError(errorMessage);
-      if (error.response?.data?.errors) {
-        setValidationErrors(error.response.data.errors);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchTables, pagination.currentPage]);
+      await perform(
+        async () => {
+          await createTableMutation(createData).unwrap();
+          setSuccessMessage(i18n.t('notifications.tableCreated'));
+        },
+        '',
+        i18n.t('notifications.tableFailed')
+      );
+    },
+    [perform, createTableMutation]
+  );
 
   // Update existing table
-  const updateTable = useCallback(async (tableId: number, formData: Partial<TableFormData>): Promise<void> => {
-    const existingTable = tables.find(t => t.id === tableId);
-    if (!existingTable) {
-      setError('Table not found');
-      return;
-    }
+  const updateTable = useCallback(
+    async (tableId: number, formData: Partial<TableFormData>): Promise<void> => {
+      const existingTable = tables.find((t) => t.id === tableId);
+      if (!existingTable) {
+        setActionError('Table not found');
+        return;
+      }
 
-    if (formData.number && !formData.number.trim()) {
-      setError('Please enter a table number');
-      return;
-    }
+      if (formData.number && !formData.number.trim()) {
+        setActionError('Please enter a table number');
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
       const updateData: Partial<UpdateTableRequest> = {};
-      
+
       if (formData.number) updateData.number = formData.number.trim();
       if (formData.capacity) updateData.capacity = formData.capacity;
       if (formData.shape) updateData.shape = formData.shape;
       if (formData.status) updateData.status = formData.status;
       if (formData.section || formData.floor || formData.coordinates) {
         updateData.location = {
-          section: formData.section || (existingTable.location as any)?.section || '',
-          floor: formData.floor || (existingTable.location as any)?.floor || '',
-          ...(formData.coordinates && { coordinates: formData.coordinates })
+          section: formData.section || existingTable.location?.section || '',
+          floor: (formData.floor || existingTable.location?.floor || '') as number,
+          ...(formData.coordinates && { coordinates: formData.coordinates }),
         };
       }
       if (formData.features) updateData.features = formData.features;
       if (formData.description?.trim()) updateData.description = formData.description.trim();
 
-      const updatedTable = await tableAPI.updateTable(tableId, updateData);
-      setSuccessMessage(`Table "${updatedTable.number}" updated successfully!`);
-      await fetchTables(pagination.currentPage);
-    } catch (error: any) {
-      console.error('Error updating table:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update table';
-      setError(errorMessage);
-      if (error.response?.data?.errors) {
-        setValidationErrors(error.response.data.errors);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [tables, fetchTables, pagination.currentPage]);
+      await perform(
+        async () => {
+          await updateTableMutation({ id: tableId, data: updateData }).unwrap();
+          setSuccessMessage(i18n.t('notifications.tableUpdated'));
+        },
+        '',
+        i18n.t('notifications.tableFailed')
+      );
+    },
+    [tables, perform, updateTableMutation]
+  );
 
   // Delete table
-  const deleteTable = useCallback(async (tableId: number): Promise<void> => {
-    const table = tables.find(t => t.id === tableId);
-    if (!table) {
-      setError('Table not found');
-      return;
-    }
+  const deleteTable = useCallback(
+    async (tableId: number): Promise<void> => {
+      const table = tables.find((t) => t.id === tableId);
+      if (!table) {
+        setActionError('Table not found');
+        return;
+      }
 
-    if (table.status === 'occupied') {
-      setError('Cannot delete occupied table');
-      return;
-    }
+      if (table.status === 'occupied') {
+        setActionError('Cannot delete occupied table');
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
-      await tableAPI.deleteTable(tableId);
-      setSuccessMessage(`Table "${table.number}" deleted successfully!`);
-      await fetchTables(pagination.currentPage);
-    } catch (error: any) {
-      console.error('Error deleting table:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete table';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [tables, fetchTables, pagination.currentPage]);
+      await perform(
+        () => deleteTableMutation(tableId).unwrap(),
+        i18n.t('notifications.tableDeleted'),
+        i18n.t('notifications.tableFailed')
+      );
+    },
+    [tables, perform, deleteTableMutation]
+  );
 
   // Update table status
-  const updateTableStatus = useCallback(async (tableId: number, newStatus: TableStatus): Promise<void> => {
-    const table = tables.find(t => t.id === tableId);
-    if (!table) {
-      setError('Table not found');
-      return;
-    }
+  const updateTableStatus = useCallback(
+    async (tableId: number, newStatus: TableStatus): Promise<void> => {
+      const table = tables.find((t) => t.id === tableId);
+      if (!table) {
+        setActionError('Table not found');
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
-      await tableAPI.updateTableStatus(tableId, newStatus);
-      setSuccessMessage(`Table "${table.number}" status updated to ${newStatus}`);
-      await fetchTables(pagination.currentPage);
-    } catch (error: any) {
-      console.error('Error updating table status:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update table status';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [tables, fetchTables, pagination.currentPage]);
+      await perform(
+        () => updateStatusMutation({ id: tableId, status: newStatus }).unwrap(),
+        i18n.t('notifications.tableUpdated'),
+        i18n.t('notifications.tableFailed')
+      );
+    },
+    [tables, perform, updateStatusMutation]
+  );
+
+  // Selection management
+  const clearSelection = () => {
+    setSelectedItems([]);
+  };
 
   // Bulk update status
   const bulkUpdateStatus = async (ids: number[], status: TableStatus): Promise<void> => {
     if (ids.length === 0) return;
-    
-    setLoading(true);
-    setError(null);
+
+    setActionLoading(true);
+    setActionError(null);
     try {
-      await Promise.all(ids.map(id => updateTableStatus(id, status)));
-      setSuccessMessage(`Successfully updated ${ids.length} table(s)`);
+      await Promise.all(ids.map((id) => updateTableStatus(id, status)));
+      setSuccessMessage(i18n.t('notifications.tableUpdated'));
       clearSelection();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update tables');
+    } catch (err) {
+      setActionError(messageOf(err, i18n.t('notifications.tableFailed')));
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
-  // Selection management
   const toggleItemSelection = (id: number) => {
-    setSelectedItems(prev =>
-      prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
-    );
-  };
-
-  const clearSelection = () => {
-    setSelectedItems([]);
+    setSelectedItems((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
   };
 
   return {
@@ -369,7 +381,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     editingItem: editingTable,
     filter: statusFilter,
     selectedItems,
-    
+
     // Aliases for backward compatibility
     tables,
     filteredTables,
@@ -380,15 +392,15 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     sectionFilter,
     minCapacityFilter,
     maxCapacityFilter,
-    
+
     // UI State
     viewMode,
-    loading,
+    loading: isLoading || actionLoading,
     error,
     successMessage,
     validationErrors,
     pagination,
-    
+
     // Actions - base
     fetchItems: fetchTables,
     createItem: createTable,
@@ -397,14 +409,14 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     updateItemStatus: updateTableStatus,
     bulkUpdateStatus,
     goToPage,
-    
+
     // Actions - aliases
     fetchTables,
     createTable,
     updateTable,
     deleteTable,
     updateTableStatus,
-    
+
     // UI Actions - base
     setViewMode,
     setFilter: setStatusFilter,
@@ -415,7 +427,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     toggleItemSelection,
     clearSelection,
     setPerPage,
-    
+
     // UI Actions - aliases
     setStatusFilter,
     setShapeFilter,
@@ -424,7 +436,7 @@ export const useTableManagement = (initialPerPage: number = 5): UseTableManageme
     setMaxCapacityFilter,
     setSelectedTable,
     setEditingTable,
-    
+
     // Stats
     stats: tableStats,
     tableStats,

@@ -1,20 +1,33 @@
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 
 interface BreadcrumbItem {
   label: string;
   href?: string;
 }
 
+interface BreadcrumbAliasItem {
+  label: string;
+  link?: string;
+  path?: string;
+  href?: string;
+}
+
 interface BreadcrumbProps {
   pageTitle: string;
   breadcrumbItems?: BreadcrumbItem[];
+  items?: BreadcrumbAliasItem[];
 }
 
-const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems }) => {
+const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems, items: aliasItems }) => {
+  const { t } = useTranslation();
+  const normalizedItems: BreadcrumbItem[] | undefined =
+    breadcrumbItems ??
+    aliasItems?.map((i) => ({ label: i.label, href: i.href ?? i.link ?? i.path }));
   const items: BreadcrumbItem[] = [
-    { label: "Home", href: "/" },
-    ...(breadcrumbItems && breadcrumbItems.length > 0
-      ? breadcrumbItems
+    { label: t("nav.home"), href: "/" },
+    ...(normalizedItems && normalizedItems.length > 0
+      ? normalizedItems
       : [{ label: pageTitle }]),
   ];
 
@@ -26,7 +39,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems 
       >
         {pageTitle}
       </h2>
-      <nav>
+      <nav aria-label={t("rbac.breadcrumb.label")}>
         <ol className="flex items-center gap-1.5">
           {items.map((item, index) => {
             const isLast = index === items.length - 1;

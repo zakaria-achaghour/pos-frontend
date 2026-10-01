@@ -1,4 +1,6 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 
 interface CategoryTab {
   id: number;
@@ -10,42 +12,48 @@ interface CategoryTabsProps {
   selectedCategory: number | null;
   loading: boolean;
   onCategoryChange: (categoryId: number | null) => void;
+  /** vertical = side rail for wide screens, horizontal = scrolling chips */
+  orientation?: 'horizontal' | 'vertical';
 }
 
-const CategoryTabsComponent: React.FC<CategoryTabsProps> = ({
+const CategoryTabsComponent = ({
   categories,
   selectedCategory,
   loading,
   onCategoryChange,
-}) => {
-  return (
-    <div className="flex gap-2 overflow-x-auto scroll-px-4 snap-x snap-mandatory scrollbar-hide pb-1 px-4 pt-3">
+  orientation = 'horizontal',
+}: CategoryTabsProps) => {
+  const { t } = useTranslation();
+  const vertical = orientation === 'vertical';
+
+  const button = (id: number | null, label: string) => {
+    const selected = selectedCategory === id;
+    return (
       <button
-        onClick={() => onCategoryChange(null)}
+        key={id ?? 'all'}
+        type="button"
+        aria-pressed={selected}
         disabled={loading}
-        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors snap-start ${
-          selectedCategory === null
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => onCategoryChange(id)}
+        className={twMerge(
+          'min-h-12 shrink-0 rounded-xl px-4 text-base font-semibold transition-colors disabled:opacity-60',
+          vertical ? 'w-full text-start' : 'whitespace-nowrap',
+          selected ? 'bg-primary text-primary-fg' : 'bg-surface text-fg ring-1 ring-line hover:bg-surface-2'
+        )}
       >
-        All
+        {label}
       </button>
-      {categories.map(category => (
-        <button
-          key={category.id}
-          onClick={() => onCategoryChange(category.id)}
-          disabled={loading}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors snap-start ${
-            selectedCategory === category.id
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          {category.name}
-        </button>
-      ))}
-    </div>
+    );
+  };
+
+  return (
+    <nav
+      aria-label={t('menu.categories')}
+      className={twMerge(vertical ? 'flex flex-col gap-2' : 'flex gap-2 overflow-x-auto pb-1')}
+    >
+      {button(null, t('menu.allCategories'))}
+      {categories.map((c) => button(c.id, c.name))}
+    </nav>
   );
 };
 

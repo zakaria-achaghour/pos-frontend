@@ -1,32 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { dynamicT } from '@/i18n/dynamic';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
-import Modal from '@/components/common/Modal';
+import { Button, Modal, useToast } from '@/components/kit';
 import PaginationWithText from '@/components/ui/pagination/PaginationWithText';
 import OrderList from '@/components/pos/orders/OrderList';
 import PaymentModal from '@/components/pos/orders/PaymentModal';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { orderAPI } from '@/api/orders';
-import type { Order, OrderStatus } from '@/types/order';
+import type { Order, OrderStatus, OrderFilter, OrderTypeFilter } from '@/types/order';
 import { useCashierShift } from '@/hooks/useCashierShift';
 import { useAuth } from '@/hooks/useAuthRedux';
+import { errorMessage } from '@/lib/errors';
 
 export default function OrdersManagement() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const toast = useToast();
   const { user } = useAuth();
   const isCashier = user?.role === 'cashier';
   const {
     currentShift,
     requireShift,
     error: shiftError,
-    setError: setShiftError,
   } = useCashierShift({ autoFetch: isCashier });
+  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh toggle (RTK Query polling)
   const {
     // Data
     filteredOrders,
-
     // UI State
     statusFilter,
     typeFilter,
@@ -49,32 +53,13 @@ export default function OrdersManagement() {
     setTypeFilter,
     setTableFilter,
     setSearchTerm,
-  } = useOrderManagement(12); // 12 orders per page
+  } = useOrderManagement(12, { autoRefresh }); // 12 orders per page
 
   // Local modal states
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [orderToUpdateStatus, setOrderToUpdateStatus] = useState<{order: Order; newStatus: OrderStatus} | null>(null);
   const [orderToPayment, setOrderToPayment] = useState<Order | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh toggle
-
-  // Auto-refresh when there are preparing orders
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    // Check if there are any preparing orders
-    const hasPreparingOrders = filteredOrders.some(order => order.status === 'preparing');
-    
-    if (hasPreparingOrders) {
-      // Refresh every 30 seconds when there are preparing orders
-      const interval = setInterval(() => {
-        console.log('Auto-refreshing orders (preparing orders detected)');
-        fetchOrders();
-      }, 30000); // 30 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [filteredOrders, autoRefresh, fetchOrders]);
 
   // Handler for delete request (opens confirmation modal)
   const handleDeleteRequest = (id: number) => {
@@ -107,7 +92,7 @@ export default function OrdersManagement() {
     try {
       await updateOrderStatus(orderToUpdateStatus.order.id, orderToUpdateStatus.newStatus);
       setOrderToUpdateStatus(null);
-    } catch (error: any) {
+    } catch (error) {
       // Close modal first so error message is visible
       setOrderToUpdateStatus(null);
       // Error is already set in the hook, but we can log it
@@ -120,7 +105,7 @@ export default function OrdersManagement() {
     if (isCashier) {
       const hasShift = currentShift || (await requireShift());
       if (!hasShift) {
-        alert('Please open a shift before processing payments.');
+        toast.error(t('orderList.errors.shiftRequired'));
         return;
       }
     }
@@ -139,15 +124,15 @@ export default function OrdersManagement() {
       const updatedOrder = await orderAPI.updatePayment(orderId, paymentData);
       await fetchOrders();
       return updatedOrder;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Payment update failed:', error);
-      alert(error.response?.data?.message || 'Failed to process payment');
+      toast.error(errorMessage(error, t('orderList.errors.payment')));
       throw error;
     }
   };
 
   const handleEdit = (order: Order) => {
-    navigate(`/orders/${order.id}/edit`);
+    navigate(`/orders/${order.id}`); // no edit route exists; details page handles changes
   };
 
   const handleViewDetails = (order: Order) => {
@@ -156,15 +141,15 @@ export default function OrdersManagement() {
 
   return (
     <div>
-      <PageMeta title="Orders Management | POS System" description="Manage restaurant orders" />
-      <PageBreadcrumb pageTitle="Orders Management" />
+      <PageMeta title={t('orderList.meta.title')} description={t('orderList.meta.description')} />
+      <PageBreadcrumb pageTitle={t('orderList.title')} />
 
       {/* Success/Error Messages */}
       {successMessage && (
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success"
+            title={t('orderList.alerts.success')}
             message={successMessage}
           />
         </div>
@@ -174,7 +159,7 @@ export default function OrdersManagement() {
         <div className="mb-6">
           <Alert
             variant="error"
-            title="Error"
+            title={t('orderList.alerts.error')}
             message={error}
           />
         </div>
@@ -183,9 +168,8 @@ export default function OrdersManagement() {
         <div className="mb-4">
           <Alert
             variant="error"
-            title="Shift Warning"
+            title={t('orderList.alerts.shiftWarning')}
             message={shiftError}
-            onClose={() => setShiftError(null)}
           />
         </div>
       )}
@@ -193,72 +177,62 @@ export default function OrdersManagement() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('orderList.title')}</h1>
           <p className="text-gray-600 mt-1">
-            Manage restaurant orders • {orderStats.total} total
+            {t('orderList.subtitle', { count: orderStats.total })}
           </p>
         </div>
-        <div className="flex gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div className="flex flex-wrap gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700 cursor-pointer px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
             <input
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            <span>Auto-refresh</span>
+            <span>{t('orderList.autoRefresh')}</span>
           </label>
-          <button
-            onClick={() => fetchOrders()}
-            disabled={loading}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-          <button
-            onClick={() => navigate('/orders/new')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            + Create New Order
-          </button>
+          <Button size="md" variant="secondary" onClick={() => fetchOrders()} loading={loading}>
+            {loading ? t('orderList.refreshing') : t('common.refresh')}
+          </Button>
+          <Button size="md" onClick={() => navigate('/orders/new')}>
+            {t('orderList.createNew')}
+          </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Total</div>
+          <div className="text-sm text-gray-600">{t('orderList.stats.total')}</div>
           <div className="text-2xl font-bold text-gray-900">{orderStats.total}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Active</div>
+          <div className="text-sm text-gray-600">{t('orderList.stats.active')}</div>
           <div className="text-2xl font-bold text-blue-600">{orderStats.active}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Pending</div>
+          <div className="text-sm text-gray-600">{t('status.pending')}</div>
           <div className="text-2xl font-bold text-yellow-600">{orderStats.pending}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Preparing</div>
+          <div className="text-sm text-gray-600">{t('status.preparing')}</div>
           <div className="text-2xl font-bold text-orange-600">{orderStats.preparing}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Ready</div>
+          <div className="text-sm text-gray-600">{t('status.ready')}</div>
           <div className="text-2xl font-bold text-emerald-600">{orderStats.ready}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Served</div>
+          <div className="text-sm text-gray-600">{t('status.served')}</div>
           <div className="text-2xl font-bold text-teal-600">{orderStats.served}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Completed</div>
+          <div className="text-sm text-gray-600">{t('status.completed')}</div>
           <div className="text-2xl font-bold text-green-600">{orderStats.completed}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Cancelled</div>
+          <div className="text-sm text-gray-600">{t('status.cancelled')}</div>
           <div className="text-2xl font-bold text-red-600">{orderStats.cancelled}</div>
         </div>
       </div>
@@ -268,10 +242,10 @@ export default function OrdersManagement() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
             <input
               type="text"
-              placeholder="Search orders..."
+              placeholder={t('orderList.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -280,48 +254,48 @@ export default function OrdersManagement() {
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('orderList.filters.status')}</label>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as OrderFilter)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active ({orderStats.active})</option>
-              <option value="pending">Pending ({orderStats.pending})</option>
-              <option value="accepted">Accepted</option>
-              <option value="preparing">Preparing ({orderStats.preparing})</option>
-              <option value="ready">Ready ({orderStats.ready})</option>
-              <option value="served">Served ({orderStats.served})</option>
-              <option value="completed">Completed ({orderStats.completed})</option>
-              <option value="cancelled">Cancelled ({orderStats.cancelled})</option>
+              <option value="all">{t('orderList.filters.allStatus')}</option>
+              <option value="active">{t('orderList.stats.active')} ({orderStats.active})</option>
+              <option value="pending">{t('status.pending')} ({orderStats.pending})</option>
+              <option value="accepted">{t('status.accepted')}</option>
+              <option value="preparing">{t('status.preparing')} ({orderStats.preparing})</option>
+              <option value="ready">{t('status.ready')} ({orderStats.ready})</option>
+              <option value="served">{t('status.served')} ({orderStats.served})</option>
+              <option value="completed">{t('status.completed')} ({orderStats.completed})</option>
+              <option value="cancelled">{t('status.cancelled')} ({orderStats.cancelled})</option>
             </select>
           </div>
 
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Order Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('order.typeLabel')}</label>
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={(e) => setTypeFilter(e.target.value as OrderTypeFilter)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Types</option>
-              <option value="dine-in">Dine-in</option>
-              <option value="takeout">Takeout</option>
-              <option value="delivery">Delivery</option>
+              <option value="all">{t('orderList.filters.allTypes')}</option>
+              <option value="dine-in">{t('order.type.dineIn')}</option>
+              <option value="takeout">{t('order.type.takeout')}</option>
+              <option value="delivery">{t('order.type.delivery')}</option>
             </select>
           </div>
 
           {/* Table Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Table</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('orderList.filters.table')}</label>
             <select
               value={tableFilter}
               onChange={(e) => setTableFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Tables</option>
+              <option value="all">{t('orderList.filters.allTables')}</option>
               {/* TODO: Add table options from tables API */}
             </select>
           </div>
@@ -358,29 +332,27 @@ export default function OrdersManagement() {
         <Modal
           isOpen={true}
           onClose={() => setOrderToDelete(null)}
-          title="Delete Order"
+          title={t('orderList.cancelModal.title')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOrderToDelete(null)}>
+                {t('orderList.cancelModal.keep')}
+              </Button>
+              <Button variant="danger" onClick={handleConfirmDelete} loading={loading}>
+                {loading ? t('orderList.cancelModal.cancelling') : t('orderList.cancelModal.confirm')}
+              </Button>
+            </>
+          }
         >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to delete order <strong>{orderToDelete.orderNumber || `#${orderToDelete.id}`}</strong>? 
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setOrderToDelete(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={loading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
+          <p className="text-gray-600">
+            <Trans
+              i18nKey="orderList.cancelModal.body"
+              values={{ order: orderToDelete.orderNumber || `#${orderToDelete.id}` }}
+              components={{ strong: <strong /> }}
+            />
+          </p>
         </Modal>
       )}
 
@@ -389,31 +361,31 @@ export default function OrdersManagement() {
         <Modal
           isOpen={true}
           onClose={() => setOrderToUpdateStatus(null)}
-          title="Update Order Status"
+          title={t('orderList.statusModal.title')}
+          closeLabel={t('common.close')}
+          size="sm"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOrderToUpdateStatus(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleConfirmUpdateStatus} loading={loading}>
+                {loading ? t('orderList.statusModal.updating') : t('orderList.statusModal.confirm')}
+              </Button>
+            </>
+          }
         >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Are you sure you want to change order{' '}
-              <strong>{orderToUpdateStatus.order.orderNumber || `#${orderToUpdateStatus.order.id}`}</strong>{' '}
-              status from <strong>{orderToUpdateStatus.order.status}</strong> to{' '}
-              <strong>{orderToUpdateStatus.newStatus}</strong>?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setOrderToUpdateStatus(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmUpdateStatus}
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Updating...' : 'Update Status'}
-              </button>
-            </div>
-          </div>
+          <p className="text-gray-600">
+            <Trans
+              i18nKey="orderList.statusModal.body"
+              values={{
+                order: orderToUpdateStatus.order.orderNumber || `#${orderToUpdateStatus.order.id}`,
+                from: dynamicT(`status.${orderToUpdateStatus.order.status}`, { defaultValue: orderToUpdateStatus.order.status }),
+                to: dynamicT(`status.${orderToUpdateStatus.newStatus}`, { defaultValue: orderToUpdateStatus.newStatus }),
+              }}
+              components={{ strong: <strong /> }}
+            />
+          </p>
         </Modal>
       )}
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../hooks/useAuthRedux';
 // import { dashboardAPI } from '../../api/dashboard'; // DEPRECATED - endpoint no longer exists
@@ -6,6 +7,9 @@ import type { DashboardMetrics, DashboardPeriod } from '@/types/dashboard';
 import { handleApiError } from '../../api/client';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import DemoDataBanner from '@/components/common/DemoDataBanner';
+import type { AxiosError } from 'axios';
+import { formatMoney } from '@/lib/money';
 
 const mockMetrics: DashboardMetrics = {
   total_revenue: 15750.00,
@@ -59,6 +63,10 @@ const extendedMockData = {
 };
 
 export default function OwnerDashboard() {
+  const { t, i18n } = useTranslation();
+  const numberLocale = i18n.language.startsWith('ar') ? 'ar-MA-u-nu-latn' : i18n.language;
+  const formatNumber = (value: number, digits = 0) =>
+    value.toLocaleString(numberLocale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState<DashboardPeriod>('today');
@@ -72,8 +80,8 @@ export default function OwnerDashboard() {
         // NOTE: /dashboard/metrics endpoint no longer exists on backend
         // Using mock data until new endpoint is implemented
         setMetrics(mockMetrics);
-      } catch (err: any) {
-        console.error('Error fetching metrics:', handleApiError(err));
+      } catch (err) {
+        console.error('Error fetching metrics:', handleApiError(err as AxiosError));
         // Fallback to mock data
         setMetrics(mockMetrics);
       } finally {
@@ -104,8 +112,8 @@ export default function OwnerDashboard() {
   if (loading) {
     return (
       <div>
-        <PageMeta title="Owner Dashboard | POS System" description="Restaurant management dashboard" />
-        <PageBreadcrumb pageTitle="Owner Dashboard" />
+        <PageMeta title={t('dashboard.owner.metaTitle')} description={t('dashboard.owner.metaDescription')} />
+        <PageBreadcrumb pageTitle={t('nav.ownerDashboard')} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
@@ -122,21 +130,22 @@ export default function OwnerDashboard() {
 
   return (
     <div className="space-y-6">
-      <PageMeta title="Owner Dashboard | POS System" description="Restaurant management dashboard" />
-      <PageBreadcrumb pageTitle="Owner Dashboard" />
+      <PageMeta title={t('dashboard.owner.metaTitle')} description={t('dashboard.owner.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('nav.ownerDashboard')} />
+      <DemoDataBanner />
 
       {/* Welcome Header */}
       <div className="bg-blue-500 text-white p-6 rounded-lg">
-        <h1 className="text-2xl font-bold">Welcome back, {user?.name}!</h1>
-        <p className="text-blue-100">Here's how your restaurant is performing today</p>
+        <h1 className="text-2xl font-bold">{t('dashboard.owner.welcome', { name: user?.name })}</h1>
+        <p className="text-blue-100">{t('dashboard.owner.subtitle')}</p>
       </div>
 
       {/* Timeframe Selector */}
       <div className="flex gap-2">
         {[
-          { key: 'today' as DashboardPeriod, label: 'Today' },
-          { key: 'week' as DashboardPeriod, label: 'This Week' },
-          { key: 'month' as DashboardPeriod, label: 'This Month' }
+          { key: 'today' as DashboardPeriod, label: t('dashboard.period.today') },
+          { key: 'week' as DashboardPeriod, label: t('dashboard.period.week') },
+          { key: 'month' as DashboardPeriod, label: t('dashboard.period.month') }
         ].map((timeframe) => (
           <button
             key={timeframe.key}
@@ -157,12 +166,12 @@ export default function OwnerDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Revenue</p>
+              <p className="text-sm text-gray-600">{t('dashboard.owner.revenue')}</p>
               <p className="text-2xl font-bold text-gray-900">
-                MAD {getRevenueByTimeframe().toFixed(2)}
+                {formatMoney(getRevenueByTimeframe())}
               </p>
               <div className={`text-sm ${getRevenueChange() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {getRevenueChange() >= 0 ? '↗️' : '↘️'} {Math.abs(getRevenueChange()).toFixed(1)}% vs yesterday
+                {getRevenueChange() >= 0 ? '↗️' : '↘️'} {t('dashboard.owner.vsYesterday', { percent: formatNumber(Math.abs(getRevenueChange()), 1) })}
               </div>
             </div>
             <div className="text-2xl">💰</div>
@@ -173,9 +182,9 @@ export default function OwnerDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Orders Today</p>
+              <p className="text-sm text-gray-600">{t('dashboard.ordersToday')}</p>
               <p className="text-2xl font-bold text-gray-900">{metrics.total_orders}</p>
-              <p className="text-sm text-gray-500">MAD {metrics.average_order_value.toFixed(2)} avg ticket</p>
+              <p className="text-sm text-gray-500">{t('dashboard.owner.avgTicketValue', { amount: formatMoney(metrics.average_order_value) })}</p>
             </div>
             <div className="text-2xl">🧾</div>
           </div>
@@ -185,11 +194,11 @@ export default function OwnerDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Table Occupancy</p>
+              <p className="text-sm text-gray-600">{t('dashboard.owner.tableOccupancy')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.occupied_tables}/{metrics.occupied_tables + metrics.available_tables}
               </p>
-              <p className="text-sm text-gray-500">{((metrics.occupied_tables / (metrics.occupied_tables + metrics.available_tables)) * 100).toFixed(0)}% occupied</p>
+              <p className="text-sm text-gray-500">{t('dashboard.owner.occupiedPercent', { percent: formatNumber((metrics.occupied_tables / (metrics.occupied_tables + metrics.available_tables)) * 100) })}</p>
             </div>
             <div className="text-2xl">🍽️</div>
           </div>
@@ -199,9 +208,9 @@ export default function OwnerDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Top Performer</p>
+              <p className="text-sm text-gray-600">{t('dashboard.owner.topPerformer')}</p>
               <p className="text-lg font-bold text-gray-900">{extendedMockData.topPerformer.name}</p>
-              <p className="text-sm text-gray-500">{extendedMockData.topPerformer.ordersCompleted} orders • MAD {extendedMockData.topPerformer.revenue.toFixed(2)}</p>
+              <p className="text-sm text-gray-500">{t('dashboard.owner.performerStats', { count: extendedMockData.topPerformer.ordersCompleted, amount: formatMoney(extendedMockData.topPerformer.revenue) })}</p>
             </div>
             <div className="text-2xl">👑</div>
           </div>
@@ -212,7 +221,7 @@ export default function OwnerDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Sales Chart */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">📈 Hourly Sales</h3>
+          <h3 className="text-lg font-semibold mb-4">📈 {t('dashboard.owner.hourlySales')}</h3>
           <div className="space-y-2">
             {extendedMockData.hourlySales.slice(-8).map((hour) => (
               <div key={hour.hour} className="flex items-center gap-3">
@@ -223,7 +232,7 @@ export default function OwnerDashboard() {
                     style={{ width: `${(hour.sales / 2500) * 100}%` }}
                   ></div>
                 </div>
-                <div className="w-20 text-sm font-medium text-right">MAD {hour.sales}</div>
+                <div className="w-20 text-sm font-medium text-end">{formatMoney(hour.sales)}</div>
               </div>
             ))}
           </div>
@@ -231,41 +240,41 @@ export default function OwnerDashboard() {
 
         {/* Payment Methods */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">💳 Payment Methods</h3>
+          <h3 className="text-lg font-semibold mb-4">💳 {t('dashboard.paymentMethods')}</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Cash</span>
+                <span>{t('payment.method.cash')}</span>
               </div>
-              <div className="text-right">
-                <div className="font-semibold">MAD {extendedMockData.paymentMethods.cash.toFixed(2)}</div>
+              <div className="text-end">
+                <div className="font-semibold">{formatMoney(extendedMockData.paymentMethods.cash)}</div>
                 <div className="text-sm text-gray-500">
-                  {((extendedMockData.paymentMethods.cash / metrics.total_revenue) * 100).toFixed(0)}%
+                  {formatNumber((extendedMockData.paymentMethods.cash / metrics.total_revenue) * 100)}%
                 </div>
               </div>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Card</span>
+                <span>{t('payment.method.card')}</span>
               </div>
-              <div className="text-right">
-                <div className="font-semibold">MAD {extendedMockData.paymentMethods.card.toFixed(2)}</div>
+              <div className="text-end">
+                <div className="font-semibold">{formatMoney(extendedMockData.paymentMethods.card)}</div>
                 <div className="text-sm text-gray-500">
-                  {((extendedMockData.paymentMethods.card / metrics.total_revenue) * 100).toFixed(0)}%
+                  {formatNumber((extendedMockData.paymentMethods.card / metrics.total_revenue) * 100)}%
                 </div>
               </div>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span>Other</span>
+                <span>{t('dashboard.owner.other')}</span>
               </div>
-              <div className="text-right">
-                <div className="font-semibold">MAD {extendedMockData.paymentMethods.other.toFixed(2)}</div>
+              <div className="text-end">
+                <div className="font-semibold">{formatMoney(extendedMockData.paymentMethods.other)}</div>
                 <div className="text-sm text-gray-500">
-                  {((extendedMockData.paymentMethods.other / metrics.total_revenue) * 100).toFixed(0)}%
+                  {formatNumber((extendedMockData.paymentMethods.other / metrics.total_revenue) * 100)}%
                 </div>
               </div>
             </div>
@@ -275,7 +284,7 @@ export default function OwnerDashboard() {
 
       {/* Popular Items */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">🏆 Top Selling Items Today</h3>
+        <h3 className="text-lg font-semibold mb-4">🏆 {t('dashboard.owner.topItems')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
           {extendedMockData.topItems.map((item, index) => (
             <div key={item.name} className="border rounded-lg p-4">
@@ -284,8 +293,8 @@ export default function OwnerDashboard() {
                 <span className="font-medium">{item.name}</span>
               </div>
               <div className="text-sm text-gray-600">
-                <div>Sold: {item.sold} units</div>
-                <div className="font-semibold text-green-600">MAD {item.revenue.toFixed(2)}</div>
+                <div>{t('dashboard.owner.sold', { count: item.sold })}</div>
+                <div className="font-semibold text-green-600">{formatMoney(item.revenue)}</div>
               </div>
             </div>
           ))}
@@ -294,42 +303,42 @@ export default function OwnerDashboard() {
 
       {/* Quick Actions */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">⚡ Quick Actions</h3>
+        <h3 className="text-lg font-semibold mb-4">⚡ {t('dashboard.owner.quickActions')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <button
             onClick={() => navigate('/reports')}
             className="p-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">📊</div>
-            <div className="text-sm font-medium">View Reports</div>
+            <div className="text-sm font-medium">{t('dashboard.owner.viewReports')}</div>
           </button>
           <button
             onClick={() => navigate('/tables/manage')}
             className="p-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">🍽️</div>
-            <div className="text-sm font-medium">Manage Tables</div>
+            <div className="text-sm font-medium">{t('nav.manageTables')}</div>
           </button>
           <button
             onClick={() => navigate('/owner/tables')}
             className="p-4 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">📊</div>
-            <div className="text-sm font-medium">Table Analytics</div>
+            <div className="text-sm font-medium">{t('dashboard.owner.tableAnalytics')}</div>
           </button>
           <button
             onClick={() => navigate('/owner/staff')}
             className="p-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">👥</div>
-            <div className="text-sm font-medium">Staff Management</div>
+            <div className="text-sm font-medium">{t('dashboard.owner.staffManagement')}</div>
           </button>
           <button
             onClick={() => navigate('/items')}
             className="p-4 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors hover:scale-105 transform duration-200"
           >
             <div className="text-2xl mb-2">📋</div>
-            <div className="text-sm font-medium">Menu Editor</div>
+            <div className="text-sm font-medium">{t('dashboard.owner.menuEditor')}</div>
           </button>
         </div>
       </div>

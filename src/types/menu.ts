@@ -102,6 +102,7 @@ export interface MenuItemFormData {
   preparationTime?: number;
   ingredients: string | string[]; // backward compatibility - can be string or array
   allergens?: string | string[];
+  imageFile?: File | null;
 }
 
 // API-specific interfaces (from api/menu.ts)
@@ -123,8 +124,8 @@ export interface CreateMenuItemData {
   is_active?: boolean;
   is_available?: boolean;
   preparation_time?: number;
-  allergens?: string[];
-  ingredients?: string[];
+  allergens?: string | string[];
+  ingredients?: string | string[];
   sort_order?: number;
 }
 
@@ -206,7 +207,7 @@ export interface CategoryFiltersProps {
 export interface CategoryFormProps {
   initialData?: Partial<Category>;
   isEdit?: boolean;
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: CategoryFormData) => Promise<void> | void;
   onCancel: () => void;
   isLoading?: boolean;
   categories?: Category[];
@@ -215,7 +216,7 @@ export interface CategoryFormProps {
 export interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: CategoryFormData) => Promise<void>;
   editingCategory?: Category | null;
   loading?: boolean;
 }
@@ -297,8 +298,8 @@ export interface ItemCardProps {
 }
 
 export interface MenuFiltersProps {
-  filters: any; // MenuFilters type from hooks
-  onFiltersChange: (filters: Partial<any>) => void;
+  filters: MenuItemFilterOptions;
+  onFiltersChange: (filters: Partial<MenuItemFilterOptions>) => void;
   onReset: () => void;
   totalItemsCount: number;
   filteredItemsCount: number;
@@ -400,8 +401,8 @@ export interface UseMenuItemManagementReturn {
 
   // CRUD Actions
   fetchMenuItems: () => Promise<void>;
-  createMenuItem: (data: CreateMenuItemData) => Promise<void>;
-  updateMenuItem: (id: number, data: UpdateMenuItemData) => Promise<void>;
+  createMenuItem: (data: MenuItemFormData) => Promise<void>;
+  updateMenuItem: (id: number, data: MenuItemFormData) => Promise<void>;
   deleteMenuItem: (id: number) => Promise<void>;
   updateMenuItemStatus: (id: number, isActive: boolean) => Promise<void>;
   updateMenuItemAvailability: (id: number, isAvailable: boolean) => Promise<void>;
@@ -426,4 +427,13 @@ export interface UseMenuItemManagementReturn {
   setSearchTerm: (term: string) => void;
   clearError: () => void;
   clearSuccessMessage: () => void;
+}
+
+export type { PaginationInfo };
+
+export interface MenuFilters {
+  search: string;
+  category_id: number | 'all';
+  status: 'all' | 'active' | 'inactive';
+  price_range: 'all' | 'low' | 'medium' | 'high';
 }

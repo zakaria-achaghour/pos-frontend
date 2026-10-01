@@ -83,19 +83,27 @@ export interface Staff {
 }
 
 export interface CreateStaffData {
-  name: string;
+  name?: string;
   email: string;
-  role: 'manager' | 'cashier' | 'waiter' | 'kitchen';
+  role: string;
   phone?: string;
   address?: string;
   hire_date: string;
   hourly_rate?: number;
   password: string;
+  user_id?: number;
+  employee_id?: string;
+  first_name?: string;
+  last_name?: string;
+  position?: string;
+  department?: string;
+  status?: string;
 }
 
 export interface UpdateStaffData extends Partial<Omit<CreateStaffData, 'password'>> {
   password?: string;
   is_active?: boolean;
+  status?: string;
 }
 
 export interface StaffPerformance {
@@ -142,8 +150,8 @@ export interface AttendanceSummary {
 // ============================================
 
 export interface StaffFiltersProps {
-  filters: any;
-  onFilterChange: (key: string, value: any) => void;
+  filters: Record<string, string | number | boolean | undefined>;
+  onFilterChange: (key: string, value: string | number | undefined) => void;
   onClearFilters: () => void;
 }
 

@@ -1,0 +1,144 @@
+/*
+ * POS design tokens (additive on top of the TailAdmin theme in index.css).
+ *
+ * Palette: deep forest green + sage/cream, warm amber for "new", soft blue for "cooking",
+ * leaf green for "ready". Serif display headings.
+ *
+ * Surfaces and text are CSS variables that `.dark` overrides, so
+ * `bg-surface text-fg border-line` work in both themes without `dark:` classes.
+ * Order status, priority and table state each have ONE color here; use
+ * src/design/status.ts instead of picking colors per screen.
+ */
+@theme {
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  /* Forest scale. The template's hardcoded `brand`, `indigo` and `blue` utilities are remapped to it
+     so older screens match the new look without being edited one by one. */
+  --color-brand-25: #f6faf7;
+  --color-brand-50: #eef5f0;
+  --color-brand-100: #dcebe0;
+  --color-brand-200: #bfd8c6;
+  --color-brand-300: #96bca3;
+  --color-brand-400: #639a79;
+  --color-brand-500: #3a7a58;
+  --color-brand-600: #2a5f49;
+  --color-brand-700: #1f4b3a;
+  --color-brand-800: #183c2e;
+  --color-brand-900: #122e23;
+  --color-brand-950: #0b1d15;
+
+  --color-indigo-50: #eef5f0;
+  --color-indigo-100: #dcebe0;
+  --color-indigo-200: #bfd8c6;
+  --color-indigo-300: #96bca3;
+  --color-indigo-400: #639a79;
+  --color-indigo-500: #3a7a58;
+  --color-indigo-600: #2a5f49;
+  --color-indigo-700: #1f4b3a;
+  --color-indigo-800: #183c2e;
+  --color-indigo-900: #122e23;
+  --color-indigo-950: #0b1d15;
+
+  --color-blue-50: #eef5f0;
+  --color-blue-100: #dcebe0;
+  --color-blue-200: #bfd8c6;
+  --color-blue-300: #96bca3;
+  --color-blue-400: #639a79;
+  --color-blue-500: #3a7a58;
+  --color-blue-600: #2a5f49;
+  --color-blue-700: #1f4b3a;
+  --color-blue-800: #183c2e;
+  --color-blue-900: #122e23;
+  --color-blue-950: #0b1d15;
+
+  /* surfaces + text */
+  --color-bg: #f4f4ec;
+  --color-surface: #fdfdf9;
+  --color-surface-2: #eceee2;
+  --color-line: #dcdfd0;
+  --color-fg: #1b2a23;
+  --color-fg-muted: #5c6a60;
+
+  /* app shell (dark green sidebar, like the section bars in the reference) */
+  --color-sidebar: #1e4a3a;
+  --color-sidebar-fg: #e8f0ea;
+
+  /* actions */
+  --color-primary: #1f4b3a;
+  --color-primary-hover: #173a2d;
+  --color-primary-fg: #ffffff;
+  --color-danger: #b4352a;
+  --color-danger-fg: #ffffff;
+  --color-success: #2d8a52;
+  --color-warning: #b8680c;
+
+  /* order lifecycle: amber = new, blue = cooking, green = ready */
+  --color-status-new: #b8680c;
+  --color-status-cooking: #2f78b7;
+  --color-status-ready: #2d8a52;
+  --color-status-served: #6b7280;
+  --color-status-void: #b4352a;
+
+  /* priority: its own hues so it never reads as a status */
+  --color-prio-rush: #c2410c;
+  --color-prio-urgent: #a21caf;
+
+  /* table states */
+  --color-table-free: #2d8a52;
+  --color-table-busy: #c0492b;
+  --color-table-reserved: #8a5a14;
+  --color-table-cleaning: #0e7490;
+
+  /* POS type scale: readable at arm's length (cashier) and at a distance (kitchen) */
+  --text-pos-price: 1.25rem;
+  --text-pos-price--line-height: 1.75rem;
+  --text-pos-total: 2rem;
+  --text-pos-total--line-height: 2.5rem;
+  --text-kds-item: 1.5rem;
+  --text-kds-item--line-height: 2rem;
+  --text-kds-qty: 2rem;
+  --text-kds-qty--line-height: 2.5rem;
+  --text-kds-timer: 1.75rem;
+  --text-kds-timer--line-height: 2.25rem;
+
+  /* 48px minimum touch target: h-touch, min-h-touch, min-w-touch */
+  --spacing-touch: 3rem;
+}
+
+.dark {
+  --color-bg: #0e1813;
+  --color-surface: #15241d;
+  --color-surface-2: #1d3027;
+  --color-line: #28402f;
+  --color-fg: #e9f1ea;
+  --color-fg-muted: #9db0a3;
+  --color-sidebar: #0b1712;
+  --color-sidebar-fg: #e8f0ea;
+  --color-primary: #7fcf9d;
+  --color-primary-hover: #99dab1;
+  --color-primary-fg: #0b1712;
+}
+
+/* Serif display headings (page and section titles) */
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Visible keyboard focus everywhere (the template removed most outlines) */
+:where(button, [role="button"], a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion: drop the global press-scale and transitions */
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    transform: none !important;
+    transition: none !important;
+  }
+}

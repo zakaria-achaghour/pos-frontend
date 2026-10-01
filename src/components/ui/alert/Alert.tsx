@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 
 interface AlertProps {
   variant: "success" | "error" | "warning" | "info"; // Alert type
@@ -7,6 +8,7 @@ interface AlertProps {
   showLink?: boolean; // Whether to show the "Learn More" link
   linkHref?: string; // Link URL
   linkText?: string; // Link text
+  onClose?: () => void; // Optional dismiss handler
 }
 
 const Alert: React.FC<AlertProps> = ({
@@ -16,7 +18,9 @@ const Alert: React.FC<AlertProps> = ({
   showLink = false,
   linkHref = "#",
   linkText = "Learn more",
+  onClose,
 }) => {
+  const { t } = useTranslation();
   // Tailwind classes for each variant
   const variantClasses = {
     success: {
@@ -120,7 +124,7 @@ const Alert: React.FC<AlertProps> = ({
           {icons[variant]}
         </div>
 
-        <div>
+        <div className="flex-1">
           <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
             {title}
           </h4>
@@ -136,6 +140,17 @@ const Alert: React.FC<AlertProps> = ({
             </Link>
           )}
         </div>
+
+        {onClose && (
+          <button
+            type="button"
+            aria-label={t('common.dismiss')}
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        )}
       </div>
     </div>
   );

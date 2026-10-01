@@ -1,5 +1,17 @@
-import React from 'react';
+import { dynamicT } from '@/i18n/dynamic';
+import { useTranslation } from 'react-i18next';
+import { formatMoney } from '@/lib/money';
 import type { StaffMember, StaffStatus } from '@/types/staff';
+
+interface StaffCardProps {
+  member: StaffMember;
+  loading?: boolean;
+  onToggleClock: (id: number) => void;
+  onShowDetails: (member: StaffMember) => void;
+  onChangeStatus: (id: number, status: StaffStatus) => void;
+  onEdit?: (member: StaffMember) => void;
+  onDelete?: (id: number, name: string) => void;
+}
 
 
 const getRoleColor = (role: string) => {
@@ -41,7 +53,8 @@ export default function StaffCard({
   onEdit,
   onDelete,
 }: StaffCardProps) {
-  const displayName = member.name || 'Unknown';
+  const { t } = useTranslation();
+  const displayName = member.name || t('staffAdmin.card.unknown');
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -62,13 +75,13 @@ export default function StaffCard({
               <p className="text-sm text-gray-600">{member.email}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
                 member.role
               )}`}
             >
-              {member.role}
+              {dynamicT(`roles.${member.role}`, { defaultValue: member.role })}
             </span>
             <div className="mt-1">
               <span
@@ -76,7 +89,7 @@ export default function StaffCard({
                   member.status
                 )}`}
               >
-                {member.status}
+                {dynamicT(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
               </span>
             </div>
           </div>
@@ -86,44 +99,44 @@ export default function StaffCard({
       <div className="p-4">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Shift Status:</span>
+            <span className="text-sm text-gray-600">{t('staffAdmin.card.shiftStatus')}</span>
             <div className="flex items-center gap-2">
               {member.currentShift?.isActive ? (
                 <span className="text-green-600 text-sm">
-                  🟢 On duty since {member.currentShift.clockIn}
+                  <span aria-hidden="true">🟢</span> {t('staffAdmin.card.onDutySince', { time: member.currentShift.clockIn })}
                 </span>
               ) : (
-                <span className="text-gray-500 text-sm">⚫ Off duty</span>
+                <span className="text-gray-500 text-sm"><span aria-hidden="true">⚫</span> {t('staffAdmin.card.offDuty')}</span>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="text-gray-500">Orders:</span>
+              <span className="text-gray-500">{t('staffAdmin.card.orders')}</span>
               <div className="font-medium">{member.performance.ordersCompleted}</div>
             </div>
             <div>
-              <span className="text-gray-500">Rating:</span>
+              <span className="text-gray-500">{t('staffAdmin.card.rating')}</span>
               <div className="font-medium">⭐ {member.performance.customerRating.toFixed(1)}</div>
             </div>
             <div>
-              <span className="text-gray-500">Revenue:</span>
+              <span className="text-gray-500">{t('staffAdmin.card.revenue')}</span>
               <div className="font-medium text-green-600">
-                MAD {member.performance.revenueGenerated.toLocaleString()}
+                {formatMoney(member.performance.revenueGenerated)}
               </div>
             </div>
             <div>
-              <span className="text-gray-500">Salary:</span>
-              <div className="font-medium">MAD {member.salary.toLocaleString()}</div>
+              <span className="text-gray-500">{t('staffAdmin.card.salary')}</span>
+              <div className="font-medium">{formatMoney(member.salary)}</div>
             </div>
           </div>
 
           {member.role === 'waiter' && member.currentShift?.tableAssignments && (
             <div>
-              <span className="text-sm text-gray-600">Tables: </span>
+              <span className="text-sm text-gray-600">{t('staffAdmin.card.tables')} </span>
               <span className="text-sm font-medium">
-                {member.currentShift.tableAssignments.map((t) => `T${t}`).join(', ') || 'None'}
+                {member.currentShift.tableAssignments.map((n) => `T${n}`).join(', ') || t('staffAdmin.details.none')}
               </span>
             </div>
           )}
@@ -138,42 +151,43 @@ export default function StaffCard({
               }`}
               disabled={loading}
             >
-              {member.currentShift?.isActive ? '⏰ Clock Out' : '⏰ Clock In'}
+              <span aria-hidden="true">⏰</span> {member.currentShift?.isActive ? t('staffAdmin.card.clockOut') : t('staffAdmin.card.clockIn')}
             </button>
             <button
               onClick={() => onShowDetails(member)}
               className="bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200"
             >
-              👁️ Details
+              <span aria-hidden="true">👁️</span> {t('staffAdmin.card.details')}
             </button>
             {onEdit && (
               <button
                 onClick={() => onEdit(member)}
                 className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded text-sm hover:bg-yellow-200"
               >
-                ✏️ Edit
+                <span aria-hidden="true">✏️</span> {t('staffAdmin.card.edit')}
               </button>
             )}
             {onDelete && (
               <button
-                onClick={() => onDelete(member.id)}
+                onClick={() => onDelete(member.id, member.name)}
                 className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm hover:bg-red-200"
                 disabled={loading}
               >
-                🗑️ Delete
+                <span aria-hidden="true">🗑️</span> {t('staffAdmin.delete')}
               </button>
             )}
           </div>
 
           <select
             value={member.status}
+            aria-label={t('staffAdmin.card.changeStatus', { name: displayName })}
             onChange={(e) => onChangeStatus(member.id, e.target.value as StaffStatus)}
             className="w-full px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="vacation">Vacation</option>
+            <option value="active">{t('staffAdmin.status.active')}</option>
+            <option value="inactive">{t('staffAdmin.status.inactive')}</option>
+            <option value="vacation">{t('staffAdmin.status.vacation')}</option>
           </select>
         </div>
       </div>

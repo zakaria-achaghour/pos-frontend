@@ -1,7 +1,17 @@
-import { useState, useEffect } from 'react';
-import { rolesAPI, type Role, type RoleUser } from '../api/roles';
-import { permissionsAPI, type Permission } from '../api/permissions';
+import i18n from '@/i18n';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import type { Role } from '../api/roles';
 import type { RoleFormData } from '../types/roles';
+import {
+  useGetRolesQuery,
+  useLazyGetRoleUsersQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
+} from '@/services/rolesApi';
+import { useGetPermissionsQuery } from '@/services/permissionsApi';
+import type { ApiError } from '@/services/baseApi';
+import type { Permission } from '../api/permissions';
 
 interface PaginationInfo {
   currentPage: number;
@@ -10,232 +20,174 @@ interface PaginationInfo {
   total: number;
 }
 
+const PER_PAGE = 10;
+const EMPTY_ROLES: Role[] = [];
+const EMPTY_PERMISSIONS: Permission[] = [];
+
+const messageOf = (err: unknown, fallback: string): string => {
+  const e = err as Partial<ApiError> | undefined;
+  if (e?.status === 403) return i18n.t('apiErrors.forbidden');
+  return e?.message || fallback;
+};
+
+/**
+ * Roles admin. Server state lives in RTK Query; this hook holds UI state
+ * (search, page, selection, messages).
+ */
 export function useRoleManagement() {
-  // Data state
-  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [roleUsers, setRoleUsers] = useState<RoleUser[]>([]);
-  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
-  
-  // UI state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [dismissedQueryError, setDismissedQueryError] = useState<unknown>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: 10,
-    total: 0,
-  });
+
+  const {
+    data,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useGetRolesQuery(
+    { page, per_page: PER_PAGE, ...(searchQuery && { search: searchQuery }) },
+    { refetchOnMountOrArgChange: true }
+  );
+  const { data: permissionsData, refetch: refetchPermissions } = useGetPermissionsQuery();
+  const [loadRoleUsers, roleUsersResult] = useLazyGetRoleUsersQuery();
+  const [createRoleMutation] = useCreateRoleMutation();
+  const [updateRoleMutation] = useUpdateRoleMutation();
+  const [deleteRoleMutation] = useDeleteRoleMutation();
+
+  const roles = data?.data ?? EMPTY_ROLES;
+  const roleUsers = roleUsersResult.data ?? [];
+  const availablePermissions = useMemo(
+    () => (Array.isArray(permissionsData) ? permissionsData : permissionsData?.data ?? EMPTY_PERMISSIONS),
+    [permissionsData]
+  );
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: Number(data?.current_page ?? page) || page,
+      lastPage: Number(data?.last_page ?? 1) || 1,
+      perPage: Number(data?.per_page ?? roles.length) || PER_PAGE,
+      total: Number(data?.total ?? roles.length) || roles.length,
+    }),
+    [data, page, roles.length]
+  );
+
+  const queryErrorMessage =
+    queryError && queryError !== dismissedQueryError ? messageOf(queryError, i18n.t('notifications.roleFetch')) : null;
+  const error = actionError ?? queryErrorMessage;
 
   // Auto-clear messages
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
+    if (!successMessage) return undefined;
+    const timer = setTimeout(() => setSuccessMessage(null), 3000);
+    return () => clearTimeout(timer);
   }, [successMessage]);
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+    if (!error) return undefined;
+    const timer = setTimeout(() => {
+      setActionError(null);
+      setDismissedQueryError(queryError);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error, queryError]);
 
-  // Fetch all available permissions (for role form)
-  const fetchAvailablePermissions = async () => {
-    try {
-      console.log('🔍 Fetching all permissions for role form');
-      const response = await permissionsAPI.getPermissions({});
-      const permissions = Array.isArray(response) ? response : response.data;
-      setAvailablePermissions(permissions);
-    } catch (err: any) {
-      console.error('❌ Error fetching permissions:', err);
-      // Don't set error here, it's a background operation
-    }
-  };
-
-  // Fetch roles with pagination and search
-  const fetchRoles = async (page: number = pagination.currentPage) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const filters: {
-        page: number;
-        per_page: number;
-        search?: string;
-      } = {
-        page,
-        per_page: pagination.perPage,
-      };
-      
-      if (searchQuery) {
-        filters.search = searchQuery;
+  // Runs a mutation with shared loading / error / success handling
+  const perform = useCallback(
+    async <T,>(action: () => Promise<T>, success: string, failure: string): Promise<T> => {
+      setActionLoading(true);
+      setActionError(null);
+      setValidationErrors({});
+      try {
+        const result = await action();
+        setSuccessMessage(success);
+        return result;
+      } catch (err) {
+        const apiErr = err as Partial<ApiError>;
+        if (apiErr.status === 422 && apiErr.errors) setValidationErrors(apiErr.errors);
+        setActionError(messageOf(err, failure));
+        throw err;
+      } finally {
+        setActionLoading(false);
       }
-      
-      const response = await rolesAPI.getRoles(filters);
-      setRoles(response.data);
-      setPagination({
-        currentPage: Number(response.current_page ?? page) || page,
-        lastPage: Number(response.last_page ?? 1) || 1,
-        perPage: Number(response.per_page ?? response.data.length) || pagination.perPage,
-        total: Number(response.total ?? response.data.length) || response.data.length,
-      });
-    } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to fetch roles';
-      if (err.response?.status === 403) {
-        setError('Access denied. SuperAdmin privileges required.');
-      } else {
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    []
+  );
 
-  // Fetch users for a specific role
-  const fetchRoleUsers = async (roleId: number) => {
-    setLoading(true);
-    try {
-      const users = await rolesAPI.getRoleUsers(roleId);
-      setRoleUsers(users);
-    } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to fetch role users';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Create new role
-  const createRole = async (formData: RoleFormData) => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-
-    try {
-      const createData = {
-        name: formData.name,
-        permissions: formData.permissions,
-      };
-
-      await rolesAPI.createRole(createData);
-      await fetchRoles(1); // Refresh list and go to first page
-      setSuccessMessage('Role created successfully!');
-    } catch (err: any) {
-      if (err.response?.status === 422 && err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-        setError(err.response.data.message || 'Validation errors occurred');
-      } else if (err.response?.status === 403) {
-        setError('Access denied. SuperAdmin privileges required.');
-      } else {
-        setError(err.response?.data?.message || 'Failed to create role');
-      }
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update role
-  const updateRole = async (id: number, formData: RoleFormData) => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-
-    try {
-      const updateData = {
-        name: formData.name,
-        permissions: formData.permissions,
-      };
-
-      await rolesAPI.updateRole(id, updateData);
-      await fetchRoles(pagination.currentPage); // Refresh list, stay on current page
-      setSuccessMessage('Role updated successfully!');
-      setEditingRole(null);
-    } catch (err: any) {
-      if (err.response?.status === 422 && err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-        setError(err.response.data.message || 'Validation errors occurred');
-      } else if (err.response?.status === 403) {
-        setError('Access denied. SuperAdmin privileges required.');
-      } else {
-        setError(err.response?.data?.message || 'Failed to update role');
-      }
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete role
-  const deleteRole = async (id: number) => {
-    setLoading(true);
-    try {
-      await rolesAPI.deleteRole(id);
-
-      // Calculate next page if current page will be empty
-      const anticipatedTotal = Math.max(0, pagination.total - 1);
-      const previousItems = (pagination.currentPage - 1) * pagination.perPage;
-      const itemsRemainingOnPage = anticipatedTotal - previousItems;
-      const nextPage =
-        itemsRemainingOnPage > 0 || pagination.currentPage === 1
-          ? pagination.currentPage
-          : pagination.currentPage - 1;
-
-      await fetchRoles(Math.max(1, nextPage));
-      setSuccessMessage('Role deleted successfully!');
-    } catch (err: any) {
-      if (err.response?.status === 422) {
-        // Role still has users or is SuperAdmin/Owner
-        setError(err.response.data.message || 'Cannot delete this role. Please reassign staff first.');
-      } else if (err.response?.status === 403) {
-        setError('Access denied. SuperAdmin privileges required.');
-      } else {
-        setError(err.response?.data?.message || 'Failed to delete role');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Pagination
-  const goToPage = (page: number) => {
-    if (page < 1 || page > pagination.lastPage || page === pagination.currentPage) {
+  const fetchRoles = async (nextPage?: number) => {
+    if (nextPage !== undefined && nextPage !== page) {
+      setPage(nextPage);
       return;
     }
-    fetchRoles(page);
+    await refetch();
   };
 
-  // Search
+  const fetchRoleUsers = async (roleId: number) => {
+    try {
+      await loadRoleUsers(roleId).unwrap();
+    } catch (err) {
+      setActionError(messageOf(err, i18n.t('notifications.roleFetch')));
+    }
+  };
+
+  const fetchAvailablePermissions = async () => {
+    await refetchPermissions();
+  };
+
+  const createRole = async (formData: RoleFormData) => {
+    await perform(
+      () => createRoleMutation({ name: formData.name, permissions: formData.permissions }).unwrap(),
+      i18n.t('notifications.roleCreated'),
+      i18n.t('notifications.roleFailed')
+    );
+    setPage(1);
+  };
+
+  const updateRole = async (id: number, formData: RoleFormData) => {
+    await perform(
+      () => updateRoleMutation({ id, data: { name: formData.name, permissions: formData.permissions } }).unwrap(),
+      i18n.t('notifications.roleUpdated'),
+      i18n.t('notifications.roleFailed')
+    );
+    setEditingRole(null);
+  };
+
+  const deleteRole = async (id: number) => {
+    // Step back a page if this deletion empties the current one
+    const remaining = Math.max(0, pagination.total - 1) - (pagination.currentPage - 1) * pagination.perPage;
+    const nextPage = remaining > 0 || pagination.currentPage === 1 ? pagination.currentPage : pagination.currentPage - 1;
+    try {
+      await perform(() => deleteRoleMutation(id).unwrap(), i18n.t('notifications.roleDeleted'), i18n.t('notifications.roleFailed'));
+      setPage(Math.max(1, nextPage));
+    } catch {
+      // error already surfaced through perform
+    }
+  };
+
+  const goToPage = (next: number) => {
+    if (next < 1 || next > pagination.lastPage || next === pagination.currentPage) return;
+    setPage(next);
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Debounce would be better in production
-    fetchRoles(1);
+    setPage(1);
   };
 
-  // Clear error
   const clearError = () => {
-    setError(null);
+    setActionError(null);
+    setDismissedQueryError(queryError);
     setValidationErrors({});
   };
 
-  // Clear success message
   const clearSuccessMessage = () => {
     setSuccessMessage(null);
   };
-
-  // Load roles and permissions on mount
-  useEffect(() => {
-    fetchRoles();
-    fetchAvailablePermissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return {
     // Data
@@ -244,15 +196,15 @@ export function useRoleManagement() {
     editingRole,
     roleUsers,
     availablePermissions,
-    
+
     // UI State
-    loading,
+    loading: isLoading || actionLoading,
     error,
     successMessage,
     validationErrors,
     pagination,
     searchQuery,
-    
+
     // Actions
     fetchRoles,
     fetchRoleUsers,
@@ -262,7 +214,7 @@ export function useRoleManagement() {
     deleteRole,
     goToPage,
     handleSearch,
-    
+
     // UI Actions
     setSelectedRole,
     setEditingRole,

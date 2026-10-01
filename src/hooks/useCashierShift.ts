@@ -1,74 +1,71 @@
 import { useCallback, useEffect, useState } from 'react';
-import cashierAPI from '@/api/cashier';
-import type {
-  CashierShift,
-  OpenShiftPayload,
-  CloseShiftPayload,
-} from '@/types/cashier';
+import type { CashierShift, OpenShiftPayload, CloseShiftPayload } from '@/types/cashier';
+import {
+  useLazyGetCurrentShiftQuery,
+  useOpenShiftMutation,
+  useCloseShiftMutation,
+} from '@/services/cashierApi';
+import { errorMessage } from '@/lib/errors';
 
 interface UseCashierShiftOptions {
   autoFetch?: boolean;
 }
 
+/**
+ * Current cashier shift. The shift lives in RTK Query ('Shifts' tag); this hook
+ * only holds the error message and the loading flag for open/close actions.
+ */
 export const useCashierShift = (options: UseCashierShiftOptions = {}) => {
   const { autoFetch = true } = options;
-  const [currentShift, setCurrentShift] = useState<CashierShift | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const fetchCurrentShift = useCallback(async () => {
+  const [loadShift, shiftResult] = useLazyGetCurrentShiftQuery();
+  const [openShiftMutation] = useOpenShiftMutation();
+  const [closeShiftMutation] = useCloseShiftMutation();
+
+  const currentShift: CashierShift | null = shiftResult.data ?? null;
+
+  const fetchCurrentShift = useCallback(async (): Promise<CashierShift | null> => {
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      const shift = await cashierAPI.getCurrentShift();
-      setCurrentShift(shift);
-      return shift;
-    } catch (err: any) {
-      console.error('Failed to fetch current shift', err);
-      setError(err?.message || 'Failed to fetch current shift.');
+      return await loadShift(undefined, false).unwrap();
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to fetch current shift.'));
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [loadShift]);
 
   const openShift = useCallback(
     async (payload: OpenShiftPayload) => {
+      setIsActionLoading(true);
+      setError(null);
       try {
-        setIsActionLoading(true);
-        setError(null);
-        const shift = await cashierAPI.openShift(payload);
-        setCurrentShift(shift);
-        return shift;
-      } catch (err: any) {
-        console.error('Failed to open shift', err);
-        setError(err?.response?.data?.message || err?.message || 'Failed to open shift.');
+        return await openShiftMutation(payload).unwrap();
+      } catch (err) {
+        setError(errorMessage(err, 'Failed to open shift.'));
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [],
+    [openShiftMutation]
   );
 
   const closeShift = useCallback(
     async (payload: CloseShiftPayload) => {
+      setIsActionLoading(true);
+      setError(null);
       try {
-        setIsActionLoading(true);
-        setError(null);
-        const shift = await cashierAPI.closeShift(payload);
-        setCurrentShift(null);
-        return shift;
-      } catch (err: any) {
-        console.error('Failed to close shift', err);
-        setError(err?.response?.data?.message || err?.message || 'Failed to close shift.');
+        return await closeShiftMutation(payload).unwrap();
+      } catch (err) {
+        setError(errorMessage(err, 'Failed to close shift.'));
         throw err;
       } finally {
         setIsActionLoading(false);
       }
     },
-    [],
+    [closeShiftMutation]
   );
 
   const requireShift = useCallback(async () => {
@@ -85,7 +82,7 @@ export const useCashierShift = (options: UseCashierShiftOptions = {}) => {
 
   return {
     currentShift,
-    isLoading,
+    isLoading: shiftResult.isLoading,
     isActionLoading,
     error,
     setError,

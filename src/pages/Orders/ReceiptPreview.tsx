@@ -1,12 +1,17 @@
+import { dynamicT } from '@/i18n/dynamic';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '../../components/common/PageMeta';
 import { fetchReceipt, downloadReceipt, printReceipt } from '../../api/receipts';
 import type { ReceiptData } from '../../types/receipt';
+import { Button } from '@/components/kit';
+import { formatMoney } from '@/lib/money';
 
 export default function ReceiptPreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +30,14 @@ export default function ReceiptPreview() {
         setReceipt(receiptData);
       } catch (err) {
         console.error('Error loading receipt:', err);
-        setError('Failed to load receipt. Please try again.');
+        setError(t('receipt.errors.load'));
       } finally {
         setLoading(false);
       }
     };
 
     loadReceipt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
   const handlePrint = async () => {
@@ -40,7 +46,7 @@ export default function ReceiptPreview() {
         await printReceipt(parseInt(id));
       } catch (err) {
         console.error('Error printing receipt:', err);
-        setError('Failed to print receipt. Please try again.');
+        setError(t('receipt.errors.print'));
       }
     }
   };
@@ -51,7 +57,7 @@ export default function ReceiptPreview() {
         await downloadReceipt(parseInt(id), 'pdf');
       } catch (err) {
         console.error('Error downloading receipt:', err);
-        setError('Failed to download receipt. Please try again.');
+        setError(t('receipt.errors.download'));
       }
     }
   };
@@ -63,11 +69,11 @@ export default function ReceiptPreview() {
   if (loading) {
     return (
       <div>
-        <PageMeta title="Receipt Preview | Restaurant POS" description="Loading receipt details" />
+        <PageMeta title={t('receipt.meta.title')} description={t('receipt.meta.loading')} />
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
+          <div role="status" className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading receipt...</p>
+            <p className="text-gray-600">{t('receipt.loading')}</p>
           </div>
         </div>
       </div>
@@ -77,7 +83,7 @@ export default function ReceiptPreview() {
   if (error || !receipt) {
     return (
       <div>
-        <PageMeta title="Receipt Preview | Restaurant POS" description="Receipt not found" />
+        <PageMeta title={t('receipt.meta.title')} description={t('receipt.meta.notFound')} />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center max-w-md">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
@@ -94,12 +100,10 @@ export default function ReceiptPreview() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
-              <p className="text-gray-600">{error || 'Receipt not found'}</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('receipt.errorTitle')}</h3>
+              <p role="alert" className="text-gray-600">{error || t('receipt.notFound')}</p>
             </div>
-            <button onClick={handleBack} className="btn btn-primary">
-              Back to Order
-            </button>
+            <Button onClick={handleBack}>{t('receipt.backToOrder')}</Button>
           </div>
         </div>
       </div>
@@ -108,21 +112,19 @@ export default function ReceiptPreview() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PageMeta 
-        title={`Receipt #${receipt.order_number} | Restaurant POS`} 
-        description={`Receipt for order ${receipt.order_number}`} 
+      <PageMeta
+        title={t('receipt.meta.receiptTitle', { n: receipt.order_number })}
+        description={t('receipt.meta.receiptDescription', { n: receipt.order_number })}
       />
 
       {/* Action Bar - No Print */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 print:hidden">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
+            <Button variant="ghost" size="md" onClick={handleBack}>
               <svg
-                className="h-5 w-5"
+                aria-hidden="true"
+                className="h-5 w-5 rtl:rotate-180"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -134,49 +136,16 @@ export default function ReceiptPreview() {
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              Back
-            </button>
+              {t('common.back')}
+            </Button>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-gray-800 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-900 transition-colors"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                  />
-                </svg>
-                Print
-              </button>
-
-              <button
-                onClick={handleDownloadPDF}
-                className="flex items-center gap-2 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Download PDF
-              </button>
+              <Button variant="secondary" size="md" onClick={handlePrint}>
+                {t('receipt.print')}
+              </Button>
+              <Button variant="danger" size="md" onClick={handleDownloadPDF}>
+                {t('receipt.downloadPdf')}
+              </Button>
             </div>
           </div>
         </div>
@@ -204,7 +173,7 @@ export default function ReceiptPreview() {
             )}
             {receipt.restaurant.tax_number && (
               <p className="text-sm text-gray-500 mt-2">
-                Tax ID: {receipt.restaurant.tax_number}
+                {t('receipt.taxId', { id: receipt.restaurant.tax_number })}
               </p>
             )}
           </div>
@@ -213,24 +182,24 @@ export default function ReceiptPreview() {
           <div className="p-8 border-b border-gray-200">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Order Number</p>
+                <p className="text-gray-500">{t('receipt.orderNumber')}</p>
                 <p className="font-semibold text-gray-900">{receipt.order_number}</p>
               </div>
               <div>
-                <p className="text-gray-500">Date & Time</p>
+                <p className="text-gray-500">{t('receipt.dateTime')}</p>
                 <p className="font-semibold text-gray-900">
                   {receipt.date} {receipt.time}
                 </p>
               </div>
               {receipt.table_number && (
                 <div>
-                  <p className="text-gray-500">Table</p>
+                  <p className="text-gray-500">{t('receipt.table')}</p>
                   <p className="font-semibold text-gray-900">{receipt.table_number}</p>
                 </div>
               )}
               {receipt.server_name && (
                 <div>
-                  <p className="text-gray-500">Server</p>
+                  <p className="text-gray-500">{t('receipt.server')}</p>
                   <p className="font-semibold text-gray-900">{receipt.server_name}</p>
                 </div>
               )}
@@ -242,10 +211,10 @@ export default function ReceiptPreview() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-300">
-                  <th className="text-left pb-2 font-semibold text-gray-700">Item</th>
-                  <th className="text-center pb-2 font-semibold text-gray-700">Qty</th>
-                  <th className="text-right pb-2 font-semibold text-gray-700">Price</th>
-                  <th className="text-right pb-2 font-semibold text-gray-700">Total</th>
+                  <th className="text-start pb-2 font-semibold text-gray-700">{t('receipt.item')}</th>
+                  <th className="text-center pb-2 font-semibold text-gray-700">{t('receipt.qty')}</th>
+                  <th className="text-end pb-2 font-semibold text-gray-700">{t('receipt.price')}</th>
+                  <th className="text-end pb-2 font-semibold text-gray-700">{t('receipt.total')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,11 +229,11 @@ export default function ReceiptPreview() {
                       </div>
                     </td>
                     <td className="text-center py-3 text-gray-700">{item.quantity}</td>
-                    <td className="text-right py-3 text-gray-700">
-                      {item.unit_price.toFixed(2)}
+                    <td className="text-end py-3 text-gray-700">
+                      {formatMoney(item.unit_price)}
                     </td>
-                    <td className="text-right py-3 font-medium text-gray-900">
-                      {item.total_price.toFixed(2)}
+                    <td className="text-end py-3 font-medium text-gray-900">
+                      {formatMoney(item.total_price)}
                     </td>
                   </tr>
                 ))}
@@ -276,33 +245,33 @@ export default function ReceiptPreview() {
           <div className="p-8 border-b-2 border-dashed border-gray-300">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-900">{receipt.subtotal.toFixed(2)} MAD</span>
+                <span className="text-gray-600">{t('receipt.subtotal')}</span>
+                <span className="text-gray-900">{formatMoney(receipt.subtotal)}</span>
               </div>
-              
+
               {receipt.discount_amount && receipt.discount_amount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
-                  <span>-{receipt.discount_amount.toFixed(2)} MAD</span>
+                  <span>{t('receipt.discount')}</span>
+                  <span>-{formatMoney(receipt.discount_amount)}</span>
                 </div>
               )}
 
               {receipt.service_charge && receipt.service_charge > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Service Charge</span>
-                  <span className="text-gray-900">{receipt.service_charge.toFixed(2)} MAD</span>
+                  <span className="text-gray-600">{t('receipt.serviceCharge')}</span>
+                  <span className="text-gray-900">{formatMoney(receipt.service_charge)}</span>
                 </div>
               )}
 
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax ({receipt.tax_rate}%)</span>
-                <span className="text-gray-900">{receipt.tax_amount.toFixed(2)} MAD</span>
+                <span className="text-gray-600">{t('receipt.tax', { rate: receipt.tax_rate })}</span>
+                <span className="text-gray-900">{formatMoney(receipt.tax_amount)}</span>
               </div>
 
               <div className="flex justify-between pt-3 border-t border-gray-300">
-                <span className="text-lg font-bold text-gray-900">Total</span>
+                <span className="text-lg font-bold text-gray-900">{t('receipt.total')}</span>
                 <span className="text-lg font-bold text-gray-900">
-                  {receipt.total.toFixed(2)} MAD
+                  {formatMoney(receipt.total)}
                 </span>
               </div>
             </div>
@@ -310,22 +279,22 @@ export default function ReceiptPreview() {
             {/* Payment Information */}
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Payment Method</span>
-                <span className="font-semibold text-gray-900 capitalize">
-                  {receipt.payment_method}
+                <span className="text-gray-600">{t('receipt.paymentMethod')}</span>
+                <span className="font-semibold text-gray-900">
+                  {dynamicT(`payment.method.${receipt.payment_method}`, { defaultValue: receipt.payment_method })}
                 </span>
               </div>
               {receipt.amount_paid && (
                 <>
                   <div className="flex justify-between text-sm mt-2">
-                    <span className="text-gray-600">Amount Paid</span>
-                    <span className="text-gray-900">{receipt.amount_paid.toFixed(2)} MAD</span>
+                    <span className="text-gray-600">{t('receipt.amountPaid')}</span>
+                    <span className="text-gray-900">{formatMoney(receipt.amount_paid)}</span>
                   </div>
                   {receipt.change_amount && receipt.change_amount > 0 && (
                     <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Change</span>
+                      <span className="text-gray-600">{t('receipt.change')}</span>
                       <span className="font-semibold text-green-600">
-                        {receipt.change_amount.toFixed(2)} MAD
+                        {formatMoney(receipt.change_amount)}
                       </span>
                     </div>
                   )}
@@ -340,10 +309,10 @@ export default function ReceiptPreview() {
               <p className="text-sm text-gray-600 mb-4">{receipt.notes}</p>
             )}
             <p className="text-sm text-gray-600 mb-2">
-              {receipt.footer_message || 'Thank you for dining with us!'}
+              {receipt.footer_message || t('receipt.thanks')}
             </p>
             <p className="text-xs text-gray-500">
-              Paid at: {new Date(receipt.paid_at || receipt.created_at).toLocaleString()}
+              {t('receipt.paidAt', { date: new Date(receipt.paid_at || receipt.created_at).toLocaleString(i18n.language) })}
             </p>
           </div>
         </div>

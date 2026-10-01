@@ -1,6 +1,6 @@
 // Kitchen Types
 export type KitchenTicketStatus = 'pending' | 'preparing' | 'ready' | 'completed';
-export type KitchenPriority = 'normal' | 'high' | 'urgent';
+export type KitchenPriority = 'normal' | 'rush' | 'urgent';
 export type CookingStation = 'grill' | 'fryer' | 'salad' | 'dessert' | 'beverages' | 'general';
 
 // Simplified Order Item (for display purposes)

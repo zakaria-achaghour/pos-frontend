@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
@@ -9,8 +10,10 @@ import Button from '../../components/ui/button/Button';
 import Alert from '../../components/ui/alert/Alert';
 import { restaurantAPI } from '../../api/restaurants';
 import type { CreateRestaurantData } from '@/types/restaurant';
+import { errorMessage } from '@/lib/errors';
 
 export default function CreateRestaurant() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,25 +53,22 @@ export default function CreateRestaurant() {
     setSuccessMessage(null);
 
     try {
-      console.log('🆕 Creating restaurant with data:', formData);
       const response = await restaurantAPI.createRestaurant(formData);
-      console.log('📡 Create response:', response);
       
       // Check if response has a message property
       if (response && typeof response === 'object' && 'message' in response) {
         setSuccessMessage(response.message as string);
-        console.log('✅ Success message:', response.message);
       } else {
-        setSuccessMessage('Restaurant created successfully!');
+        setSuccessMessage(t('tenants.create.success'));
       }
       
       // Auto-hide success message and redirect after 3 seconds
       setTimeout(() => {
         navigate('/admin/tenants');
       }, 3000);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating restaurant:', error);
-      setError(error.response?.data?.message || 'Failed to create restaurant');
+      setError(errorMessage(error, t('tenants.create.failed')));
     } finally {
       setLoading(false);
     }
@@ -76,12 +76,12 @@ export default function CreateRestaurant() {
 
   return (
     <div>
-      <PageMeta title="Create Restaurant | Admin" description="Add new restaurant" />
+      <PageMeta title={t('tenants.create.metaTitle')} description={t('tenants.create.metaDescription')} />
       <PageBreadcrumb 
-        pageTitle="Create Restaurant" 
+        pageTitle={t('tenants.create.title')}
         breadcrumbItems={[
-          { label: 'Restaurants', href: '/admin/tenants' },
-          { label: 'Create' }
+          { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
+          { label: t('tenants.breadcrumb.create') }
         ]}
       />
       
@@ -90,7 +90,7 @@ export default function CreateRestaurant() {
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success!"
+            title={t('tenants.successTitle')}
             message={successMessage}
           />
         </div>
@@ -98,7 +98,7 @@ export default function CreateRestaurant() {
       
       <div className="bg-white rounded-xl shadow">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Restaurant Information</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('tenants.create.sectionTitle')}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
@@ -111,10 +111,10 @@ export default function CreateRestaurant() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
               
               <div>
-                <Label htmlFor="name">Restaurant Name *</Label>
+                <Label htmlFor="name">{t('tenants.form.name')}</Label>
                 <Input
                   id="name"
                   name="name"
@@ -122,12 +122,12 @@ export default function CreateRestaurant() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter restaurant name"
+                  placeholder={t('tenants.form.namePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('tenants.form.description')}</Label>
                 <textarea
                   id="description"
                   name="description"
@@ -135,12 +135,12 @@ export default function CreateRestaurant() {
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Brief description of the restaurant"
+                  placeholder={t('tenants.form.descriptionPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t('tenants.form.address')}</Label>
                 <Input
                   id="address"
                   name="address"
@@ -148,13 +148,13 @@ export default function CreateRestaurant() {
                   value={formData.address}
                   onChange={handleInputChange}
                   required
-                  placeholder="Full address"
+                  placeholder={t('tenants.form.addressPh')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t('tenants.form.city')}</Label>
                   <Input
                     id="city"
                     name="city"
@@ -162,11 +162,11 @@ export default function CreateRestaurant() {
                     value={formData.city}
                     onChange={handleInputChange}
                     required
-                    placeholder="City"
+                    placeholder={t('tenants.form.cityPh')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="country">Country *</Label>
+                  <Label htmlFor="country">{t('tenants.form.country')}</Label>
                   <select
                     id="country"
                     name="country"
@@ -175,83 +175,83 @@ export default function CreateRestaurant() {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Morocco">Morocco</option>
-                    <option value="France">France</option>
-                    <option value="Spain">Spain</option>
-                    <option value="Tunisia">Tunisia</option>
-                    <option value="Algeria">Algeria</option>
+                    <option value="Morocco">{t('tenants.form.countries.morocco')}</option>
+                    <option value="France">{t('tenants.form.countries.france')}</option>
+                    <option value="Spain">{t('tenants.form.countries.spain')}</option>
+                    <option value="Tunisia">{t('tenants.form.countries.tunisia')}</option>
+                    <option value="Algeria">{t('tenants.form.countries.algeria')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('tenants.form.phone')}</Label>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="+212 123 456 789"
+                    placeholder={t('tenants.form.phonePh')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('tenants.form.email')}</Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="restaurant@example.com"
+                    placeholder={t('tenants.form.emailPh')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="website">Website</Label>
+                <Label htmlFor="website">{t('tenants.form.website')}</Label>
                 <Input
                   id="website"
                   name="website"
                   type="url"
                   value={formData.website}
                   onChange={handleInputChange}
-                  placeholder="https://restaurant.com"
+                  placeholder={t('tenants.form.websitePh')}
                 />
               </div>
             </div>
 
             {/* Business & Owner Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Business & Owner Information</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
               
               <div>
-                <Label htmlFor="license_number">Business License</Label>
+                <Label htmlFor="license_number">{t('tenants.form.license')}</Label>
                 <Input
                   id="license_number"
                   name="license_number"
                   type="text"
                   value={formData.license_number}
                   onChange={handleInputChange}
-                  placeholder="Business license number"
+                  placeholder={t('tenants.form.licensePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="tax_number">Tax Number</Label>
+                <Label htmlFor="tax_number">{t('tenants.form.taxNumber')}</Label>
                 <Input
                   id="tax_number"
                   name="tax_number"
                   type="text"
                   value={formData.tax_number}
                   onChange={handleInputChange}
-                  placeholder="Tax identification number"
+                  placeholder={t('tenants.form.taxNumberPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_name">Owner Name *</Label>
+                <Label htmlFor="owner_name">{t('tenants.form.ownerName')}</Label>
                 <Input
                   id="owner_name"
                   name="owner_name"
@@ -259,12 +259,12 @@ export default function CreateRestaurant() {
                   value={formData.owner_name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Owner full name"
+                  placeholder={t('tenants.form.ownerNamePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_email">Owner Email *</Label>
+                <Label htmlFor="owner_email">{t('tenants.form.ownerEmail')}</Label>
                 <Input
                   id="owner_email"
                   name="owner_email"
@@ -272,24 +272,24 @@ export default function CreateRestaurant() {
                   value={formData.owner_email}
                   onChange={handleInputChange}
                   required
-                  placeholder="owner@example.com"
+                  placeholder={t('tenants.form.ownerEmailPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="owner_phone">Owner Phone</Label>
+                <Label htmlFor="owner_phone">{t('tenants.form.ownerPhone')}</Label>
                 <Input
                   id="owner_phone"
                   name="owner_phone"
                   type="tel"
                   value={formData.owner_phone}
                   onChange={handleInputChange}
-                  placeholder="+212 123 456 789"
+                  placeholder={t('tenants.form.phonePh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="subscription_plan">Subscription Plan</Label>
+                <Label htmlFor="subscription_plan">{t('tenants.form.plan')}</Label>
                 <select
                   id="subscription_plan"
                   name="subscription_plan"
@@ -297,15 +297,15 @@ export default function CreateRestaurant() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="basic">Basic</option>
-                  <option value="premium">Premium</option>
-                  <option value="enterprise">Enterprise</option>
+                  <option value="basic">{t('tenants.plan.basic')}</option>
+                  <option value="premium">{t('tenants.plan.premium')}</option>
+                  <option value="enterprise">{t('tenants.plan.enterprise')}</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="timezone">{t('tenants.form.timezone')}</Label>
                   <select
                     id="timezone"
                     name="timezone"
@@ -320,7 +320,7 @@ export default function CreateRestaurant() {
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="currency">Currency</Label>
+                  <Label htmlFor="currency">{t('tenants.form.currency')}</Label>
                   <select
                     id="currency"
                     name="currency"
@@ -328,9 +328,9 @@ export default function CreateRestaurant() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="MAD">MAD (Moroccan Dirham)</option>
-                    <option value="EUR">EUR (Euro)</option>
-                    <option value="USD">USD (US Dollar)</option>
+                    <option value="MAD">{t('tenants.form.currencies.mad')}</option>
+                    <option value="EUR">{t('tenants.form.currencies.eur')}</option>
+                    <option value="USD">{t('tenants.form.currencies.usd')}</option>
                   </select>
                 </div>
               </div>
@@ -338,21 +338,21 @@ export default function CreateRestaurant() {
           </div>
 
           {/* Form Actions */}
-          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end space-x-4">
+          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end gap-4">
             <Button
               type="button"
               variant="secondary"
               onClick={() => navigate('/admin/tenants')}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Create Restaurant'}
+              {loading ? t('tenants.create.creating') : t('tenants.create.submit')}
             </Button>
           </div>
         </form>

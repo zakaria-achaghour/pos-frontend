@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import type { Order } from '@/types/order';
-import { emitCashierDashboardRefresh } from '@/utils/cashierEvents';
+import { dynamicT } from '@/i18n/dynamic';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
+import { Button, Icon, Modal, useToast } from '@/components/kit';
 import { printReceipt, downloadReceipt } from '@/api/receipts';
-import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
+import { emitCashierDashboardRefresh } from '@/utils/cashierEvents';
+import { formatMoney, toCents } from '@/lib/money';
+import type { Order } from '@/types/order';
+
+// Discounts are absolute amounts, recalculated by the backend.
+const SUPPORTS_DISCOUNT = true;
+
+type Method = 'cash' | 'card' | 'mobile';
+const METHODS: Method[] = ['cash', 'card', 'mobile'];
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -16,418 +26,310 @@ interface PaymentModalProps {
       amount_received?: number;
       tip_amount?: number;
       discount_amount?: number;
-    },
+    }
   ) => Promise<Order | void>;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({
-  isOpen,
-  onClose,
-  order,
-  onConfirm,
-}) => {
-  const [paymentMethod, setPaymentMethod] =
-    useState<'cash' | 'card' | 'mobile'>('cash');
-  const [amountReceived, setAmountReceived] = useState<string>('');
-  const [tipAmount, setTipAmount] = useState<string>('0');
-  const [discountAmount, setDiscountAmount] = useState<string>('0');
+const input =
+  'h-14 w-full rounded-xl border border-line bg-surface px-4 text-xl font-semibold tabular-nums text-fg placeholder:text-fg-muted';
+
+/** Cash chips: exact amount plus the next round amounts a customer would hand over. */
+const quickCashAmounts = (due: number): number[] => {
+  const rounded = [10, 50, 100, 200, 500].map((step) => Math.ceil(due / step) * step);
+  return [...new Set(rounded)].filter((v) => v > due).sort((a, b) => a - b).slice(0, 4);
+};
+
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, order, onConfirm }) => {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [method, setMethod] = useState<Method>('cash');
+  const [amountReceived, setAmountReceived] = useState('');
+  const [tipAmount, setTipAmount] = useState('0');
+  const [discountAmount, setDiscountAmount] = useState('0');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paidAt, setPaidAt] = useState<string | null>(null);
 
-  // Reset modal state
+  // Reset when opened for an order (keyed on id: a refetched order object must not wipe the form)
+  const orderId = order?.id;
   useEffect(() => {
-    if (isOpen && order) {
-      const method = order.paymentMethod || order.payment_method;
-      if (method === 'cash' || method === 'card' || method === 'mobile') {
-        setPaymentMethod(method as any);
-      } else {
-        setPaymentMethod('cash');
-      }
-      const orderTotal = Number(order.total) || 0;
-      setAmountReceived(orderTotal.toFixed(2));
-      setTipAmount('0');
-      setDiscountAmount('0');
-      setIsSuccess(false);
-      setPaidAt(null);
-    }
-  }, [isOpen, order]);
+    if (!isOpen || !order) return;
+    const existing = order.paymentMethod || order.payment_method;
+    setMethod(existing === 'cash' || existing === 'card' || existing === 'mobile' ? existing : 'cash');
+    setAmountReceived(toCents(Number(order.total) || 0).toFixed(2));
+    setTipAmount('0');
+    setDiscountAmount(String(order.discount_amount ?? order.discount ?? 0));
+    setIsSuccess(false);
+    setPaidAt(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, orderId]);
 
-  if (!isOpen || !order) return null;
+  const orderTotal = toCents(Number(order?.subtotal ?? 0) + Number(order?.tax_amount ?? order?.tax ?? 0) + Number(order?.service_charge_amount ?? 0));
+  const tip = toCents(parseFloat(tipAmount) || 0);
+  const discount = SUPPORTS_DISCOUNT ? toCents(parseFloat(discountAmount) || 0) : 0;
+  const finalTotal = toCents(Math.max(0, orderTotal - discount) + tip);
+  const received = toCents(parseFloat(amountReceived) || 0);
+  const change = toCents(received - finalTotal);
+  const shortBy = toCents(finalTotal - received);
+  const cashShort = method === 'cash' && received < finalTotal;
 
-  const orderTotal = Number(order.total) || 0;
-  const tip = parseFloat(tipAmount) || 0;
-  const discount = parseFloat(discountAmount) || 0;
-  const finalTotal = orderTotal + tip - discount;
-  const received = parseFloat(amountReceived) || 0;
-  const change = received - finalTotal;
+  const chips = useMemo(() => quickCashAmounts(finalTotal), [finalTotal]);
 
-  const applyTipPercentage = (percentage: number) => {
-    const tipValue = (orderTotal * percentage) / 100;
-    setTipAmount(tipValue.toFixed(2));
-  };
+  if (!order) return null;
+
+  const orderLabel = order.orderNumber || `#${order.id}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (paymentMethod === 'cash' && received < finalTotal) {
-      alert('Amount received must be at least the total amount');
-      return;
-    }
+    if (isProcessing || cashShort) return; // also blocks a double tap
 
     setIsProcessing(true);
     try {
-      const paymentData: {
-        payment_method: string;
-        payment_status: string;
-        amount_received?: number;
-        tip_amount?: number;
-        discount_amount?: number;
-      } = {
-        payment_method: paymentMethod,
+      await onConfirm(order.id, {
+        payment_method: method,
         payment_status: 'completed',
-      };
-
-      if (paymentMethod === 'cash') {
-        paymentData.amount_received = received;
-      }
-
-      if (tip > 0) {
-        paymentData.tip_amount = tip;
-      }
-
-      if (discount > 0) {
-        paymentData.discount_amount = discount;
-      }
-
-      await onConfirm(order.id, paymentData);
+        ...(method === 'cash' && { amount_received: received }),
+        ...(tip > 0 && { tip_amount: tip }),
+        discount_amount: discount,
+      });
       emitCashierDashboardRefresh();
       setPaidAt(new Date().toISOString());
       setIsSuccess(true);
-    } catch (error) {
-      console.error('Payment processing failed:', error);
+    } catch {
+      // The caller rethrows on failure and shows the reason; stay here so the cashier can retry
+      toast.error(t('payment.failed'));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePrintReceipt = async () => {
+  const receiptAction = async (action: () => Promise<unknown>) => {
     try {
-      await printReceipt(order.id);
-    } catch (error) {
-      console.error('Failed to print receipt:', error);
-      alert('Failed to print receipt. Please try again.');
-    }
-  };
-
-  const handleDownloadReceipt = async () => {
-    try {
-      await downloadReceipt(order.id, 'pdf');
-    } catch (error) {
-      console.error('Failed to download receipt:', error);
-      alert('Failed to download receipt. Please try again.');
+      await action();
+    } catch {
+      toast.error(t('payment.receiptFailed'));
     }
   };
 
   const handleClose = () => {
+    if (isProcessing) return;
     setIsSuccess(false);
     setPaidAt(null);
     onClose();
   };
 
+  const title = isSuccess ? t('payment.completedTitle') : t('payment.title');
+
   return (
-    <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-50`}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md md:max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">💵 Process Payment</h2>
-              <p className="text-sm text-gray-600">
-                {order.orderNumber || `Order #${order.id}`}
-              </p>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={title}
+      size="md"
+      closeOnBackdrop={false}
+      closeLabel={t('common.close')}
+    >
+      {isSuccess ? (
+        <div className="space-y-5">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
+              <Icon name="check" className="h-9 w-9" />
+            </span>
+            <p className="text-fg-muted">
+              {t('payment.completedBody', { order: orderLabel, method: dynamicT(`payment.method.${method}`) })}
+            </p>
+            {paidAt && <p className="text-sm text-fg-muted">{new Date(paidAt).toLocaleString()}</p>}
+          </div>
+
+          <dl className="space-y-1 rounded-xl bg-surface-2 p-4">
+            <div className="flex justify-between">
+              <dt>{t('payment.orderTotal')}</dt>
+              <dd className="font-semibold tabular-nums">{formatMoney(orderTotal)}</dd>
             </div>
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              disabled={isProcessing}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {tip > 0 && (
+              <div className="flex justify-between">
+                <dt>{t('payment.tip')}</dt>
+                <dd className="font-semibold tabular-nums">{formatMoney(tip)}</dd>
+              </div>
+            )}
+            <div className="mt-2 flex justify-between border-t border-line pt-2 text-lg font-bold">
+              <dt>{t('payment.amountDue')}</dt>
+              <dd className="tabular-nums">{formatMoney(finalTotal)}</dd>
+            </div>
+            {method === 'cash' && change > 0 && (
+              <div className="flex justify-between text-success">
+                <dt>{t('payment.change')}</dt>
+                <dd className="font-semibold tabular-nums">{formatMoney(change)}</dd>
+              </div>
+            )}
+          </dl>
+
+          <div className="space-y-3">
+            <Button size="xl" fullWidth onClick={() => void receiptAction(() => printReceipt(order.id))}>
+              {t('payment.print')}
+            </Button>
+            <Button size="lg" fullWidth variant="secondary" onClick={() => void receiptAction(() => downloadReceipt(order.id, 'pdf'))}>
+              {t('payment.download')}
+            </Button>
+            <Button size="lg" fullWidth variant="ghost" onClick={handleClose}>
+              {t('common.close')}
+            </Button>
           </div>
         </div>
-
-        {/* Body */}
-        {isSuccess ? (
-          <div className="p-6 space-y-6">
-            <div className="text-center space-y-2">
-              <div className="text-4xl">✅</div>
-              <h3 className="text-xl font-bold text-gray-900">Payment Completed</h3>
-              <p className="text-sm text-gray-600">
-                Order {order.orderNumber || `#${order.id}`} has been marked as paid via{' '}
-                <strong className="capitalize">{paymentMethod}</strong>.
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* The number the cashier cares about most */}
+          <div className="rounded-2xl bg-surface-2 p-4 text-center">
+            <p className="text-sm font-medium text-fg-muted">
+              {t('payment.amountDue')} · {orderLabel}
+            </p>
+            <p className="text-pos-total font-black tabular-nums">{formatMoney(finalTotal)}</p>
+            {(tip > 0 || discount > 0) && (
+              <p className="text-sm text-fg-muted">
+                {formatMoney(orderTotal)}
+                {tip > 0 ? ` + ${formatMoney(tip)} ${t('payment.tip').toLowerCase()}` : ''}
+                {discount > 0 ? ` − ${formatMoney(discount)}` : ''}
               </p>
-              {paidAt && (
-                <p className="text-xs text-gray-500">
-                  Paid at {new Date(paidAt).toLocaleString()}
-                </p>
-              )}
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 space-y-1 text-sm text-gray-700">
-              <div className="flex justify-between">
-                <span>Total</span>
-                <span className="font-semibold">MAD {orderTotal.toFixed(2)}</span>
-              </div>
-              {tip > 0 && (
-                <div className="flex justify-between">
-                  <span>Tip</span>
-                  <span className="font-semibold">MAD {tip.toFixed(2)}</span>
-                </div>
-              )}
-              {discount > 0 && (
-                <div className="flex justify-between">
-                  <span>Discount</span>
-                  <span className="font-semibold text-rose-600">
-                    - MAD {discount.toFixed(2)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between border-t pt-2 mt-2">
-                <span>Final Amount</span>
-                <span className="font-semibold">MAD {finalTotal.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handlePrintReceipt}
-                className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                🖨️ Print Receipt
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadReceipt}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-              >
-                📄 Download PDF
-              </button>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+            )}
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Order Summary */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <div className="text-sm text-gray-600">Order {order.orderNumber || `#${order.id}`}</div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-bold">Total:</span>
-                <span className="text-2xl font-bold text-gray-900">
-                  MAD {orderTotal.toFixed(2)}
-                </span>
-              </div>
-            </div>
 
-            {/* Payment Method */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Method
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`p-3 rounded-lg border-2 transition-all ${paymentMethod === 'cash'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  disabled={isProcessing}
-                >
-                  <div className="text-2xl mb-1">💵</div>
-                  <div className="text-xs font-medium">Cash</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`p-3 rounded-lg border-2 transition-all ${paymentMethod === 'card'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  disabled={isProcessing}
-                >
-                  <div className="text-2xl mb-1">💳</div>
-                  <div className="text-xs font-medium">Card</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('mobile')}
-                  className={`p-3 rounded-lg border-2 transition-all ${paymentMethod === 'mobile'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  disabled={isProcessing}
-                >
-                  <div className="text-2xl mb-1">📱</div>
-                  <div className="text-xs font-medium">Mobile</div>
-                </button>
-              </div>
-            </div>
-
-            {/* Amount Received (Cash only) */}
-            {paymentMethod === 'cash' && (
-              <div>
-                <label htmlFor="amountReceived" className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount Received
-                </label>
-                <input
-                  type="number"
-                  id="amountReceived"
-                  step="0.01"
-                  min={finalTotal}
-                  value={amountReceived}
-                  onChange={(e) => setAmountReceived(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="0.00"
-                  required
-                  disabled={isProcessing}
-                />
-              </div>
-            )}
-
-            {/* Discount */}
-            <div>
-              <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-2">
-                Discount (Optional)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  id="discount"
-                  step="0.01"
-                  min="0"
-                  max={orderTotal}
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(e.target.value)}
-                  className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="0.00"
-                  disabled={isProcessing}
-                />
-                <span className="absolute right-3 top-2.5 text-gray-500 font-medium">MAD</span>
-              </div>
-            </div>
-
-            {/* Change Calculation */}
-            {paymentMethod === 'cash' && received >= finalTotal && (
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
-                  <span>Change:</span>
-                  <span className="font-medium">MAD {change.toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-
-            {received > 0 && received < finalTotal && (
-              <div className="text-sm text-red-600">
-                ⚠️ Amount received is less than total
-              </div>
-            )}
-
-            {/* Tips */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tips (Optional)
-              </label>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={() => applyTipPercentage(10)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
-                  disabled={isProcessing}
-                >
-                  10%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyTipPercentage(15)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
-                  disabled={isProcessing}
-                >
-                  15%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyTipPercentage(20)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
-                  disabled={isProcessing}
-                >
-                  20%
-                </button>
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={tipAmount}
-                onChange={(e) => setTipAmount(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="0.00"
-                disabled={isProcessing}
-              />
-            </div>
-
-            {/* Card/Mobile Message */}
-            {(paymentMethod === 'card' || paymentMethod === 'mobile') && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  ℹ️ {paymentMethod === 'card' ? 'Please process the card payment on the terminal' : 'Please process the mobile payment'}
-                </p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+          {/* Method */}
+          <div role="radiogroup" aria-label={t('payment.methodLabel')} className="grid grid-cols-3 gap-2">
+            {METHODS.map((m) => (
               <button
+                key={m}
                 type="button"
-                onClick={onClose}
+                role="radio"
+                aria-checked={method === m}
                 disabled={isProcessing}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isProcessing || (paymentMethod === 'cash' && received < finalTotal)}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Process Payment
-                  </>
+                onClick={() => setMethod(m)}
+                className={twMerge(
+                  'min-h-14 rounded-xl text-base font-bold ring-2 transition-colors',
+                  method === m ? 'bg-primary text-primary-fg ring-primary' : 'bg-surface text-fg ring-line hover:bg-surface-2'
                 )}
+              >
+                {dynamicT(`payment.method.${m}`)}
               </button>
+            ))}
+          </div>
+
+          {method === 'cash' ? (
+            <div className="space-y-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{t('payment.received')}</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={amountReceived}
+                  onChange={(e) => setAmountReceived(e.target.value.replace(',', '.'))}
+                  disabled={isProcessing}
+                  className={input}
+                  placeholder="0.00"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t('payment.quickCash')}>
+                <button
+                  type="button"
+                  onClick={() => setAmountReceived(finalTotal.toFixed(2))}
+                  className="min-h-12 rounded-xl bg-surface-2 px-4 text-base font-semibold ring-1 ring-line hover:bg-surface"
+                >
+                  {t('payment.exact')}
+                </button>
+                {chips.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setAmountReceived(value.toFixed(2))}
+                    className="min-h-12 rounded-xl bg-surface-2 px-4 text-base font-semibold tabular-nums ring-1 ring-line hover:bg-surface"
+                  >
+                    {formatMoney(value)}
+                  </button>
+                ))}
+              </div>
+
+              {/* Change is the most prominent number once cash covers the total */}
+              {received >= finalTotal ? (
+                <div role="status" className="rounded-2xl bg-success/15 p-4 text-center text-success">
+                  <p className="text-sm font-semibold">{t('payment.change')}</p>
+                  <p className="text-pos-total font-black tabular-nums">{formatMoney(change)}</p>
+                </div>
+              ) : (
+                received > 0 && (
+                  <p role="alert" className="rounded-xl bg-danger/15 px-4 py-3 text-center text-base font-bold text-danger">
+                    {t('payment.short', { amount: formatMoney(shortBy) })}
+                  </p>
+                )
+              )}
             </div>
-          </form>
-        )}
-      </div>
-    </div>
+          ) : (
+            <p className="rounded-xl bg-surface-2 px-4 py-3 text-base text-fg-muted">
+              {method === 'card' ? t('payment.cardHint') : t('payment.mobileHint')}
+            </p>
+          )}
+
+          {/* Tip */}
+          <fieldset>
+            <legend className="mb-1 text-sm font-semibold">{t('payment.tipOptional')}</legend>
+            <div className="mb-2 grid grid-cols-4 gap-2">
+              {[0, 10, 15, 20].map((pct) => {
+                const value = pct === 0 ? 0 : Math.round(orderTotal * pct) / 100;
+                const selected = tip === value;
+                return (
+                  <button
+                    key={pct}
+                    type="button"
+                    disabled={isProcessing}
+                    aria-pressed={selected}
+                    onClick={() => setTipAmount(value.toFixed(2))}
+                    className={twMerge(
+                      'min-h-12 rounded-xl text-base font-semibold ring-1 transition-colors',
+                      selected ? 'bg-primary text-primary-fg ring-primary' : 'bg-surface text-fg ring-line hover:bg-surface-2'
+                    )}
+                  >
+                    {pct === 0 ? t('payment.noTip') : `${pct}%`}
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label={t('payment.tipOptional')}
+              value={tipAmount}
+              onChange={(e) => setTipAmount(e.target.value.replace(',', '.'))}
+              disabled={isProcessing}
+              className={twMerge(input, 'h-12 text-base')}
+              placeholder="0.00"
+            />
+          </fieldset>
+
+          {SUPPORTS_DISCOUNT && (
+            <label className="block">
+              <span className="mb-1 block text-sm font-semibold">{t('payment.discountOptional')}</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={discountAmount}
+                onChange={(e) => setDiscountAmount(e.target.value.replace(',', '.'))}
+                disabled={isProcessing}
+                className={twMerge(input, 'h-12 text-base')}
+                placeholder="0.00"
+              />
+            </label>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="secondary" size="xl" disabled={isProcessing} onClick={handleClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="success" size="xl" fullWidth loading={isProcessing} disabled={cashShort}>
+              {isProcessing ? t('payment.processing') : `${t('payment.confirm')} · ${formatMoney(finalTotal)}`}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
   );
 };
 

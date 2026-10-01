@@ -1,52 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import type { TFunction } from 'i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
 import { menuAPI } from '@/api/menu';
 import type { CreateMenuItemData, Category, MenuItem } from '@/types/menu';
+import { errorMessage } from '@/lib/errors';
+import { DEFAULT_CURRENCY } from '@/lib/money';
 
-const validationSchema = Yup.object({
-  name: Yup.string()
-    .required('Item name is required')
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be less than 100 characters'),
-  description: Yup.string()
-    .max(500, 'Description must be less than 500 characters'),
-  price: Yup.number()
-    .required('Price is required')
-    .min(0.01, 'Price must be greater than 0')
-    .max(99999.99, 'Price is too high'),
-  cost: Yup.number()
-    .min(0, 'Cost cannot be negative')
-    .max(99999.99, 'Cost is too high')
-    .nullable()
-    .transform((value: any, originalValue: any) => {
-      return originalValue === '' ? null : value;
-    }),
-  category_id: Yup.number()
-    .required('Category is required'),
-  preparation_time: Yup.number()
-    .min(1, 'Preparation time must be at least 1 minute')
-    .max(480, 'Preparation time cannot exceed 480 minutes')
-    .nullable()
-    .transform((value: any, originalValue: any) => {
-      return originalValue === '' ? null : value;
-    }),
-  is_active: Yup.boolean(),
-  is_available: Yup.boolean(),
-  sort_order: Yup.number()
-    .min(0, 'Sort order cannot be negative')
-    .nullable()
-    .transform((value: any, originalValue: any) => {
-      return originalValue === '' ? null : value;
-    }),
-});
+interface MenuItemFormValues {
+  name: string;
+  description: string;
+  price: number;
+  cost: number | '';
+  category_id: number;
+  preparation_time: number | '';
+  is_active: boolean;
+  is_available: boolean;
+  sort_order: number | '';
+}
+
+const buildValidationSchema = (t: TFunction) =>
+  Yup.object({
+    name: Yup.string()
+      .required(t('menuAdmin.form.validation.nameRequired'))
+      .min(2, t('menuAdmin.form.validation.nameMin', { count: 2 }))
+      .max(100, t('menuAdmin.form.validation.nameMax', { count: 100 })),
+    description: Yup.string().max(500, t('menuAdmin.form.validation.descriptionMax', { count: 500 })),
+    price: Yup.number()
+      .required(t('menuAdmin.form.validation.priceRequired'))
+      .min(0.01, t('menuAdmin.form.validation.priceMin'))
+      .max(99999.99, t('menuAdmin.form.validation.priceMax')),
+    cost: Yup.number()
+      .min(0, t('menuAdmin.form.validation.costMin'))
+      .max(99999.99, t('menuAdmin.form.validation.costMax'))
+      .nullable()
+      .transform((value, originalValue) => {
+        return originalValue === '' ? null : value;
+      }),
+    category_id: Yup.number().required(t('menuAdmin.form.validation.categoryRequired')),
+    preparation_time: Yup.number()
+      .min(1, t('menuAdmin.form.validation.prepMin', { count: 1 }))
+      .max(480, t('menuAdmin.form.validation.prepMax', { count: 480 }))
+      .nullable()
+      .transform((value, originalValue) => {
+        return originalValue === '' ? null : value;
+      }),
+    is_active: Yup.boolean(),
+    is_available: Yup.boolean(),
+    sort_order: Yup.number()
+      .min(0, t('menuAdmin.form.validation.sortMin'))
+      .nullable()
+      .transform((value, originalValue) => {
+        return originalValue === '' ? null : value;
+      }),
+  });
 
 export default function MenuItemForm() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const validationSchema = useMemo(() => buildValidationSchema(t), [t]);
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
 
@@ -67,9 +84,9 @@ export default function MenuItemForm() {
         const response = await menuAPI.getCategories();
         const categoriesData = Array.isArray(response) ? response : response.data || [];
         setCategories(categoriesData);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch categories:', err);
-        setError('Failed to load categories');
+        setError(t('menuAdmin.form.errors.loadCategories'));
       }
     };
     fetchCategories();
@@ -81,18 +98,16 @@ export default function MenuItemForm() {
       const fetchMenuItem = async () => {
         setLoading(true);
         try {
-          const response = await menuAPI.getItems({ id: Number(id) });
-          const itemsData = Array.isArray(response) ? response : response.data || [];
-          const item = itemsData.find((i: MenuItem) => i.id === Number(id));
+          const item = await menuAPI.getItem(Number(id));
           if (item) {
             setMenuItem(item);
             setIngredients(item.ingredients?.join(', ') || '');
             setAllergens(item.allergens?.join(', ') || '');
           } else {
-            setError('Menu item not found');
+            setError(t('menuAdmin.form.errors.notFound'));
           }
-        } catch (err: any) {
-          setError('Failed to load menu item');
+        } catch (err) {
+          setError(t('menuAdmin.form.errors.loadItem'));
           console.error('Failed to fetch menu item:', err);
         } finally {
           setLoading(false);
@@ -121,7 +136,7 @@ export default function MenuItemForm() {
     }
   };
 
-  const initialValues = {
+  const initialValues: MenuItemFormValues = {
     name: menuItem?.name || '',
     description: menuItem?.description || '',
     price: menuItem?.price ? Number(menuItem.price) : 0,
@@ -133,14 +148,14 @@ export default function MenuItemForm() {
     sort_order: menuItem?.sort_order ?? '',
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: MenuItemFormValues) => {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
     
     try {
       const data: CreateMenuItemData = {
-        ...values,
+        ...(values as CreateMenuItemData),
         ingredients: ingredients ? ingredients.split(',').map(i => i.trim()).filter(Boolean) : undefined,
         allergens: allergens ? allergens.split(',').map(a => a.trim()).filter(Boolean) : undefined,
       };
@@ -150,21 +165,21 @@ export default function MenuItemForm() {
       if (isEditMode && id) {
         await menuAPI.updateItem(Number(id), data);
         itemId = Number(id);
-        setSuccessMessage('Menu item updated successfully!');
+        setSuccessMessage(t('menuAdmin.form.success.updated'));
       } else {
         const result = await menuAPI.createItem(data);
         itemId = result.id;
-        setSuccessMessage('Menu item created successfully!');
+        setSuccessMessage(t('menuAdmin.form.success.created'));
       }
 
       // Upload image if one was selected
       if (imageFile && itemId) {
         try {
           await menuAPI.uploadItemImage(itemId, imageFile);
-        } catch (imgErr: any) {
+        } catch (imgErr) {
           console.error('Failed to upload image:', imgErr);
           // Don't fail the whole operation if image upload fails
-          setError('Item saved but image upload failed. You can try uploading the image again.');
+          setError(t('menuAdmin.form.errors.imageUpload'));
         }
       }
 
@@ -172,8 +187,8 @@ export default function MenuItemForm() {
       setTimeout(() => {
         navigate('/menu/items');
       }, 1500);
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to save menu item');
+    } catch (err) {
+      setError(errorMessage(err, t('menuAdmin.form.errors.save')));
     } finally {
       setLoading(false);
     }
@@ -183,11 +198,15 @@ export default function MenuItemForm() {
 
   return (
     <div className="p-6">
-      <PageMeta title={isEditMode ? 'Edit Menu Item' : 'Add Menu Item'} />
+      <PageMeta
+        title={isEditMode ? t('menuAdmin.form.metaEditTitle') : t('menuAdmin.form.metaAddTitle')}
+        description={isEditMode ? t('menuAdmin.form.metaEditDescription') : t('menuAdmin.form.metaAddDescription')}
+      />
       <PageBreadcrumb
-        items={[
-          { label: 'Menu Items', path: '/menu/items' },
-          { label: isEditMode ? 'Edit Item' : 'Add Item', path: '' },
+        pageTitle={isEditMode ? t('menuAdmin.form.breadcrumbEdit') : t('menuAdmin.form.breadcrumbAdd')}
+        breadcrumbItems={[
+          { label: t('menuAdmin.breadcrumb'), href: '/menu/items' },
+          { label: isEditMode ? t('menuAdmin.form.breadcrumbEdit') : t('menuAdmin.form.breadcrumbAdd') },
         ]}
       />
 
@@ -196,7 +215,7 @@ export default function MenuItemForm() {
         <div className="mb-6">
           <Alert
             variant="success"
-            title="Success"
+            title={t('menuAdmin.successTitle')}
             message={successMessage}
           />
         </div>
@@ -206,7 +225,7 @@ export default function MenuItemForm() {
         <div className="mb-6">
           <Alert
             variant="error"
-            title="Error"
+            title={t('menuAdmin.errorTitle')}
             message={error}
           />
         </div>
@@ -216,17 +235,18 @@ export default function MenuItemForm() {
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {isEditMode ? 'Edit Menu Item' : 'Add New Menu Item'}
+            {isEditMode ? t('menuAdmin.form.headingEdit') : t('menuAdmin.form.headingAdd')}
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            {isEditMode ? 'Update the menu item details' : 'Create a new item for your menu'}
+            {isEditMode ? t('menuAdmin.form.subtitleEdit') : t('menuAdmin.form.subtitleAdd')}
           </p>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/menu/items')}
           className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          ← Back to Menu Items
+          {t('menuAdmin.form.back')}
         </button>
       </div>
 
@@ -238,22 +258,22 @@ export default function MenuItemForm() {
           onSubmit={handleSubmit}
           enableReinitialize
         >
-          {({ values, errors, touched, isSubmitting }) => (
+          {({ errors, touched, isSubmitting }) => (
             <Form className="space-y-6">
               {/* Basic Information */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.basicInfo')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name */}
                   <div className="md:col-span-2">
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Item Name <span className="text-red-500">*</span>
+                      {t('menuAdmin.form.name')} <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Field
                       id="name"
                       name="name"
                       type="text"
-                      placeholder="e.g., Grilled Chicken Breast"
+                      placeholder={t('menuAdmin.form.namePlaceholder')}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                         errors.name && touched.name ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -265,14 +285,14 @@ export default function MenuItemForm() {
                   {/* Description */}
                   <div className="md:col-span-2">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
+                      {t('menuAdmin.form.description')}
                     </label>
                     <Field
                       as="textarea"
                       id="description"
                       name="description"
                       rows={3}
-                      placeholder="Brief description of the item..."
+                      placeholder={t('menuAdmin.form.descriptionPlaceholder')}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                         errors.description && touched.description ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -284,14 +304,14 @@ export default function MenuItemForm() {
                   {/* Image Upload */}
                   <div className="md:col-span-2">
                     <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                      Item Image
+                      {t('menuAdmin.form.image')}
                     </label>
                     <div className="flex items-start gap-4">
                       {imagePreview && (
                         <div className="flex-shrink-0">
                           <img
                             src={imagePreview}
-                            alt="Preview"
+                            alt={t('menuAdmin.form.imagePreviewAlt')}
                             className="w-24 h-24 object-cover rounded-lg border border-gray-300"
                           />
                         </div>
@@ -303,10 +323,10 @@ export default function MenuItemForm() {
                           accept="image/*"
                           onChange={handleImageChange}
                           disabled={isSubmitting || loading}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                          className="block w-full text-sm text-gray-500 file:me-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          PNG, JPG, GIF up to 10MB
+                          {t('menuAdmin.form.imageHint')}
                         </p>
                       </div>
                     </div>
@@ -315,7 +335,7 @@ export default function MenuItemForm() {
                   {/* Category */}
                   <div>
                     <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
-                      Category <span className="text-red-500">*</span>
+                      {t('menuAdmin.category')} <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Field
                       as="select"
@@ -326,7 +346,7 @@ export default function MenuItemForm() {
                       }`}
                       disabled={isSubmitting || loading}
                     >
-                      <option value={0}>Select a category</option>
+                      <option value={0}>{t('menuAdmin.form.selectCategory')}</option>
                       {activeCategories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
@@ -339,14 +359,14 @@ export default function MenuItemForm() {
                   {/* Preparation Time */}
                   <div>
                     <label htmlFor="preparation_time" className="block text-sm font-medium text-gray-700 mb-1">
-                      Preparation Time (minutes)
+                      {t('menuAdmin.form.prepTime')}
                     </label>
                     <Field
                       id="preparation_time"
                       name="preparation_time"
                       type="number"
                       min="1"
-                      placeholder="e.g., 15"
+                      placeholder={t('menuAdmin.form.prepPlaceholder')}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                         errors.preparation_time && touched.preparation_time ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -359,12 +379,12 @@ export default function MenuItemForm() {
 
               {/* Pricing */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Pricing</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.pricing')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Price */}
                   <div>
                     <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (MAD) <span className="text-red-500">*</span>
+                      {t('menuAdmin.form.price', { currency: DEFAULT_CURRENCY })} <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Field
                       id="price"
@@ -384,7 +404,7 @@ export default function MenuItemForm() {
                   {/* Cost */}
                   <div>
                     <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">
-                      Cost (MAD)
+                      {t('menuAdmin.form.cost', { currency: DEFAULT_CURRENCY })}
                     </label>
                     <Field
                       id="cost"
@@ -405,19 +425,19 @@ export default function MenuItemForm() {
 
               {/* Additional Details */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Details</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.additional')}</h2>
                 <div className="space-y-4">
                   {/* Ingredients */}
                   <div>
                     <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
-                      Ingredients (comma-separated)
+                      {t('menuAdmin.form.ingredients')}
                     </label>
                     <input
                       id="ingredients"
                       type="text"
                       value={ingredients}
                       onChange={(e) => setIngredients(e.target.value)}
-                      placeholder="e.g., Chicken, Olive oil, Garlic, Herbs"
+                      placeholder={t('menuAdmin.form.ingredientsPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={isSubmitting || loading}
                     />
@@ -426,14 +446,14 @@ export default function MenuItemForm() {
                   {/* Allergens */}
                   <div>
                     <label htmlFor="allergens" className="block text-sm font-medium text-gray-700 mb-1">
-                      Allergens (comma-separated)
+                      {t('menuAdmin.form.allergens')}
                     </label>
                     <input
                       id="allergens"
                       type="text"
                       value={allergens}
                       onChange={(e) => setAllergens(e.target.value)}
-                      placeholder="e.g., Nuts, Dairy, Gluten"
+                      placeholder={t('menuAdmin.form.allergensPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       disabled={isSubmitting || loading}
                     />
@@ -442,7 +462,7 @@ export default function MenuItemForm() {
                   {/* Sort Order */}
                   <div>
                     <label htmlFor="sort_order" className="block text-sm font-medium text-gray-700 mb-1">
-                      Sort Order
+                      {t('menuAdmin.form.sortOrder')}
                     </label>
                     <Field
                       id="sort_order"
@@ -462,7 +482,7 @@ export default function MenuItemForm() {
 
               {/* Status Toggles */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.status')}</h2>
                 <div className="space-y-3">
                   {/* Is Available */}
                   <div className="flex items-center">
@@ -473,8 +493,8 @@ export default function MenuItemForm() {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       disabled={isSubmitting || loading}
                     />
-                    <label htmlFor="is_available" className="ml-2 text-sm font-medium text-gray-700">
-                      Item is available for sale
+                    <label htmlFor="is_available" className="ms-2 text-sm font-medium text-gray-700">
+                      {t('menuAdmin.form.isAvailable')}
                     </label>
                   </div>
 
@@ -487,8 +507,8 @@ export default function MenuItemForm() {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       disabled={isSubmitting || loading}
                     />
-                    <label htmlFor="is_active" className="ml-2 text-sm font-medium text-gray-700">
-                      Item is active
+                    <label htmlFor="is_active" className="ms-2 text-sm font-medium text-gray-700">
+                      {t('menuAdmin.form.isActive')}
                     </label>
                   </div>
                 </div>
@@ -502,7 +522,7 @@ export default function MenuItemForm() {
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   disabled={isSubmitting || loading}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -512,10 +532,10 @@ export default function MenuItemForm() {
                   {isSubmitting || loading ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      {isEditMode ? 'Updating...' : 'Creating...'}
+                      {isEditMode ? t('menuAdmin.form.updating') : t('menuAdmin.form.creating')}
                     </span>
                   ) : (
-                    isEditMode ? 'Update Item' : 'Create Item'
+                    isEditMode ? t('menuAdmin.form.update') : t('menuAdmin.form.create')
                   )}
                 </button>
               </div>

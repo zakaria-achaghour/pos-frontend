@@ -1,29 +1,32 @@
-import React from 'react';
+import { dynamicT } from '@/i18n/dynamic';
+import { useTranslation } from 'react-i18next';
 import type { StaffScheduleViewProps } from '@/types/staff';
 import type { StaffMember } from '@/types/staff';
 
 const days = [
-  { key: 'monday', label: 'Monday' },
-  { key: 'tuesday', label: 'Tuesday' },
-  { key: 'wednesday', label: 'Wednesday' },
-  { key: 'thursday', label: 'Thursday' },
-  { key: 'friday', label: 'Friday' },
-  { key: 'saturday', label: 'Saturday' },
-  { key: 'sunday', label: 'Sunday' }
+  { key: 'monday' },
+  { key: 'tuesday' },
+  { key: 'wednesday' },
+  { key: 'thursday' },
+  { key: 'friday' },
+  { key: 'saturday' },
+  { key: 'sunday' }
 ] as const;
 
 export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
+  const { t } = useTranslation();
+  const dayLabel = (key: (typeof days)[number]['key']) => dynamicT(`staffAdmin.schedule.days.${key}`);
   // Get schedule summary for each day
   const getScheduleSummary = () => {
     return days.map(day => {
-      const workingStaff = staff.filter(member => 
+      const workingStaff = staff.filter(member =>
         member.shiftSchedule[day.key as keyof typeof member.shiftSchedule].isWorking
       );
-      
+
       const totalHours = workingStaff.reduce((sum, member) => {
         const shift = member.shiftSchedule[day.key as keyof typeof member.shiftSchedule];
         if (!shift.isWorking) return sum;
-        
+
         const start = new Date(`2000-01-01T${shift.start}:00`);
         const end = new Date(`2000-01-01T${shift.end}:00`);
         const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -31,7 +34,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
       }, 0);
 
       return {
-        day: day.label,
+        day: dayLabel(day.key),
         workingCount: workingStaff.length,
         totalHours: totalHours,
         coverage: workingStaff.length >= 3 ? 'good' : workingStaff.length >= 2 ? 'adequate' : 'low'
@@ -64,7 +67,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
       {/* Weekly Coverage Summary */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          📅 Weekly Coverage Summary
+          <span aria-hidden="true">📅</span> {t('staffAdmin.schedule.weeklyCoverage')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {scheduleSummary.map((day) => (
@@ -72,10 +75,10 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
               <div className="font-medium text-gray-900 mb-2">{day.day}</div>
               <div className="space-y-2">
                 <div className={`px-2 py-1 rounded-full text-xs font-medium ${getCoverageColor(day.coverage)}`}>
-                  {getCoverageIcon(day.coverage)} {day.workingCount} staff
+                  <span aria-hidden="true">{getCoverageIcon(day.coverage)}</span> {t('staffAdmin.schedule.staffCount', { count: day.workingCount })}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {day.totalHours.toFixed(1)}h total
+                  {t('staffAdmin.schedule.hoursTotal', { hours: day.totalHours.toFixed(1) })}
                 </div>
               </div>
             </div>
@@ -87,19 +90,19 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            🗓️ Detailed Schedule
+            <span aria-hidden="true">🗓️</span> {t('staffAdmin.schedule.detailed')}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Staff Member</th>
+                  <th className="text-start p-3 font-medium">{t('staffAdmin.schedule.staffMember')}</th>
                   {days.map((day) => (
                     <th key={day.key} className="text-center p-3 font-medium min-w-[120px]">
-                      {day.label}
+                      {dayLabel(day.key)}
                     </th>
                   ))}
-                  <th className="text-center p-3 font-medium">Total Hours</th>
+                  <th className="text-center p-3 font-medium">{t('staffAdmin.schedule.totalHours')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,7 +125,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                           </div>
                           <div>
                             <div className="font-medium">{member.name}</div>
-                            <div className="text-xs text-gray-600">{member.role}</div>
+                            <div className="text-xs text-gray-600">{dynamicT(`roles.${member.role}`, { defaultValue: member.role })}</div>
                           </div>
                         </div>
                       </td>
@@ -138,20 +141,20 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                                     const start = new Date(`2000-01-01T${shift.start}:00`);
                                     const end = new Date(`2000-01-01T${shift.end}:00`);
                                     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                                    return `${hours}h`;
+                                    return t('staffAdmin.schedule.hours', { hours });
                                   })()}
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-gray-400 text-xs">Off</div>
+                              <div className="text-gray-400 text-xs">{t('staffAdmin.schedule.off')}</div>
                             )}
                           </td>
                         );
                       })}
                       <td className="p-3 text-center">
-                        <div className="font-medium">{weeklyHours.toFixed(1)}h</div>
+                        <div className="font-medium">{t('staffAdmin.schedule.hours', { hours: weeklyHours.toFixed(1) })}</div>
                         <div className="text-xs text-gray-600">
-                          {weeklyHours > 40 ? 'Overtime' : weeklyHours < 20 ? 'Part-time' : 'Regular'}
+                          {weeklyHours > 40 ? t('staffAdmin.schedule.overtime') : weeklyHours < 20 ? t('staffAdmin.schedule.partTime') : t('staffAdmin.schedule.regular')}
                         </div>
                       </td>
                     </tr>
@@ -167,19 +170,19 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Coverage Alerts */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="font-semibold mb-4 text-red-600">⚠️ Coverage Alerts</h4>
+          <h4 className="font-semibold mb-4 text-red-600"><span aria-hidden="true">⚠️</span> {t('staffAdmin.schedule.coverageAlerts')}</h4>
           <div className="space-y-3">
             {scheduleSummary
               .filter(day => day.coverage === 'low')
               .map((day) => (
                 <div key={day.day} className="flex items-center justify-between">
                   <span className="font-medium">{day.day}</span>
-                  <span className="text-red-600 text-sm">Only {day.workingCount} staff</span>
+                  <span className="text-red-600 text-sm">{t('staffAdmin.schedule.onlyStaff', { count: day.workingCount })}</span>
                 </div>
               ))}
             {scheduleSummary.filter(day => day.coverage === 'low').length === 0 && (
               <div className="text-green-600 text-center py-4">
-                ✅ All days have adequate coverage
+                <span aria-hidden="true">✅</span> {t('staffAdmin.schedule.allCovered')}
               </div>
             )}
           </div>
@@ -187,7 +190,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
 
         {/* Overtime Staff */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="font-semibold mb-4 text-orange-600">⏰ Overtime Staff</h4>
+          <h4 className="font-semibold mb-4 text-orange-600"><span aria-hidden="true">⏰</span> {t('staffAdmin.schedule.overtimeStaff')}</h4>
           <div className="space-y-3">
             {staff
               .filter(member => {
@@ -209,7 +212,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                 return (
                   <div key={member.id} className="flex items-center justify-between">
                     <span className="font-medium">{member.name}</span>
-                    <span className="text-orange-600 text-sm">{weeklyHours.toFixed(1)}h</span>
+                    <span className="text-orange-600 text-sm">{t('staffAdmin.schedule.hours', { hours: weeklyHours.toFixed(1) })}</span>
                   </div>
                 );
               })}
@@ -223,7 +226,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
               return weeklyHours > 40;
             }).length === 0 && (
               <div className="text-green-600 text-center py-4">
-                ✅ No overtime scheduled
+                <span aria-hidden="true">✅</span> {t('staffAdmin.schedule.noOvertime')}
               </div>
             )}
           </div>
@@ -231,14 +234,14 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
 
         {/* Today's Schedule */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h4 className="font-semibold mb-4 text-blue-600">📍 Today's Schedule</h4>
+          <h4 className="font-semibold mb-4 text-blue-600"><span aria-hidden="true">📍</span> {t('staffAdmin.schedule.today')}</h4>
           <div className="space-y-3">
             {(() => {
               const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() as keyof StaffMember['shiftSchedule'];
-              const todayStaff = staff.filter(member => 
+              const todayStaff = staff.filter(member =>
                 member.shiftSchedule[today]?.isWorking
               );
-              
+
               return todayStaff.length > 0 ? (
                 todayStaff.map((member) => {
                   const shift = member.shiftSchedule[today];
@@ -246,7 +249,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                     <div key={member.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{member.name}</span>
-                        <span className="text-xs text-gray-600">({member.role})</span>
+                        <span className="text-xs text-gray-600">({dynamicT(`roles.${member.role}`, { defaultValue: member.role })})</span>
                       </div>
                       <span className="text-blue-600 text-sm">
                         {shift.start} - {shift.end}
@@ -256,7 +259,7 @@ export default function StaffScheduleView({ staff }: StaffScheduleViewProps) {
                 })
               ) : (
                 <div className="text-gray-600 text-center py-4">
-                  No staff scheduled for today
+                  {t('staffAdmin.schedule.noneToday')}
                 </div>
               );
             })()}

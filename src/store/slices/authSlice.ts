@@ -1,8 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { AxiosError } from 'axios';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { authAPI } from '../../api/auth';
 import type { User as ApiUser } from '../../api/auth';
 import { handleApiError } from '../../api/client';
+import { asApiError } from '@/utils/apiError';
 
 interface AuthState {
   user: ApiUser | null;
@@ -25,35 +27,27 @@ const initialState: AuthState = {
   loginError: null,
 };
 
-// Helper function to get redirect path for a specific user
-const getRedirectPathForUser = (user: ApiUser): string => {
-  let redirectPath: string;
-  switch (user.role) {
+// Single source of truth: where each role lands after login / on "/"
+export const getRedirectPathForRole = (role: string | undefined): string => {
+  switch (role) {
     case 'superadmin':
-      redirectPath = '/admin/tenants';
-      break;
+      return '/admin/tenants';
     case 'owner':
-      redirectPath = '/owner/dashboard';
-      break;
+      return '/owner/dashboard';
     case 'manager':
-      redirectPath = '/dashboard';
-      break;
+      return '/dashboard';
     case 'cashier':
-      redirectPath = '/cashier/dashboard';
-      break;
+      return '/cashier/dashboard';
     case 'waiter':
-      redirectPath = '/tables';
-      break;
+      return '/tables';
     case 'kitchen':
-      redirectPath = '/kitchen';
-      break;
+      return '/kitchen';
     default:
-      redirectPath = '/tables';
-      break;
+      return '/tables';
   }
-  
-  return redirectPath;
 };
+
+const getRedirectPathForUser = (user: ApiUser): string => getRedirectPathForRole(user.role);
 
 // Async thunks
 export const initializeAuth = createAsyncThunk(
@@ -68,7 +62,8 @@ export const initializeAuth = createAsyncThunk(
           // Verify token by fetching fresh user data
           const userData = await authAPI.me();
           return userData;
-        } catch (apiError: any) {
+        } catch (apiErrorRaw) {
+          const apiError = asApiError(apiErrorRaw);
           // If API call fails with 401, token is invalid
           if (apiError.response?.status === 401) {
             authAPI.clearAuthData();
@@ -83,9 +78,9 @@ export const initializeAuth = createAsyncThunk(
         authAPI.clearAuthData(); // Clean up any partial data
         return null;
       }
-    } catch (error: any) {
+    } catch (errorRaw) {
       authAPI.clearAuthData();
-      return rejectWithValue(handleApiError(error));
+      return rejectWithValue(handleApiError(errorRaw as AxiosError));
     }
   }
 );
@@ -106,8 +101,8 @@ export const loginUser = createAsyncThunk<
       const redirectPath = getRedirectPathForUser(authData.user);
       
       return { user: authData.user, redirectPath };
-    } catch (error: any) {
-      const errorMessage = handleApiError(error);
+    } catch (errorRaw) {
+      const errorMessage = handleApiError(errorRaw as AxiosError);
       return rejectWithValue(errorMessage);
     }
   }
@@ -118,7 +113,7 @@ export const logoutUser = createAsyncThunk(
   async () => {
     try {
       await authAPI.logout();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Logout error:', error);
       // Don't reject on logout error, still clear local data
     } finally {
@@ -212,36 +207,7 @@ export const selectHasRole = (roles: string | string[]) => (state: { auth: AuthS
 
 export const selectGetRoleBasedRedirect = (state: { auth: AuthState }): string => {
   const user = state.auth.user;
-  if (!user) {
-    return '/login';
-  }
-  
-  let redirectPath: string;
-  switch (user.role) {
-    case 'superadmin':
-      redirectPath = '/admin/tenants';
-      break;
-    case 'owner':
-      redirectPath = '/owner/dashboard';
-      break;
-    case 'manager':
-      redirectPath = '/dashboard';
-      break;
-    case 'cashier':
-      redirectPath = '/cashier/dashboard';
-      break;
-    case 'waiter':
-      redirectPath = '/tables';
-      break;
-    case 'kitchen':
-      redirectPath = '/kitchen';
-      break;
-    default:
-      redirectPath = '/tables';
-      break;
-  }
-  
-  return redirectPath;
+  return user ? getRedirectPathForRole(user.role) : '/login';
 };
 
 export const { clearError, setUser } = authSlice.actions;

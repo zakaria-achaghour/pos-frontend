@@ -1,4 +1,7 @@
-import React, { memo } from 'react';
+import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Icon } from '@/components/kit';
+import { formatMoney } from '@/lib/money';
 import type { MenuItem } from '@/types/menu';
 
 interface MenuItemCardProps {
@@ -7,106 +10,65 @@ interface MenuItemCardProps {
   onCustomize: (item: MenuItem) => void;
 }
 
-const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({ item, onAddToCart, onCustomize }) => {
-  const isAvailable = item.is_available !== false;
-  const [imageError, setImageError] = React.useState(false);
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
+/**
+ * Menu tile: one tap adds the item. The whole tile is a real <button>; the
+ * customize control is a sibling button (buttons can't nest) with a 44px target.
+ */
+const MenuItemCardComponent = ({ item, onAddToCart, onCustomize }: MenuItemCardProps) => {
+  const { t } = useTranslation();
+  const [imageError, setImageError] = useState(false);
+  const available = item.is_available !== false;
 
   return (
-    <div
-      onClick={() => isAvailable && onAddToCart(item)}
-      className={`relative rounded-lg border-2 transition-all flex flex-col overflow-hidden ${isAvailable
-        ? 'bg-white border-green-300 hover:border-green-500 cursor-pointer hover:shadow-md'
-        : 'bg-white border-red-300 cursor-not-allowed opacity-75'
-        }`}
-    >
-      {/* Image Section */}
-      <div className="relative w-full h-32 sm:h-36 lg:h-40 bg-gray-100 overflow-hidden">
-        {item.image_url && !imageError ? (
-          <img
-            src={item.image_url}
-            alt={item.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={handleImageError}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <svg 
-              className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
-        )}
-        {/* Status Dot on Image */}
-        <div className="absolute top-2 right-2">
-          <div
-            className={`w-3 h-3 rounded-full shadow-md ${isAvailable ? 'bg-green-500' : 'bg-red-500'
-              }`}
-          />
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="p-4 flex flex-col gap-3 flex-1">
-        <div>
-          <h3 className={`font-semibold text-base md:text-lg mb-2 ${isAvailable ? 'text-gray-900' : 'text-gray-400'
-            }`}>
-            {item.name}
-          </h3>
-
-          {item.description && (
-            <p className={`text-sm md:text-base mb-2 line-clamp-2 ${isAvailable ? 'text-gray-600' : 'text-gray-400'
-              }`}>
-              {item.description}
-            </p>
-          )}
-        </div>
-
-        {/* Footer Section - Always at bottom */}
-        <div className="flex items-center justify-between mt-auto">
-          <span className={`text-lg md:text-xl font-bold ${isAvailable ? 'text-green-600' : 'text-gray-400'
-            }`}>
-            {Number(item.price).toFixed(2)} MAD
-          </span>
-
-          {!isAvailable && (
-            <span className="text-xs md:text-sm font-medium text-red-600 bg-red-100 px-2 py-1 rounded">
-              Out of Stock
-            </span>
-          )}
-
-          {isAvailable && (
-            <div className="flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCustomize(item);
-                }}
-                className="text-xs md:text-sm font-medium text-gray-600 bg-gray-100 px-2.5 py-1.5 rounded hover:bg-gray-200 transition-colors"
-                title="Customize"
-              >
-                ⚙️
-              </button>
-              <button className="text-xs md:text-sm font-medium text-blue-600 bg-blue-100 px-2.5 py-1.5 rounded hover:bg-blue-200 transition-colors">
-                + Add
-              </button>
+    <div className="relative">
+      <button
+        type="button"
+        disabled={!available}
+        onClick={() => onAddToCart(item)}
+        aria-label={t('menu.addNamed', { name: item.name })}
+        className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface text-start shadow-sm enabled:hover:border-primary disabled:opacity-60"
+      >
+        <div className="h-24 w-full bg-surface-2">
+          {item.image_url && !imageError ? (
+            <img
+              src={item.image_url}
+              alt=""
+              loading="lazy"
+              onError={() => setImageError(true)}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div aria-hidden="true" className="flex h-full w-full items-center justify-center text-3xl font-black text-fg-muted">
+              {item.name.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
-      </div>
+        <div className="flex flex-1 flex-col gap-1 p-3">
+          <span className="line-clamp-2 min-h-12 text-base font-semibold leading-snug text-fg">{item.name}</span>
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <span className="text-pos-price font-bold text-fg">{formatMoney(item.price)}</span>
+            {!available && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-status-void/15 px-2 py-0.5 text-xs font-semibold text-status-void">
+                <Icon name="x" className="h-3.5 w-3.5" />
+                {t('menu.outOfStock')}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+
+      {available && (
+        <button
+          type="button"
+          onClick={() => onCustomize(item)}
+          aria-label={t('menu.customize', { name: item.name })}
+          className="absolute end-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface/95 text-fg shadow hover:bg-surface-2"
+        >
+          <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

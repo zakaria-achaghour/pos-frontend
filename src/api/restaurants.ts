@@ -7,6 +7,7 @@ import type {
   RestaurantStats,
   RestaurantFilters
 } from '../types/restaurant';
+import { asApiError } from '@/utils/apiError';
 
 // Restaurant API service
 export const restaurantAPI = {
@@ -31,13 +32,12 @@ export const restaurantAPI = {
    */
   getRestaurant: async (id: number): Promise<Restaurant> => {
     try {
-      console.log('🔍 Fetching restaurant with ID:', id);
       const response = await apiClient.get(`/admin/restaurants/${id}`);
-      console.log('📡 Single restaurant API response:', response.data);
       
       // For single restaurant, the data is returned directly (not wrapped in data property)
       return response.data as Restaurant;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching restaurant:', error);
       console.error('Error details:', {
         status: error.response?.status,
@@ -53,14 +53,13 @@ export const restaurantAPI = {
    */
   createRestaurant: async (restaurantData: CreateRestaurantData): Promise<Restaurant> => {
     try {
-      console.log('➕ Creating new restaurant:', restaurantData);
       const response = await apiClient.post('/admin/restaurants', restaurantData);
-      console.log('📡 Create restaurant API response:', response.data);
       
       // For single restaurant creation, the data might be returned directly or wrapped
       // Let's handle both cases
       return response.data.data || response.data as Restaurant;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error creating restaurant:', error);
       console.error('Error details:', {
         status: error.response?.status,
@@ -76,13 +75,12 @@ export const restaurantAPI = {
    */
   updateRestaurant: async (id: number, updates: UpdateRestaurantData): Promise<Restaurant> => {
     try {
-      console.log('🔄 Updating restaurant with ID:', id, 'Data:', updates);
       const response = await apiClient.put(`/admin/restaurants/${id}`, updates);
-      console.log('📡 Update restaurant API response:', response.data);
       
       // For single restaurant updates, the data is returned directly (not wrapped in data property)
       return response.data as Restaurant;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating restaurant:', error);
       console.error('Error details:', {
         status: error.response?.status,
@@ -113,16 +111,15 @@ export const restaurantAPI = {
    */
   updateRestaurantStatus: async (id: number, status: 'active' | 'inactive'): Promise<Restaurant> => {
     try {
-      console.log('🔄 Updating restaurant status for ID:', id, 'Status:', status);
       
       // Convert status string to boolean for the backend
       const is_active = status === 'active';
       const response = await apiClient.patch(`/admin/restaurants/${id}/status`, { is_active });
-      console.log('📡 Status update API response:', response.data);
       
       // For status updates, the data is returned directly (not wrapped in data property)
       return response.data as Restaurant;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating restaurant status:', error);
       console.error('Error details:', {
         status: error.response?.status,

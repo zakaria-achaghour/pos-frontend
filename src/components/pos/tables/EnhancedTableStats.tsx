@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import { dynamicT } from '@/i18n/dynamic';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatMoney } from '@/lib/money';
 import type { EnhancedTableStatsProps } from '@/types/table';
 import { useTableAnalytics } from '@/hooks/useTableAnalytics';
 
 
 export default function EnhancedTableStats({ className = '' }: EnhancedTableStatsProps) {
+  const { t } = useTranslation();
   const {
     analytics,
     loading,
@@ -22,7 +26,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
   if (loading && !analytics.length) {
     return (
       <div className={`bg-white p-6 rounded-lg shadow border ${className}`}>
-        <div className="animate-pulse">
+        <div role="status" aria-label={t('common.loading')} className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
             <div className="h-3 bg-gray-200 rounded"></div>
@@ -38,12 +42,13 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
     return (
       <div className={`bg-white p-6 rounded-lg shadow border ${className}`}>
         <div className="text-center text-red-600">
-          <p className="mb-4">⚠️ {error}</p>
+          <p className="mb-4"><span aria-hidden="true">⚠️ </span>{error}</p>
           <button
+            type="button"
             onClick={refreshAnalytics}
             className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
           >
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -56,16 +61,18 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">📊 Advanced Table Analytics</h3>
-            <p className="text-gray-600 text-sm">Comprehensive performance metrics and insights</p>
+            <h3 className="text-lg font-semibold text-gray-900"><span aria-hidden="true">📊 </span>{t('tableAdmin.stats.title')}</h3>
+            <p className="text-gray-600 text-sm">{t('tableAdmin.stats.subtitle')}</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Period Selector */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1" role="group" aria-label={t('tableAdmin.stats.period')}>
               {(['today', 'week', 'month'] as const).map((p) => (
                 <button
                   key={p}
+                  type="button"
+                  aria-pressed={period === p}
                   onClick={() => updatePeriod(p)}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     period === p
@@ -73,18 +80,19 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                  {dynamicT(`tableAdmin.stats.periods.${p}`)}
                 </button>
               ))}
             </div>
 
             {/* Refresh Button */}
             <button
+              type="button"
               onClick={refreshAnalytics}
               disabled={loading}
               className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
-              {loading ? '🔄' : '↻'} Refresh
+              <span aria-hidden="true">{loading ? '🔄' : '↻'}</span> {t('common.refresh')}
             </button>
           </div>
         </div>
@@ -92,23 +100,25 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <nav className="flex gap-8 px-6" aria-label={t('tableAdmin.stats.tabsLabel')}>
           {[
-            { id: 'overview', name: 'Overview', icon: '📈' },
-            { id: 'performance', name: 'Table Performance', icon: '🏆' },
-            { id: 'revenue', name: 'Revenue', icon: '💰' },
-            { id: 'occupancy', name: 'Occupancy', icon: '🪑' }
+            { id: 'overview', name: t('tableAdmin.stats.tabs.overview'), icon: '📈' },
+            { id: 'performance', name: t('tableAdmin.stats.tabs.performance'), icon: '🏆' },
+            { id: 'revenue', name: t('tableAdmin.stats.tabs.revenue'), icon: '💰' },
+            { id: 'occupancy', name: t('tableAdmin.stats.tabs.occupancy'), icon: '🪑' }
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              type="button"
+              aria-current={activeTab === tab.id ? 'page' : undefined}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {tab.icon} {tab.name}
+              <span aria-hidden="true">{tab.icon}</span> {tab.name}
             </button>
           ))}
         </nav>
@@ -122,11 +132,11 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className="text-2xl">💰</span>
+                  <span className="text-2xl" aria-hidden="true">💰</span>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800">Total Revenue</p>
-                  <p className="text-lg font-semibold text-green-900">${summaryStats.totalRevenue}</p>
+                <div className="ms-3">
+                  <p className="text-sm font-medium text-green-800">{t('tableAdmin.stats.totalRevenue')}</p>
+                  <p className="text-lg font-semibold text-green-900">{formatMoney(summaryStats.totalRevenue)}</p>
                 </div>
               </div>
             </div>
@@ -134,10 +144,10 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className="text-2xl">🪑</span>
+                  <span className="text-2xl" aria-hidden="true">🪑</span>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-blue-800">Avg Occupancy</p>
+                <div className="ms-3">
+                  <p className="text-sm font-medium text-blue-800">{t('tableAdmin.stats.avgOccupancy')}</p>
                   <p className="text-lg font-semibold text-blue-900">{summaryStats.avgOccupancy}%</p>
                 </div>
               </div>
@@ -146,10 +156,10 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className="text-2xl">👥</span>
+                  <span className="text-2xl" aria-hidden="true">👥</span>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-purple-800">Total Seatings</p>
+                <div className="ms-3">
+                  <p className="text-sm font-medium text-purple-800">{t('tableAdmin.stats.totalSeatings')}</p>
                   <p className="text-lg font-semibold text-purple-900">{summaryStats.totalSeatings}</p>
                 </div>
               </div>
@@ -158,11 +168,11 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <span className="text-2xl">⏱️</span>
+                  <span className="text-2xl" aria-hidden="true">⏱️</span>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-orange-800">Avg Duration</p>
-                  <p className="text-lg font-semibold text-orange-900">{summaryStats.avgDuration}m</p>
+                <div className="ms-3">
+                  <p className="text-sm font-medium text-orange-800">{t('tableAdmin.stats.avgDuration')}</p>
+                  <p className="text-lg font-semibold text-orange-900">{t('tableAdmin.stats.minutesShort', { count: summaryStats.avgDuration })}</p>
                 </div>
               </div>
             </div>
@@ -175,12 +185,14 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
             {summaryStats.topPerformingTable && (
               <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200">
                 <div className="flex items-center">
-                  <span className="text-3xl mr-3">🏆</span>
+                  <span className="text-3xl me-3" aria-hidden="true">🏆</span>
                   <div>
-                    <h4 className="font-semibold text-yellow-800">Top Performing Table</h4>
+                    <h4 className="font-semibold text-yellow-800">{t('tableAdmin.stats.topTable')}</h4>
                     <p className="text-yellow-700">
-                      Table {summaryStats.topPerformingTable.table_number} - 
-                      ${summaryStats.topPerformingTable.total_revenue} revenue
+                      {t('tableAdmin.stats.topTableLine', {
+                        n: summaryStats.topPerformingTable.table_number,
+                        amount: formatMoney(summaryStats.topPerformingTable.total_revenue),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -192,23 +204,23 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rank
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.rank')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Table
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.table')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Revenue
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.revenue')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Seatings
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.seatings')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Occupancy
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.occupancy')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Share
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('tableAdmin.stats.col.share')}
                     </th>
                   </tr>
                 </thead>
@@ -221,15 +233,15 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <span className="text-sm font-medium text-gray-900">
-                            Table {table.table_number}
+                            {t('tableAdmin.card.title', { n: table.table_number })}
                           </span>
-                          <span className="ml-2 text-xs text-gray-500">
-                            ({table.capacity} seats)
+                          <span className="ms-2 text-xs text-gray-500">
+                            ({t('tables.seats', { count: table.capacity })})
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${table.total_revenue}
+                        {formatMoney(table.total_revenue)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {table.total_seatings}
@@ -239,7 +251,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                          <div className="w-16 bg-gray-200 rounded-full h-2 me-2">
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{ width: `${Math.min(table.revenuePercentage, 100)}%` }}
@@ -259,7 +271,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
         {activeTab === 'revenue' && (
           <div className="space-y-6">
             <div className="bg-gray-50 p-6 rounded-lg">
-              <h4 className="text-lg font-medium text-gray-900 mb-4">💰 Revenue Analytics</h4>
+              <h4 className="text-lg font-medium text-gray-900 mb-4"><span aria-hidden="true">💰 </span>{t('tableAdmin.stats.revenueAnalytics')}</h4>
               <pre className="text-sm text-gray-600 overflow-auto">
                 {JSON.stringify(revenueBreakdown, null, 2)}
               </pre>
@@ -270,7 +282,7 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
         {activeTab === 'occupancy' && (
           <div className="space-y-6">
             <div className="bg-gray-50 p-6 rounded-lg">
-              <h4 className="text-lg font-medium text-gray-900 mb-4">🪑 Occupancy Trends</h4>
+              <h4 className="text-lg font-medium text-gray-900 mb-4"><span aria-hidden="true">🪑 </span>{t('tableAdmin.stats.occupancyTrends')}</h4>
               <pre className="text-sm text-gray-600 overflow-auto">
                 {JSON.stringify(occupancyTrends, null, 2)}
               </pre>
@@ -281,9 +293,9 @@ export default function EnhancedTableStats({ className = '' }: EnhancedTableStat
         {/* No Data State */}
         {!analytics.length && !loading && (
           <div className="text-center py-12">
-            <span className="text-6xl mb-4 block">📊</span>
-            <p className="text-gray-500 text-lg">No analytics data available</p>
-            <p className="text-gray-400 text-sm">Analytics will appear as tables are used</p>
+            <span className="text-6xl mb-4 block" aria-hidden="true">📊</span>
+            <p className="text-gray-500 text-lg">{t('tableAdmin.stats.noData')}</p>
+            <p className="text-gray-400 text-sm">{t('tableAdmin.stats.noDataHint')}</p>
           </div>
         )}
       </div>

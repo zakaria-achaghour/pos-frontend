@@ -194,9 +194,19 @@ export interface UpdateReservationRequest extends Partial<CreateReservationReque
 // TABLE COMPONENT PROPS
 // ============================================
 
+/** Filter values displayed by the table filter bar. */
+export interface TableFilterValues {
+  search?: string;
+  status?: string;
+  shape?: string;
+  location?: string;
+  minCapacity?: number | string;
+  maxCapacity?: number | string;
+}
+
 export interface TableFiltersProps {
-  filters: any;
-  onFilterChange: (key: string, value: any) => void;
+  filters: TableFilterValues;
+  onFilterChange: (key: string, value: string | number | undefined) => void;
   onClearFilters: () => void;
   statusOptions?: Array<{ value: TableStatus; label: string }>;
 }

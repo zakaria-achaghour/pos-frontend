@@ -1,11 +1,18 @@
+import { dynamicT } from '@/i18n/dynamic';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import PageMeta from '@/components/common/PageMeta';
+import PageBreadcrumb from '@/components/common/PageBreadCrumb';
+import { Button, Icon, StatusPill, useToast } from '@/components/kit';
+import { orderStatusStyle, priorityStyle } from '@/design/status';
+import { formatMoney } from '@/lib/money';
+import { authAPI } from '@/api/auth';
 import { orderAPI } from '@/api/orders';
 import { downloadReceipt, printReceipt } from '@/api/receipts';
-import {
-  getOrderStatusColor,
-  getPaymentStatusColor,
-  getKitchenStatusIcon
-} from '@/utils/orderStatus';
 import PaymentModal from '@/components/pos/orders/PaymentModal';
+import { normalizeOrder } from '@/services/adapter';
+import { errorMessage } from '@/lib/errors';
 
 // Backend response structure (snake_case)
 interface BackendOrderItem {
@@ -60,42 +67,29 @@ interface BackendOrder {
   order_items: BackendOrderItem[];
 }
 
-// Toast notification function
-const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  const toast = document.createElement('div');
-  toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium transition-all ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-    }`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    if (document.body.contains(toast)) {
-      document.body.removeChild(toast);
-    }
-  }, 3000);
-};
-
 export default function OrderDetails() {
   const { id } = useParams<{ id: string }>();
+  const { t, i18n } = useTranslation();
+  const toast = useToast();
   const [order, setOrder] = useState<BackendOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [receiptLoading, setReceiptLoading] = useState<'download' | 'print' | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const user = getUser();
+  const user = authAPI.getStoredUser();
 
-  const fetchOrder = async () => {
+  // `quiet` refreshes in the background without swapping the page for the loading state
+  // (needed while the payment dialog is open on its success screen)
+  const fetchOrder = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       const orderData = await orderAPI.getOrder(parseInt(id || '0'));
-      console.log('✅ Order data received:', orderData);
       setOrder(orderData as unknown as BackendOrder);
-      console.log('✅ Order state updated');
     } catch (error) {
       console.error('❌ Error fetching order:', error);
-      showToast('Failed to load order details', 'error');
+      toast.error(t('orderDetails.errors.load'));
     } finally {
       setLoading(false);
-      console.log('✅ Loading set to false');
     }
   };
 
@@ -118,12 +112,13 @@ export default function OrderDetails() {
     try {
       setProcessing(true);
       await orderAPI.updatePayment(orderId, paymentData);
-      showToast('Payment processed successfully', 'success');
-      setIsPaymentModalOpen(false);
-      fetchOrder(); // Refresh order data
-    } catch (error: any) {
+      toast.success(t('orderDetails.toast.paid'));
+      // Keep the dialog open: its success screen offers Print / Download. Refresh quietly behind it.
+      void fetchOrder(true);
+    } catch (error) {
       console.error('Payment update failed:', error);
-      showToast(error.response?.data?.message || 'Failed to process payment', 'error');
+      toast.error(errorMessage(error, t('orderDetails.errors.payment')));
+      throw error; // let PaymentModal know the payment failed
     } finally {
       setProcessing(false);
     }
@@ -135,11 +130,11 @@ export default function OrderDetails() {
       if (!order) return;
 
       await orderAPI.updateOrderStatus(order.id, newStatus);
-      showToast(`Order status updated to ${newStatus}`, 'success');
+      toast.success(t('orderDetails.toast.statusUpdated', { status: dynamicT(`status.${newStatus}`, { defaultValue: newStatus }) }));
       fetchOrder(); // Refresh order data
     } catch (error) {
       console.error('Error updating order status:', error);
-      showToast('Failed to update order status', 'error');
+      toast.error(t('orderDetails.errors.status'));
     } finally {
       setProcessing(false);
     }
@@ -150,10 +145,10 @@ export default function OrderDetails() {
     try {
       setReceiptLoading('download');
       await downloadReceipt(order.id, 'pdf');
-      showToast('Receipt downloaded successfully', 'success');
+      toast.success(t('orderDetails.toast.downloaded'));
     } catch (error) {
       console.error('Error downloading receipt:', error);
-      showToast('Failed to download receipt', 'error');
+      toast.error(t('orderDetails.errors.download'));
     } finally {
       setReceiptLoading(null);
     }
@@ -164,10 +159,10 @@ export default function OrderDetails() {
     try {
       setReceiptLoading('print');
       await printReceipt(order.id);
-      showToast('Opening receipt for printing...', 'success');
+      toast.success(t('orderDetails.toast.printing'));
     } catch (error) {
       console.error('Error printing receipt:', error);
-      showToast('Failed to print receipt', 'error');
+      toast.error(t('orderDetails.errors.print'));
     } finally {
       setReceiptLoading(null);
     }
@@ -187,22 +182,20 @@ export default function OrderDetails() {
       order?.status === 'served';
   };
 
-  const getPaymentStatus = () => {
-    if (order?.paid_at && order?.payment_method) {
-      return 'completed';
-    }
-    return 'pending';
+  const typeLabel = (type: string) => {
+    const key = type === 'dine-in' ? 'dineIn' : type;
+    return dynamicT(`order.type.${key}`, { defaultValue: type });
   };
 
   const getTableDisplay = () => {
     if (order?.table) {
-      return `Table ${order.table.number}`;
+      return t('order.tableNumber', { n: order.table.number });
     }
-    return order?.type === 'takeout' ? 'Takeout' : order?.type === 'delivery' ? 'Delivery' : 'N/A';
+    return order?.type === 'takeout' ? t('order.type.takeout') : order?.type === 'delivery' ? t('order.type.delivery') : t('orderDetails.notAvailable');
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString(i18n.language, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -214,9 +207,9 @@ export default function OrderDetails() {
   if (loading) {
     return (
       <div>
-        <PageMeta title="Order Details | POS System" description="View order details" />
-        <PageBreadcrumb pageTitle="Order Details" />
-        <div className="space-y-6 animate-pulse">
+        <PageMeta title={t('orderDetails.meta.title')} description={t('orderDetails.meta.description')} />
+        <PageBreadcrumb pageTitle={t('orderDetails.title')} />
+        <div role="status" aria-label={t('common.loading')} className="space-y-6 animate-pulse">
           <div className="bg-white rounded-xl shadow p-6">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
             <div className="space-y-2">
@@ -241,10 +234,10 @@ export default function OrderDetails() {
   if (!order) {
     return (
       <div>
-        <PageMeta title="Order Details | POS System" description="View order details" />
-        <PageBreadcrumb pageTitle="Order Details" />
+        <PageMeta title={t('orderDetails.meta.title')} description={t('orderDetails.meta.description')} />
+        <PageBreadcrumb pageTitle={t('orderDetails.title')} />
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">Order not found</p>
+          <p className="text-red-600">{t('orderDetails.notFound')}</p>
         </div>
       </div>
     );
@@ -252,55 +245,55 @@ export default function OrderDetails() {
 
   return (
     <div>
-      <PageMeta title={`Order #${order.id} | POS System`} description="View order details" />
-      <PageBreadcrumb pageTitle={`Order #${order.id}`} />
+      <PageMeta title={t('orderDetails.meta.orderTitle', { n: order.id })} description={t('orderDetails.meta.description')} />
+      <PageBreadcrumb pageTitle={t('orders.orderNumber', { n: order.id })} />
 
       <div className="space-y-6">
         {/* Order Header */}
         <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Order #{order.id}</h2>
-              <p className="text-sm text-gray-500 mt-1">Order ID: {order.id}</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('orders.orderNumber', { n: order.id })}</h2>
+              <p className="text-sm text-gray-500 mt-1">{t('orderDetails.orderId', { id: order.id })}</p>
             </div>
             <div className="flex gap-2">
               {/* Order Status Badge */}
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getOrderStatusColor(order.status)}`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </span>
+              <StatusPill
+                style={orderStatusStyle(order.status)}
+                label={dynamicT(`status.${order.status}`, { defaultValue: order.status })}
+              />
               {/* Payment Status Badge */}
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(getPaymentStatus())}`}>
-                {order.paid_at ? '💳 Paid' : '⏳ Unpaid'}
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${order.paid_at ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}
+              >
+                {order.paid_at ? t('orderDetails.paid') : t('orderDetails.unpaid')}
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Table:</span>
+              <span className="text-gray-500">{t('orderDetails.table')}</span>
               <p className="font-medium">{getTableDisplay()}</p>
             </div>
             <div>
-              <span className="text-gray-500">Time:</span>
+              <span className="text-gray-500">{t('orderDetails.time')}</span>
               <p className="font-medium">{formatDate(order.created_at)}</p>
             </div>
             <div>
-              <span className="text-gray-500">Type:</span>
-              <p className="font-medium capitalize">{order.type}</p>
+              <span className="text-gray-500">{t('orderDetails.type')}</span>
+              <p className="font-medium">{typeLabel(order.type)}</p>
             </div>
             <div>
-              <span className="text-gray-500">Total:</span>
-              <p className="font-bold text-lg">{parseFloat(order.total).toFixed(2)} MAD</p>
+              <span className="text-gray-500">{t('orderDetails.total')}</span>
+              <p className="font-bold text-lg">{formatMoney(order.total)}</p>
             </div>
           </div>
 
           {order.priority && order.priority !== 'normal' && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${order.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                order.priority === 'high' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-blue-100 text-blue-800'
-                }`}>
-                {order.priority === 'urgent' ? '🔴' : order.priority === 'high' ? '🟡' : '🔵'} Priority: {order.priority.toUpperCase()}
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${priorityStyle(order.priority).pill}`}>
+                {t('orderDetails.priority', { priority: dynamicT(`priority.${order.priority}`, { defaultValue: order.priority }) })}
               </span>
             </div>
           )}
@@ -309,7 +302,7 @@ export default function OrderDetails() {
         {/* Order Items */}
         <div className="bg-white rounded-xl shadow">
           <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">Items</h3>
+            <h3 className="text-xl font-semibold text-gray-900">{t('orderDetails.items')}</h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">
@@ -319,40 +312,42 @@ export default function OrderDetails() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h4 className="font-medium text-gray-900">
-                          {item.menu_item?.name || `Item #${item.menu_item_id}`}
+                          {item.menu_item?.name || t('orderDetails.itemFallback', { n: item.menu_item_id })}
                         </h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
-                          {getKitchenStatusIcon(order.status)} {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
+                        <StatusPill
+                          style={orderStatusStyle(order.status)}
+                          label={dynamicT(`status.${order.status}`, { defaultValue: order.status })}
+                          size="sm"
+                        />
                       </div>
-                      <p className="text-sm text-gray-500">{parseFloat(item.unit_price).toFixed(2)} MAD each</p>
+                      <p className="text-sm text-gray-500">{t('orderDetails.each', { price: formatMoney(item.unit_price) })}</p>
 
                       {/* Special Instructions */}
                       {item.special_instructions && (
                         <p className="text-sm text-blue-600 mt-2">
-                          <span className="font-medium">📝 Note:</span> {item.special_instructions}
+                          <span className="font-medium">{t('orderDetails.note')}</span> {item.special_instructions}
                         </p>
                       )}
 
                       {/* Removed Ingredients */}
                       {item.removed_ingredients && item.removed_ingredients.length > 0 && (
                         <p className="text-sm text-red-600 mt-2">
-                          <span className="font-medium">❌ No:</span> {item.removed_ingredients.join(', ')}
+                          <span className="font-medium">{t('orderDetails.without')}</span> {item.removed_ingredients.join(', ')}
                         </p>
                       )}
 
                       {/* Added Extras */}
                       {item.added_extras && item.added_extras.length > 0 && (
                         <p className="text-sm text-green-600 mt-2">
-                          <span className="font-medium">➕ Extra:</span> {item.added_extras.join(', ')}
+                          <span className="font-medium">{t('orderDetails.extra')}</span> {item.added_extras.join(', ')}
                         </p>
                       )}
                     </div>
                     <div className="text-center min-w-[80px]">
                       <span className="text-gray-600 text-lg">× {item.quantity}</span>
                     </div>
-                    <div className="text-right min-w-[120px]">
-                      <span className="font-semibold text-lg">{(parseFloat(item.unit_price) * item.quantity).toFixed(2)} MAD</span>
+                    <div className="text-end min-w-[120px]">
+                      <span className="font-semibold text-lg">{formatMoney(parseFloat(item.unit_price) * item.quantity)}</span>
                     </div>
                   </div>
                 </div>
@@ -362,24 +357,24 @@ export default function OrderDetails() {
             {/* Order Summary */}
             <div className="border-t border-gray-200 pt-6 mt-6 space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="font-medium">{parseFloat(order.subtotal).toFixed(2)} MAD</span>
+                <span className="text-gray-600">{t('orderDetails.subtotal')}</span>
+                <span className="font-medium">{formatMoney(order.subtotal)}</span>
               </div>
               {parseFloat(order.tax_amount) > 0 && (
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Tax:</span>
-                  <span className="font-medium">{parseFloat(order.tax_amount).toFixed(2)} MAD</span>
+                  <span className="text-gray-600">{t('orderDetails.tax')}</span>
+                  <span className="font-medium">{formatMoney(order.tax_amount)}</span>
                 </div>
               )}
               {parseFloat(order.discount_amount) > 0 && (
                 <div className="flex justify-between items-center text-sm text-green-600">
-                  <span>Discount:</span>
-                  <span className="font-medium">-{parseFloat(order.discount_amount).toFixed(2)} MAD</span>
+                  <span>{t('orderDetails.discount')}</span>
+                  <span className="font-medium">-{formatMoney(order.discount_amount)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-                <span className="text-lg font-medium text-gray-600">Order Total:</span>
-                <span className="text-2xl font-bold text-green-600">{parseFloat(order.total).toFixed(2)} MAD</span>
+                <span className="text-lg font-medium text-gray-600">{t('orderDetails.orderTotal')}</span>
+                <span className="text-2xl font-bold text-green-600">{formatMoney(order.total)}</span>
               </div>
             </div>
           </div>
@@ -389,60 +384,35 @@ export default function OrderDetails() {
         {user && ['owner', 'manager', 'waiter'].includes(user.role) &&
           order.status !== 'completed' && order.status !== 'cancelled' && (
             <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Update Order Status</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.updateStatus')}</h3>
               <div className="flex flex-wrap gap-3">
                 {order.status === 'pending' && (
-                  <Button
-                    onClick={() => handleUpdateStatus('accepted')}
-                    disabled={processing}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    ✅ Accept Order
+                  <Button onClick={() => handleUpdateStatus('accepted')} disabled={processing}>
+                    {t('orderDetails.actions.accept')}
                   </Button>
                 )}
                 {(order.status === 'accepted' || order.status === 'pending') && (
-                  <Button
-                    onClick={() => handleUpdateStatus('preparing')}
-                    disabled={processing}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    👨‍🍳 Start Preparing
+                  <Button onClick={() => handleUpdateStatus('preparing')} disabled={processing}>
+                    {t('orderDetails.actions.startPreparing')}
                   </Button>
                 )}
                 {order.status === 'preparing' && (
-                  <Button
-                    onClick={() => handleUpdateStatus('ready')}
-                    disabled={processing}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    ✅ Mark Ready
+                  <Button onClick={() => handleUpdateStatus('ready')} disabled={processing}>
+                    {t('orderDetails.actions.markReady')}
                   </Button>
                 )}
                 {order.status === 'ready' && (
-                  <Button
-                    onClick={() => handleUpdateStatus('served')}
-                    disabled={processing}
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    🍽️ Mark Served
+                  <Button onClick={() => handleUpdateStatus('served')} disabled={processing}>
+                    {t('orderDetails.actions.markServed')}
                   </Button>
                 )}
                 {order.status === 'served' && order.paid_at && (
-                  <Button
-                    onClick={() => handleUpdateStatus('completed')}
-                    disabled={processing}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    ✓ Complete Order
+                  <Button variant="success" onClick={() => handleUpdateStatus('completed')} disabled={processing}>
+                    {t('orderDetails.actions.complete')}
                   </Button>
                 )}
-                <Button
-                  onClick={() => handleUpdateStatus('cancelled')}
-                  disabled={processing}
-                  variant="outline"
-                  className="border-red-300 text-red-600 hover:bg-red-50"
-                >
-                  ❌ Cancel Order
+                <Button variant="danger" onClick={() => handleUpdateStatus('cancelled')} disabled={processing}>
+                  {t('orderDetails.actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -451,36 +421,21 @@ export default function OrderDetails() {
         {/* Receipt Actions */}
         {isReceiptAvailable() && (
           <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Receipt Actions</h3>
-            <div className="flex gap-3">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.receiptActions')}</h3>
+            <div className="flex flex-wrap gap-3">
               <Button
+                variant="secondary"
                 onClick={handlePrintReceipt}
-                disabled={receiptLoading === 'print'}
-                variant="outline"
-                className="border-gray-300 hover:bg-gray-50"
+                loading={receiptLoading === 'print'}
               >
-                {receiptLoading === 'print' ? (
-                  <>
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full inline-block"></div>
-                    Printing...
-                  </>
-                ) : (
-                  <>🖨️ Print Receipt</>
-                )}
+                {receiptLoading === 'print' ? t('orderDetails.printing') : t('orderDetails.printReceipt')}
               </Button>
               <Button
+                variant="danger"
                 onClick={handleDownloadReceipt}
-                disabled={receiptLoading === 'download'}
-                className="bg-red-600 hover:bg-red-700"
+                loading={receiptLoading === 'download'}
               >
-                {receiptLoading === 'download' ? (
-                  <>
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block"></div>
-                    Downloading...
-                  </>
-                ) : (
-                  <>📄 Download PDF</>
-                )}
+                {receiptLoading === 'download' ? t('orderDetails.downloading') : t('orderDetails.downloadPdf')}
               </Button>
             </div>
           </div>
@@ -489,17 +444,17 @@ export default function OrderDetails() {
         {/* Payment Actions */}
         {canProcessPayment() && (
           <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.paymentActions')}</h3>
             <div className="flex gap-3">
               <Button
+                variant="success"
+                fullWidth
+                size="lg"
                 onClick={handlePaymentRequest}
                 disabled={processing}
-                className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {processing ? 'Processing...' : `Process Payment (${parseFloat(order.total).toFixed(2)} MAD)`}
+                <Icon name="check" className="h-5 w-5" />
+                {processing ? t('orderDetails.processing') : t('orderDetails.processPayment', { amount: formatMoney(order.total) })}
               </Button>
             </div>
           </div>
@@ -508,8 +463,11 @@ export default function OrderDetails() {
 
       <PaymentModal
         isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        order={order}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          void fetchOrder(true);
+        }}
+        order={order ? normalizeOrder(order as unknown as Record<string, unknown>) : null}
         onConfirm={handleConfirmPayment}
       />
     </div>

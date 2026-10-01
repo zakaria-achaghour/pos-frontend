@@ -1,6 +1,6 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CategoryListProps } from '@/types/menu';
-
 
 const CategoryList: React.FC<CategoryListProps> = ({
   categories,
@@ -10,9 +10,15 @@ const CategoryList: React.FC<CategoryListProps> = ({
   onToggleStatus,
   hasFilters = false,
 }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div
+        role="status"
+        aria-label={t('common.loading')}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      >
         {[...Array(8)].map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="bg-gray-200 h-48 rounded-lg"></div>
@@ -25,16 +31,14 @@ const CategoryList: React.FC<CategoryListProps> = ({
   if (categories.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400 text-5xl mb-4">
-          {hasFilters ? '�' : '�📁'}
+        <div className="text-gray-400 text-5xl mb-4" aria-hidden="true">
+          {hasFilters ? '🔍' : '📁'}
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          {hasFilters ? 'No categories found' : 'No categories yet'}
+          {hasFilters ? t('categoriesAdmin.list.emptyFiltered') : t('categoriesAdmin.list.emptyNone')}
         </h3>
         <p className="text-gray-600">
-          {hasFilters
-            ? 'Try adjusting your filters or search terms to find what you\'re looking for.'
-            : 'Get started by creating your first category to organize your menu items.'}
+          {hasFilters ? t('categoriesAdmin.list.emptyFilteredHint') : t('categoriesAdmin.list.emptyNoneHint')}
         </p>
       </div>
     );
@@ -51,7 +55,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">📂</span>
+                <span className="text-2xl" aria-hidden="true">📂</span>
                 <h3 className="font-semibold text-gray-900 truncate">{category.name}</h3>
               </div>
               <div className="flex items-center gap-2">
@@ -62,7 +66,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >
-                  {category.is_active ? 'Active' : 'Inactive'}
+                  {category.is_active ? t('categoriesAdmin.list.active') : t('categoriesAdmin.list.inactive')}
                 </span>
               </div>
             </div>
@@ -77,7 +81,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
 
           {/* Menu Items Count (placeholder) */}
           <div className="mb-4 text-sm text-gray-500">
-            <span className="font-medium">0</span> menu items
+            {t('categoriesAdmin.list.itemsCount', { count: 0 })}
           </div>
 
           {/* Actions */}
@@ -85,6 +89,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
             {/* Toggle Status */}
             {onToggleStatus && (
               <button
+                type="button"
                 onClick={() => onToggleStatus(category.id)}
                 className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                   category.is_active
@@ -92,23 +97,25 @@ const CategoryList: React.FC<CategoryListProps> = ({
                     : 'bg-green-50 text-green-700 hover:bg-green-100'
                 }`}
               >
-                {category.is_active ? '✗ Deactivate' : '✓ Activate'}
+                {category.is_active ? `✗ ${t('categoriesAdmin.list.deactivate')}` : `✓ ${t('categoriesAdmin.list.activate')}`}
               </button>
             )}
 
             {/* Edit & Delete */}
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => onEdit(category)}
                 className="flex-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
               >
-                ✏️ Edit
+                {t('categoriesAdmin.list.edit')}
               </button>
               <button
+                type="button"
                 onClick={() => onDelete(category.id)}
                 className="flex-1 px-4 py-2 bg-gray-50 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
               >
-                🗑️ Delete
+                {t('categoriesAdmin.list.delete')}
               </button>
             </div>
           </div>
@@ -117,7 +124,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
           {!category.is_active && (
             <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
               <div className="text-xs text-red-800">
-                ⚠️ This category is inactive and won't appear in the POS
+                {t('categoriesAdmin.list.inactiveWarning')}
               </div>
             </div>
           )}

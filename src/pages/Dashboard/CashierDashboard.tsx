@@ -1,11 +1,15 @@
+import { dynamicT } from '@/i18n/dynamic';
 import React, { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import PageMeta from '@/components/common/PageMeta';
 import PageBreadcrumb from '@/components/common/PageBreadCrumb';
 import Alert from '@/components/ui/alert/Alert';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/ui/button/Button';
 import { useAuth } from '@/hooks/useAuthRedux';
-import { useCurrency } from '@/hooks/useConfig';
+import { useToast } from '@/components/kit';
+import { printReceipt, downloadReceipt } from '@/api/receipts';
+import { formatMoney } from '@/lib/money';
 import { useCashierShift } from '@/hooks/useCashierShift';
 import { useCashierDashboard } from '@/hooks/useCashierDashboard';
 import type { CashierDashboardOrder, CashierTotalsByMethod } from '@/types/cashier';
@@ -30,7 +34,9 @@ const parseShiftDate = (value?: string | null): Date | null => {
 
 const CashierDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { formatCurrency } = useCurrency();
+  const toast = useToast();
+  const { t, i18n } = useTranslation();
+  const timeLocale = i18n.language.startsWith('ar') ? 'ar-MA-u-nu-latn' : i18n.language;
   const [scope, setScope] = useState<'self' | 'all'>('self');
   const {
     currentShift,
@@ -68,12 +74,12 @@ const CashierDashboard: React.FC = () => {
       const diff = Date.now() - shiftStartDate.getTime();
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      setElapsed(`${hours}h ${minutes}m`);
+      setElapsed(t('cashier.elapsedValue', { hours, minutes }));
     };
     update();
     const id = setInterval(update, 60000);
     return () => clearInterval(id);
-  }, [currentShift]);
+  }, [currentShift, shiftStartDate, t]);
 
   const byMethod = useMemo(
     () => formatMethodEntries(data?.totals?.by_method),
@@ -84,7 +90,7 @@ const CashierDashboard: React.FC = () => {
     e.preventDefault();
     const amount = parseFloat(openingAmount);
     if (Number.isNaN(amount)) {
-      setShiftError('Please enter an opening amount.');
+      setShiftError(t('cashier.openingAmountRequired'));
       return;
     }
     await openShift({ opening_amount: amount, note: openingNote || undefined });
@@ -96,7 +102,7 @@ const CashierDashboard: React.FC = () => {
     e.preventDefault();
     const amount = parseFloat(closingAmount);
     if (Number.isNaN(amount)) {
-      setShiftError('Please enter a closing amount.');
+      setShiftError(t('cashier.closingAmountRequired'));
       return;
     }
     await closeShift({ closing_amount: amount, note: closingNote || undefined });
@@ -107,19 +113,20 @@ const CashierDashboard: React.FC = () => {
     refresh();
   };
 
+  // Authenticated fetch (a plain window.open('/api/...') sends no Bearer token and gets a 401)
   const handlePrintReceipt = (orderId: number) => {
-    window.open(`/api/orders/${orderId}/receipt?auto_print=1`, '_blank', 'noopener,noreferrer');
+    printReceipt(orderId).catch(() => toast.error(t('payment.receiptFailed')));
   };
 
   const handleDownloadReceipt = (orderId: number) => {
-    window.open(`/api/orders/${orderId}/receipt?format=pdf`, '_blank', 'noopener,noreferrer');
+    downloadReceipt(orderId, 'pdf').catch(() => toast.error(t('cashier.downloadFailed')));
   };
 
   const renderOrders = (orders: CashierDashboardOrder[]) => {
     if (!orders.length) {
       return (
         <div className="text-center text-gray-500 py-8">
-          No paid orders yet today.
+          {t('cashier.noPaidOrders')}
         </div>
       );
     }
@@ -138,12 +145,12 @@ const CashierDashboard: React.FC = () => {
                       : 'bg-blue-100 text-blue-700'
                   }`}
                 >
-                  {order.payment_method.toUpperCase()}
+                  {dynamicT(`payment.method.${order.payment_method}`, { defaultValue: order.payment_method }).toUpperCase()}
                 </span>
               </div>
               <p className="text-sm text-gray-500">
-                {order.table_label || 'No table'} • Paid{' '}
-                {new Date(order.paid_at).toLocaleTimeString([], {
+                {order.table_label || t('cashier.noTable')} • {t('cashier.paidAt')}{' '}
+                {new Date(order.paid_at).toLocaleTimeString(timeLocale, {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
@@ -151,19 +158,19 @@ const CashierDashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-900">
-                {formatCurrency(order.total)}
+                {formatMoney(order.total)}
               </span>
               <button
                 onClick={() => handlePrintReceipt(order.id)}
                 className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50"
               >
-                Print
+                {t('cashier.print')}
               </button>
               <button
                 onClick={() => handleDownloadReceipt(order.id)}
                 className="px-3 py-1 text-sm border rounded-lg hover:bg-gray-50"
               >
-                PDF
+                {t('cashier.pdf')}
               </button>
             </div>
           </div>
@@ -174,34 +181,32 @@ const CashierDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      <PageMeta title="Cashier Dashboard | POS" description="Cashier operations dashboard" />
-      <PageBreadcrumb pageTitle="Cashier Dashboard" />
+      <PageMeta title={t('cashier.metaTitle')} description={t('cashier.metaDescription')} />
+      <PageBreadcrumb pageTitle={t('nav.cashierDashboard')} />
 
       {shiftError && (
         <Alert
           variant="error"
-          title="Shift Warning"
+          title={t('cashier.shiftWarning')}
           message={shiftError}
-          onClose={() => setShiftError(null)}
         />
       )}
       {dashboardError && (
         <Alert
           variant="warning"
-          title="Dashboard"
+          title={t('nav.dashboard')}
           message={dashboardError}
-          onClose={refresh}
         />
       )}
 
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.name}</h1>
-          <p className="text-gray-500">Monitor your shift and payments in real time.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('cashier.welcome', { name: user?.name })}</h1>
+          <p className="text-gray-500">{t('cashier.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={refresh} disabled={dashboardLoading}>
-            {dashboardLoading ? 'Refreshing...' : 'Refresh'}
+            {dashboardLoading ? t('cashier.refreshing') : t('common.refresh')}
           </Button>
           {canViewAll && (
             <select
@@ -209,8 +214,8 @@ const CashierDashboard: React.FC = () => {
               onChange={(e) => setScope(e.target.value as 'self' | 'all')}
               className="px-3 py-2 border rounded-lg"
             >
-              <option value="self">My totals</option>
-              <option value="all">All cashiers</option>
+              <option value="self">{t('cashier.myTotals')}</option>
+              <option value="all">{t('cashier.allCashiers')}</option>
             </select>
           )}
         </div>
@@ -219,29 +224,29 @@ const CashierDashboard: React.FC = () => {
       {/* Shift Widget */}
       <div className="bg-white rounded-lg shadow p-6">
         {shiftLoading ? (
-          <div className="text-gray-500">Loading shift...</div>
+          <div className="text-gray-500">{t('cashier.loadingShift')}</div>
         ) : currentShift ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Current shift</p>
+                <p className="text-sm text-gray-500">{t('cashier.currentShift')}</p>
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Started{' '}
+                  {t('cashier.started')}{' '}
                   {shiftStartDate
-                    ? shiftStartDate.toLocaleTimeString([], {
+                    ? shiftStartDate.toLocaleTimeString(timeLocale, {
                         hour: '2-digit',
                         minute: '2-digit',
                       })
-                    : 'Unknown'}
+                    : t('cashier.unknown')}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Elapsed: {elapsed || '0h 0m'}
+                  {t('cashier.elapsed', { value: elapsed || t('cashier.elapsedValue', { hours: 0, minutes: 0 }) })}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Opening cash</p>
+              <div className="text-end">
+                <p className="text-sm text-gray-500">{t('cashier.openingCash')}</p>
                 <p className="text-lg font-semibold">
-                  {formatCurrency(currentShift.opening_amount)}
+                  {formatMoney(currentShift.opening_amount)}
                 </p>
               </div>
             </div>
@@ -253,14 +258,14 @@ const CashierDashboard: React.FC = () => {
                 setClosingNote('');
               }}
             >
-              Close Shift
+              {t('cashier.closeShift')}
             </Button>
           </div>
         ) : (
           <form onSubmit={handleOpenShift} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Opening Cash Float
+                {t('cashier.openingFloat')}
               </label>
               <input
                 type="number"
@@ -276,7 +281,7 @@ const CashierDashboard: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Note (optional)
+                {t('cashier.noteOptional')}
               </label>
               <textarea
                 value={openingNote}
@@ -291,7 +296,7 @@ const CashierDashboard: React.FC = () => {
               className="w-full bg-blue-600 text-white hover:bg-blue-700"
               disabled={isActionLoading}
             >
-              {isActionLoading ? 'Opening…' : 'Open Shift'}
+              {isActionLoading ? t('cashier.opening') : t('cashier.openShift')}
             </Button>
           </form>
         )}
@@ -300,18 +305,18 @@ const CashierDashboard: React.FC = () => {
       {/* Totals */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500">Overall paid today</p>
+          <p className="text-sm text-gray-500">{t('cashier.overallPaid')}</p>
           <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(data?.totals?.overall || 0)}
+            {formatMoney(data?.totals?.overall || 0)}
           </p>
         </div>
         {byMethod.map((entry) => (
           <div key={entry.method} className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-500">
-              {entry.method === 'cash' ? 'Cash' : 'Card'} total
+              {t('cashier.methodTotal', { method: entry.method === 'cash' ? t('payment.method.cash') : t('payment.method.card') })}
             </p>
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(entry.amount)}
+              {formatMoney(entry.amount)}
             </p>
           </div>
         ))}
@@ -320,14 +325,14 @@ const CashierDashboard: React.FC = () => {
       {/* Orders list */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Paid Orders</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('cashier.paidOrders')}</h3>
           {data?.orders && (
-            <span className="text-sm text-gray-500">{data.orders.length} orders</span>
+            <span className="text-sm text-gray-500">{t('cashier.ordersCount', { count: data.orders.length })}</span>
           )}
         </div>
         <div className="p-4">
           {dashboardLoading ? (
-            <div className="text-center text-gray-500">Loading orders…</div>
+            <div className="text-center text-gray-500">{t('cashier.loadingOrders')}</div>
           ) : (
             renderOrders(data?.orders || [])
           )}
@@ -335,11 +340,11 @@ const CashierDashboard: React.FC = () => {
       </div>
 
       {/* Close shift modal */}
-      <Modal isOpen={closingModalOpen} onClose={() => setClosingModalOpen(false)} title="Close Shift">
+      <Modal isOpen={closingModalOpen} onClose={() => setClosingModalOpen(false)} title={t('cashier.closeShift')}>
         <form onSubmit={handleCloseShift} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Closing Cash Amount
+              {t('cashier.closingAmount')}
             </label>
             <input
               type="number"
@@ -354,7 +359,7 @@ const CashierDashboard: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (optional)
+              {t('cashier.notesOptional')}
             </label>
             <textarea
               value={closingNote}
@@ -371,14 +376,14 @@ const CashierDashboard: React.FC = () => {
               className="flex-1"
               onClick={() => setClosingModalOpen(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-red-500 hover:bg-red-600 text-white"
               disabled={isActionLoading}
             >
-              {isActionLoading ? 'Closing…' : 'Close Shift'}
+              {isActionLoading ? t('cashier.closing') : t('cashier.closeShift')}
             </Button>
           </div>
         </form>
