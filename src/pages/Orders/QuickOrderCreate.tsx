@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { menuAPI } from '@/api/menu';
 import { orderAPI } from '@/api/orders';
@@ -9,11 +9,16 @@ import { OrderCart } from '@/components/pos/orders/OrderCart';
 import { OrderFilters } from '@/components/pos/orders/OrderFilters';
 import { CategoryTabs } from '@/components/pos/orders/CategoryTabs';
 import { AddItemModal } from '@/components/pos/orders/AddItemModal';
-import type { MenuItem } from '@/types/menu';
+import type { MenuItem, Category, MenuItemFilters } from '@/types/menu';
+import type { CreateOrderData } from '@/types/order';
 import type { Table } from '@/types/table';
-import { MODAL_BACKDROP_CLASS, MODAL_OVERLAY_BASE_CLASS } from '@/utils/modalStyles';
+import { useTranslation } from 'react-i18next';
+import { Button, Modal, Skeleton, useToast } from '@/components/kit';
+import { formatMoney } from '@/lib/money';
+import { errorMessage } from '@/lib/errors';
 
 interface CartItem {
+  line_id: string;
   menu_item_id: number;
   name: string;
   price: number;
@@ -24,14 +29,45 @@ interface CartItem {
   originalItem: MenuItem;
 }
 
+// The create endpoint accepts more than the shared CreateOrderData type declares.
+type QuickOrderPayload = Omit<CreateOrderData, 'items'> & {
+  priority: string;
+  waiter_id?: number;
+  items: (CreateOrderData['items'][number] & {
+    removed_ingredients?: string[];
+    added_extras?: string[];
+  })[];
+};
+
+let cartLineCounter = 0;
+const newLineId = () => `line-${Date.now()}-${++cartLineCounter}`;
+
+// Two cart lines are the same line only if item and customizations match
+const customizationKey = (
+  menuItemId: number,
+  instructions?: string,
+  removed?: string[],
+  extras?: string[]
+) => JSON.stringify([
+  menuItemId,
+  instructions?.trim() || '',
+  [...(removed ?? [])].sort(),
+  [...(extras ?? [])].sort(),
+]);
+
+type PaymentDecision = { collectNow: boolean; method?: 'cash' | 'card' | undefined };
+
 export default function QuickOrderCreate() {
   const navigate = useNavigate();
   const location = useLocation();
   const preSelectedTableId = location.state?.tableId;
   const { user } = useAuth(); // Get current user (waiter/cashier/manager/owner)
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
 
   // Data states
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
 
@@ -40,10 +76,12 @@ export default function QuickOrderCreate() {
   const [selectedTable, setSelectedTable] = useState<number | ''>(preSelectedTableId || '');
   const [orderType, setOrderType] = useState<'dine-in' | 'takeout' | 'delivery'>('dine-in');
   const [customerName, setCustomerName] = useState('');
-  const [priority, setPriority] = useState<'normal' | 'high' | 'urgent'>('normal');
+  const [priority, setPriority] = useState<'normal' | 'rush' | 'urgent'>('normal');
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const isFirstSearchRun = useRef(true);
+  const menuRequestId = useRef(0);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -62,8 +100,6 @@ export default function QuickOrderCreate() {
 
   // Payment states (for pay-at-creation scenarios)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | null>(null);
-  const [collectPaymentNow, setCollectPaymentNow] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -95,7 +131,7 @@ export default function QuickOrderCreate() {
       setTables(availableTables);
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      setError('Failed to load data');
+      setError(t('order.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -103,6 +139,11 @@ export default function QuickOrderCreate() {
 
   // Debounced search effect
   useEffect(() => {
+    // The initial load already fetched items; only react to real search changes
+    if (isFirstSearchRun.current) {
+      isFirstSearchRun.current = false;
+      return undefined;
+    }
     const timer = setTimeout(() => {
       setPage(1);
       fetchMenuItems(selectedCategory, 1, searchTerm, true);
@@ -118,6 +159,8 @@ export default function QuickOrderCreate() {
     search: string = '',
     reset: boolean = false
   ) => {
+    // Only the latest request may update state (a slow older response must not overwrite a newer one)
+    const requestId = ++menuRequestId.current;
     try {
       if (pageNum === 1) {
         setItemsLoading(true);
@@ -126,7 +169,7 @@ export default function QuickOrderCreate() {
       }
 
       // Build filters
-      const filters: any = {
+      const filters: MenuItemFilters & { search?: string } = {
         is_active: true,
         page: pageNum,
         limit: ITEMS_PER_PAGE,
@@ -141,6 +184,7 @@ export default function QuickOrderCreate() {
       }
 
       const menuResponse = await menuAPI.getItems(filters);
+      if (requestId !== menuRequestId.current) return;
 
       // Handle response format (support both array and paginated object)
       let newItems: MenuItem[] = [];
@@ -167,11 +211,14 @@ export default function QuickOrderCreate() {
       setHasMore(newItems.length === ITEMS_PER_PAGE && currentCount < totalItems);
 
     } catch (err) {
+      if (requestId !== menuRequestId.current) return;
       console.error('Failed to fetch menu items:', err);
       setError('Failed to load menu items');
     } finally {
-      setItemsLoading(false);
-      setIsLoadingMore(false);
+      if (requestId === menuRequestId.current) {
+        setItemsLoading(false);
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -207,6 +254,7 @@ export default function QuickOrderCreate() {
       if (editingCartItemIndex !== null) {
         const newCart = [...prevCart];
         newCart[editingCartItemIndex] = {
+          line_id: newCart[editingCartItemIndex]?.line_id ?? newLineId(),
           menu_item_id: item.id,
           name: item.name,
           price: Number(item.price),
@@ -220,22 +268,27 @@ export default function QuickOrderCreate() {
       }
 
       // Normal add logic
+      const newKey = customizationKey(item.id, specialInstructions, removedIngredients, addedExtras);
       const existingItemIndex = prevCart.findIndex(cartItem =>
-        cartItem.menu_item_id === item.id &&
-        cartItem.special_instructions === specialInstructions &&
-        JSON.stringify(cartItem.removed_ingredients) === JSON.stringify(removedIngredients) &&
-        JSON.stringify(cartItem.added_extras) === JSON.stringify(addedExtras)
+        customizationKey(
+          cartItem.menu_item_id,
+          cartItem.special_instructions,
+          cartItem.removed_ingredients,
+          cartItem.added_extras
+        ) === newKey
       );
 
       if (existingItemIndex !== -1) {
         const newCart = [...prevCart];
+        const existingItem = newCart[existingItemIndex]!;
         newCart[existingItemIndex] = {
-          ...newCart[existingItemIndex],
-          quantity: newCart[existingItemIndex].quantity + quantity
+          ...existingItem,
+          quantity: existingItem.quantity + quantity
         };
         return newCart;
       } else {
         const newItem: CartItem = {
+          line_id: newLineId(),
           menu_item_id: item.id,
           name: item.name,
           price: Number(item.price),
@@ -280,13 +333,13 @@ export default function QuickOrderCreate() {
     setEditingCartItemIndex(null);
   }, []);
 
-  const updateQuantity = useCallback((menu_item_id: number, newQuantity: number) => {
+  const updateQuantity = useCallback((lineId: string, newQuantity: number) => {
     setCart(prevCart => {
       if (newQuantity <= 0) {
-        return prevCart.filter(item => item.menu_item_id !== menu_item_id);
+        return prevCart.filter(item => item.line_id !== lineId);
       } else {
         return prevCart.map(item =>
-          item.menu_item_id === menu_item_id
+          item.line_id === lineId
             ? { ...item, quantity: newQuantity }
             : item
         );
@@ -294,9 +347,28 @@ export default function QuickOrderCreate() {
     });
   }, []);
 
-  const removeFromCart = useCallback((menu_item_id: number) => {
-    setCart(prevCart => prevCart.filter(item => item.menu_item_id !== menu_item_id));
-  }, []);
+  // Removing a line is easy to do by accident on a touch screen, so offer Undo instead of a confirm dialog
+  const removeFromCart = useCallback((lineId: string) => {
+    const index = cart.findIndex(item => item.line_id === lineId);
+    const removed = cart[index];
+    if (!removed) return;
+    setCart(prevCart => prevCart.filter(item => item.line_id !== lineId));
+    toast.info(t('cart.removed', { name: removed.name }), {
+      actionLabel: t('cart.undo'),
+      onAction: () => setCart(prevCart => {
+        const next = [...prevCart];
+        next.splice(Math.min(index, next.length), 0, removed);
+        return next;
+      }),
+    });
+  }, [cart, toast, t]);
+
+  const clearCart = useCallback(() => {
+    const previous = cart;
+    if (previous.length === 0) return;
+    setCart([]);
+    toast.info(t('cart.cleared'), { actionLabel: t('cart.undo'), onAction: () => setCart(previous) });
+  }, [cart, toast, t]);
 
   // Filter handlers
   const handleOrderTypeChange = useCallback((type: 'dine-in' | 'takeout' | 'delivery') => {
@@ -311,7 +383,7 @@ export default function QuickOrderCreate() {
     setCustomerName(name);
   }, []);
 
-  const handlePriorityChange = useCallback((newPriority: 'normal' | 'high' | 'urgent') => {
+  const handlePriorityChange = useCallback((newPriority: 'normal' | 'rush' | 'urgent') => {
     setPriority(newPriority);
   }, []);
 
@@ -319,19 +391,19 @@ export default function QuickOrderCreate() {
     setSearchTerm(term);
   }, []);
 
-  const handleSubmit = async () => {
+  const submitOrder = async (paymentDecision?: PaymentDecision) => {
     if (cart.length === 0) {
-      setError('Please add at least one item');
+      setError(t('order.errors.addItem'));
       return;
     }
 
     if (orderType === 'dine-in' && !selectedTable) {
-      setError('Please select a table');
+      setError(t('order.errors.selectTable'));
       return;
     }
 
     // For takeout/delivery, offer to collect payment now
-    if ((orderType === 'takeout' || orderType === 'delivery') && !collectPaymentNow) {
+    if ((orderType === 'takeout' || orderType === 'delivery') && !paymentDecision) {
       setShowPaymentModal(true);
       return;
     }
@@ -340,7 +412,7 @@ export default function QuickOrderCreate() {
     setError(null);
 
     try {
-      const orderData: any = {
+      const orderData: QuickOrderPayload = {
         type: orderType,
         table_id: orderType === 'dine-in' ? Number(selectedTable) : undefined,
         customer_name: customerName || undefined,
@@ -359,91 +431,128 @@ export default function QuickOrderCreate() {
         })),
       };
 
-      // If payment collected now, include payment info
-      if (collectPaymentNow && paymentMethod) {
-        orderData.payment_method = paymentMethod;
-        orderData.paid_at = new Date().toISOString();
-      }
+      const createdOrder = await orderAPI.createOrder(orderData);
 
-      await orderAPI.createOrder(orderData);
+      // The create endpoint ignores payment fields, so record the payment separately
+      let paymentCollected = false;
+      if (paymentDecision?.collectNow && paymentDecision.method) {
+        try {
+          await orderAPI.updatePayment(createdOrder.id, {
+            payment_method: paymentDecision.method,
+            payment_status: 'completed',
+          });
+          paymentCollected = true;
+        } catch (paymentErr) {
+          console.error('Order created but payment failed:', paymentErr);
+        }
+      }
+      const paymentFailed = !!paymentDecision?.collectNow && !paymentCollected;
+      const doneMessage = paymentCollected
+        ? t('order.done.paid')
+        : paymentFailed
+          ? t('order.done.paymentFailed')
+          : t('order.done.created');
 
       if (user?.role === 'waiter') {
         navigate('/tables', {
           state: {
-            message: collectPaymentNow
-              ? 'Order created and payment collected!'
-              : 'Order created successfully!'
+            message: doneMessage
           }
         });
       } else {
         navigate('/orders', {
           state: {
-            successMessage: collectPaymentNow
-              ? 'Order created and payment collected!'
-              : 'Order created successfully!'
+            successMessage: doneMessage
           }
         });
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create order');
+    } catch (err) {
+      setError(errorMessage(err, t('order.errors.createFailed')));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handlePaymentDecision = (collectNow: boolean, method?: 'cash' | 'card') => {
-    setCollectPaymentNow(collectNow);
-    setPaymentMethod(method || null);
-    setShowPaymentModal(false);
+  const handleSubmit = () => submitOrder();
 
-    if (collectNow) {
-      // Proceed with order creation including payment
-      handleSubmit();
-    } else {
-      // Proceed without payment (pay later)
-      handleSubmit();
-    }
+  const handlePaymentDecision = (collectNow: boolean, method?: 'cash' | 'card') => {
+    setShowPaymentModal(false);
+    submitOrder({ collectNow, method });
   };
 
   const calculateTotal = useCallback(() => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   }, [cart]);
 
-  // Show spinner only during initial bootstrap
+  const itemCount = cart.reduce((n, item) => n + item.quantity, 0);
+  const subtotal = calculateTotal();
+  const tableForSummary = tables.find(table => table.id === selectedTable);
+  const typeLabel = t(orderType === 'dine-in' ? 'order.type.dineIn' : orderType === 'takeout' ? 'order.type.takeout' : 'order.type.delivery');
+  const cartSummary = {
+    typeLabel,
+    tableLabel: orderType === 'dine-in' && tableForSummary ? t('order.tableNumber', { n: tableForSummary.number }) : undefined,
+  };
+  const placeLabel = orderType === 'dine-in' ? t('order.sendToKitchen') : t('order.placeOrder');
+
+  // Show skeleton only during initial bootstrap
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="grid gap-4 lg:grid-cols-[1fr_24rem]" role="status" aria-label={t('common.loading')}>
+        <Skeleton className="h-96" />
+        <Skeleton className="h-96" />
       </div>
     );
   }
 
+  const editingCartLine = editingCartItemIndex !== null ? cart[editingCartItemIndex] : undefined;
+
+  const cartPanel = (
+    <OrderCart
+      cart={cart}
+      onUpdateQuantity={updateQuantity}
+      onRemoveItem={removeFromCart}
+      onEditItem={(index) => { setCartSheetOpen(false); handleEditCartItem(index); }}
+      onClear={clearCart}
+      onPlaceOrder={() => { setCartSheetOpen(false); handleSubmit(); }}
+      loading={submitting}
+      placeLabel={placeLabel}
+      summary={cartSummary}
+    />
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header Bar */}
-      <div className="bg-white shadow-sm border-b px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Quick Order</h1>
-          <button
-            onClick={() => navigate('/orders')}
-            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            ← Back
-          </button>
-        </div>
+    <div className="pb-24 lg:pb-0">
+      {/* Title row */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-fg">{t('order.title')}</h1>
+        <Button variant="secondary" size="md" onClick={() => navigate(user?.role === 'waiter' ? '/tables' : '/orders')}>
+          {t('common.back')}
+        </Button>
       </div>
 
-      {/* Error Message */}
       {error && (
-        <div className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">
+        <div role="alert" className="mb-4 rounded-xl bg-danger/15 px-4 py-3 text-base font-medium text-danger">
           {error}
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Menu Items */}
-        <div className="flex-1 flex flex-col bg-white border-r overflow-hidden">
-          {/* Search & Categories */}
+      {/* Three zones: category rail | menu | cart. The rail and cart only appear when there is room. */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[11rem_minmax(0,1fr)_24rem]">
+        {/* Category rail (wide screens) */}
+        <aside className="hidden xl:block">
+          <div className="sticky top-24">
+            <CategoryTabs
+              categories={categories}
+              selectedCategory={selectedCategory}
+              loading={itemsLoading}
+              onCategoryChange={handleCategoryChange}
+              orientation="vertical"
+            />
+          </div>
+        </aside>
+
+        {/* Menu */}
+        <section className="min-w-0 space-y-4" aria-label={t('menu.title')}>
           <OrderFilters
             orderType={orderType}
             selectedTable={selectedTable}
@@ -458,89 +567,61 @@ export default function QuickOrderCreate() {
             onSearchChange={handleSearchChange}
           />
 
-          {/* Category Tabs */}
-          <CategoryTabs
-            categories={categories}
-            selectedCategory={selectedCategory}
-            loading={itemsLoading}
-            onCategoryChange={handleCategoryChange}
-          />
-
-          {/* Menu Items Grid */}
-          <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4" id="menu-items-container">
-            <MenuItemsGrid
-              items={filteredItems}
-              loading={itemsLoading && page === 1}
-              onAddToCart={handleItemClick}
-              onCustomize={handleItemCustomize}
+          {/* Category chips (below xl the rail is hidden) */}
+          <div className="xl:hidden">
+            <CategoryTabs
+              categories={categories}
+              selectedCategory={selectedCategory}
+              loading={itemsLoading}
+              onCategoryChange={handleCategoryChange}
             />
-
-            {/* Load More Button */}
-            {hasMore && !itemsLoading && (
-              <div className="mt-6 flex justify-center pb-4">
-                <button
-                  onClick={loadMoreItems}
-                  disabled={isLoadingMore}
-                  className="px-6 py-2 bg-white border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isLoadingMore ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    'Load More Items'
-                  )}
-                </button>
-              </div>
-            )}
-
-            {!hasMore && filteredItems.length > 0 && (
-              <div className="mt-6 text-center text-sm text-gray-500 pb-4">
-                No more items to load
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* Right: Cart - Hidden on mobile, visible on desktop */}
-        <div className="hidden md:flex md:w-[360px] lg:w-[400px] flex-shrink-0 h-full bg-white">
-          <OrderCart
-            cart={cart}
-            onUpdateQuantity={updateQuantity}
-            onRemoveItem={removeFromCart}
-            onEditItem={handleEditCartItem}
-            onPlaceOrder={handleSubmit}
-            loading={submitting}
+          <MenuItemsGrid
+            items={filteredItems}
+            loading={itemsLoading && page === 1}
+            onAddToCart={handleItemClick}
+            onCustomize={handleItemCustomize}
           />
-        </div>
+
+          {hasMore && !itemsLoading && (
+            <div className="flex justify-center pb-4">
+              <Button variant="secondary" size="lg" loading={isLoadingMore} onClick={loadMoreItems}>
+                {isLoadingMore ? t('common.loading') : t('menu.loadMore')}
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Cart (lg and up): sticky beside the menu */}
+        <aside
+          className="sticky top-24 hidden max-h-[calc(100dvh-7rem)] overflow-hidden rounded-2xl border border-line shadow-sm lg:block"
+          aria-label={t('cart.title')}
+        >
+          {cartPanel}
+        </aside>
       </div>
 
-      {/* Mobile: Fixed Bottom Cart Summary & Place Order Button - OUTSIDE flex container */}
-      <div className="block md:hidden fixed inset-x-0 bottom-0 bg-white border-t-2 border-gray-200 shadow-2xl z-[9999] safe-area-inset-bottom">
-        <div className="p-4 pb-safe">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold">
-                {cart.reduce((total, item) => total + item.quantity, 0)}
-              </div>
-              <span className="text-sm font-semibold text-gray-700">
-                {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
-              </span>
-            </div>
-            <span className="text-lg font-bold text-blue-600">
-              {calculateTotal().toFixed(2)} MAD
-            </span>
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={cart.length === 0 || submitting}
-            className="w-full bg-blue-600 text-white py-3.5 rounded-lg font-bold text-base hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-lg"
-          >
-            {submitting ? 'Processing...' : 'Place Order'}
-          </button>
-        </div>
+      {/* Below lg: sticky summary bar that opens the cart as a bottom sheet */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface p-3 shadow-2xl lg:hidden">
+        <Button size="xl" fullWidth onClick={() => setCartSheetOpen(true)}>
+          <span className="flex w-full items-center justify-between gap-3">
+            <span>{t('cart.viewCart')} · {t('cart.itemCount', { count: itemCount })}</span>
+            <span className="tabular-nums">{formatMoney(subtotal)}</span>
+          </span>
+        </Button>
       </div>
+
+      <Modal
+        isOpen={cartSheetOpen}
+        onClose={() => setCartSheetOpen(false)}
+        title={t('cart.title')}
+        size="lg"
+        closeLabel={t('common.close')}
+        className="h-[85dvh] max-h-[85dvh]"
+      >
+        <div className="-mx-5 -my-4 h-[calc(85dvh-5rem)]">{cartPanel}</div>
+      </Modal>
 
       {/* Add Item Modal */}
       <AddItemModal
@@ -548,56 +629,36 @@ export default function QuickOrderCreate() {
         isOpen={isModalOpen}
         onClose={closeModal}
         onAdd={addToCart}
-        initialValues={editingCartItemIndex !== null ? {
-          quantity: cart[editingCartItemIndex].quantity,
-          specialInstructions: cart[editingCartItemIndex].special_instructions,
-          removedIngredients: cart[editingCartItemIndex].removed_ingredients,
-          addedExtras: cart[editingCartItemIndex].added_extras
+        initialValues={editingCartLine ? {
+          quantity: editingCartLine.quantity,
+          specialInstructions: editingCartLine.special_instructions,
+          removedIngredients: editingCartLine.removed_ingredients,
+          addedExtras: editingCartLine.added_extras
         } : undefined}
         mode={editingCartItemIndex !== null ? 'edit' : 'add'}
       />
 
-      {/* Payment Collection Modal (for takeout/delivery) */}
-      {showPaymentModal && (
-        <div className={`${MODAL_OVERLAY_BASE_CLASS} ${MODAL_BACKDROP_CLASS} z-[10000]`}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Collect Payment Now?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              For {orderType} orders, you can collect payment immediately or let the customer pay later.
-            </p>
-
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={() => handlePaymentDecision(true, 'cash')}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-              >
-                💵 Collect Cash Now
-              </button>
-              <button
-                onClick={() => handlePaymentDecision(true, 'card')}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                💳 Collect Card Payment Now
-              </button>
-              <button
-                onClick={() => handlePaymentDecision(false)}
-                className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              >
-                ⏳ Collect Payment Later
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="w-full text-gray-500 hover:text-gray-700 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
+      {/* Payment decision (takeout / delivery) */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        title={t('order.payNow.title')}
+        size="sm"
+        closeLabel={t('common.close')}
+      >
+        <p className="mb-5 text-fg-muted">{t('order.payNow.hint', { type: typeLabel.toLowerCase() })}</p>
+        <div className="space-y-3">
+          <Button size="xl" fullWidth variant="success" onClick={() => handlePaymentDecision(true, 'cash')}>
+            {t('order.payNow.cash')}
+          </Button>
+          <Button size="xl" fullWidth variant="primary" onClick={() => handlePaymentDecision(true, 'card')}>
+            {t('order.payNow.card')}
+          </Button>
+          <Button size="xl" fullWidth variant="secondary" onClick={() => handlePaymentDecision(false)}>
+            {t('order.payNow.later')}
+          </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
