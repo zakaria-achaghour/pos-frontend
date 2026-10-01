@@ -1,8 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500..800&display=swap")
+layer(base);
+
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
 layer(base);
 
 @import "tailwindcss";
 @import "./styles/table-management.css";
+@import "./styles/pos-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -188,7 +192,7 @@ layer(base);
     @apply active:scale-95 transition-transform duration-100;
   }
   body {
-    @apply relative font-normal font-outfit z-1 bg-gray-50;
+    @apply relative font-normal font-outfit z-1 bg-bg text-fg;
   }
 }
 
