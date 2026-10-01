@@ -21,7 +21,7 @@ export default function EditRestaurant() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  
+
   const [formData, setFormData] = useState<UpdateRestaurantData>({
     name: '',
     description: '',
@@ -53,10 +53,10 @@ export default function EditRestaurant() {
       setLoading(true);
       const data = await restaurantAPI.getRestaurant(restaurantId);
       setRestaurant(data);
-      
+
       // Extract owner information from users array if available
       const owner = data.users && data.users.length > 0 ? data.users[0] : null;
-      
+
       setFormData({
         name: data.name || '',
         description: data.description || '',
@@ -160,13 +160,13 @@ export default function EditRestaurant() {
         cleanedData.owner_phone = formData.owner_phone.trim();
       }
 
-      
+
       const response = await restaurantAPI.updateRestaurant(restaurant.id, cleanedData);
-      
+
       // Check if response has a message property (from your API response)
       if (response && typeof response === 'object' && 'message' in response) {
         setSuccessMessage(response.message as string);
-        
+
         // Auto-hide success message after 5 seconds
         setTimeout(() => {
           setSuccessMessage(null);
@@ -177,7 +177,7 @@ export default function EditRestaurant() {
           setSuccessMessage(null);
         }, 5000);
       }
-      
+
       // Don't navigate immediately, let user see the success message
       // navigate('/admin/tenants');
     } catch (error) {
@@ -185,8 +185,8 @@ export default function EditRestaurant() {
       // Handle validation errors (422)
       if (e.response?.status === 422 && e.response?.data?.errors) {
         const validationErrors = e.response.data.errors;
-        const errorMessages = Object.keys(validationErrors).map(field => 
-          `${field}: ${validationErrors[field]?.join(', ')}`
+        const errorMessages = Object.keys(validationErrors).map(field =>
+          validationErrors[field]?.join(', ')
         ).join('\n');
         setError(t('tenants.errors.validation', { details: errorMessages }));
       } else {
@@ -201,14 +201,14 @@ export default function EditRestaurant() {
     return (
       <div>
         <PageMeta title={t('tenants.edit.metaTitle')} description={t('tenants.edit.metaDescription')} />
-        <PageBreadcrumb 
+        <PageBreadcrumb
           pageTitle={t('tenants.edit.title')}
           breadcrumbItems={[
             { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
             { label: t('tenants.breadcrumb.edit') }
           ]}
         />
-        
+
         <div className="bg-white rounded-xl shadow p-6 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -251,7 +251,7 @@ export default function EditRestaurant() {
   return (
     <div>
       <PageMeta title={t('tenants.edit.metaTitleNamed', { name: restaurant.name })} description={t('tenants.edit.metaDescription')} />
-      <PageBreadcrumb 
+      <PageBreadcrumb
         pageTitle={t('tenants.edit.titleNamed', { name: restaurant.name })}
         breadcrumbItems={[
           { label: t('tenants.breadcrumb.restaurants'), href: '/admin/tenants' },
@@ -259,7 +259,7 @@ export default function EditRestaurant() {
           { label: t('tenants.breadcrumb.edit') }
         ]}
       />
-      
+
       {/* Success Alert */}
       {successMessage && (
         <div className="mb-6">
@@ -270,7 +270,7 @@ export default function EditRestaurant() {
           />
         </div>
       )}
-      
+
       <div className="bg-white rounded-xl shadow">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">{t('tenants.edit.sectionTitle')}</h2>
@@ -287,7 +287,7 @@ export default function EditRestaurant() {
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
-              
+
               <div>
                 <Label htmlFor="name">{t('tenants.form.name')}</Label>
                 <Input
@@ -414,7 +414,7 @@ export default function EditRestaurant() {
             {/* Business & Owner Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
-              
+
               <div>
                 <Label htmlFor="license_number">{t('tenants.form.license')}</Label>
                 <Input
