@@ -41,13 +41,23 @@ export interface RefreshResponse {
   expires_in: number;
 }
 
+/** User as returned by the backend: role may be absent or capitalised until normalised. */
+type RawUser = Omit<User, 'role'> & { role?: string };
+
+interface LoginResponse {
+  user: RawUser;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
 // Authentication API service
 export const authAPI = {
   /**
    * Login user with email and password
    */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await apiClient.post<any>('/login', credentials);
+    const response = await apiClient.post<LoginResponse>('/login', credentials);
     // Handle direct response format from Laravel backend
     const user = response.data.user;
     
@@ -61,14 +71,14 @@ export const authAPI = {
         'Waiter': 'waiter',
         'Kitchen': 'kitchen'
       };
-      user.role = roleMapping[user.roles[0]] || 'waiter';
+      user.role = roleMapping[user.roles[0] as string] || 'waiter';
     }
     if (user.role && typeof user.role === 'string') {
       user.role = user.role.toLowerCase();
     }
 
     return {
-      user: user,
+      user: user as User,
       token: response.data.access_token,
       token_type: response.data.token_type,
       expires_in: response.data.expires_in
@@ -88,10 +98,10 @@ export const authAPI = {
    */
   me: async (): Promise<User> => {
     const response = await apiClient.get<ApiResponse<User> | User>('/me');
-    const payload: any = response.data;
+    const payload = response.data as { data?: RawUser; user?: RawUser } & RawUser;
 
     // Support multiple backend response shapes
-    const user: any = payload?.data ?? payload?.user ?? payload;
+    const user: RawUser | undefined = payload?.data ?? payload?.user ?? payload;
 
     if (!user) {
       throw new Error('Invalid response from /me endpoint');
@@ -107,7 +117,7 @@ export const authAPI = {
         Waiter: 'waiter',
         Kitchen: 'kitchen'
       };
-      user.role = roleMapping[user.roles[0]] || user.roles[0]?.toLowerCase() || 'waiter';
+      user.role = roleMapping[user.roles[0] as string] || user.roles[0]?.toLowerCase() || 'waiter';
     } else if (typeof user.role === 'string') {
       user.role = user.role.toLowerCase();
     }

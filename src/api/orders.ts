@@ -109,10 +109,18 @@ export const orderAPI = {
   },
 
   /**
+   * Update order fields (PUT /orders/{id})
+   */
+  updateOrder: async (orderId: number, data: Record<string, unknown>): Promise<Order> => {
+    const response = await apiClient.put(`/orders/${orderId}`, data);
+    return unwrapResponse<Order>(response.data);
+  },
+
+  /**
    * Update order status
    */
   updateOrderStatus: async (orderId: number, status: string): Promise<Order> => {
-    const response = await apiClient.put(`/orders/${orderId}`, { status });
+    const response = await apiClient.patch(`/orders/${orderId}/status`, { status });
     return unwrapResponse<Order>(response.data);
   },
 

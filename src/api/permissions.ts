@@ -1,5 +1,6 @@
 import apiClient from './client';
-import type { ApiResponse, PaginatedResponse } from './client';
+import type { PaginatedResponse } from './client';
+import { asApiError } from '@/utils/apiError';
 
 // Permission Types
 export interface Permission {
@@ -29,7 +30,6 @@ export const permissionsAPI = {
     page?: number;
   } = {}): Promise<PaginatedResponse<Permission> | Permission[]> => {
     try {
-      console.log('🔍 Fetching permissions with filters:', filters);
       const params = new URLSearchParams();
       
       if (filters.search) params.append('search', filters.search);
@@ -37,7 +37,6 @@ export const permissionsAPI = {
       if (filters.page) params.append('page', filters.page.toString());
       
       const response = await apiClient.get(`/admin/permissions?${params}`);
-      console.log('📡 Permissions API response:', response.data);
       
       // If no per_page, return full array for multi-select
       if (!filters.per_page && Array.isArray(response.data)) {
@@ -45,7 +44,8 @@ export const permissionsAPI = {
       }
       
       return response.data as PaginatedResponse<Permission>;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching permissions:', error);
       throw error;
     }
@@ -56,12 +56,11 @@ export const permissionsAPI = {
    */
   getPermission: async (id: number): Promise<Permission> => {
     try {
-      console.log('🔍 Fetching permission with ID:', id);
       const response = await apiClient.get(`/admin/permissions/${id}`);
-      console.log('📡 Single permission API response:', response.data);
       
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching permission:', error);
       throw error;
     }
@@ -72,12 +71,11 @@ export const permissionsAPI = {
    */
   createPermission: async (permissionData: CreatePermissionData): Promise<Permission> => {
     try {
-      console.log('➕ Creating permission:', permissionData);
       const response = await apiClient.post('/admin/permissions', permissionData);
-      console.log('📡 Create permission API response:', response.data);
       
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error creating permission:', error);
       throw error;
     }
@@ -88,12 +86,11 @@ export const permissionsAPI = {
    */
   updatePermission: async (id: number, updates: UpdatePermissionData): Promise<Permission> => {
     try {
-      console.log('🔄 Updating permission:', id, updates);
       const response = await apiClient.patch(`/admin/permissions/${id}`, updates);
-      console.log('📡 Update permission API response:', response.data);
       
       return response.data.data || response.data;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error updating permission:', error);
       throw error;
     }
@@ -104,10 +101,9 @@ export const permissionsAPI = {
    */
   deletePermission: async (id: number): Promise<void> => {
     try {
-      console.log('🗑️ Deleting permission:', id);
       await apiClient.delete(`/admin/permissions/${id}`);
-      console.log('✅ Permission deleted successfully');
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error deleting permission:', error);
       throw error;
     }

@@ -91,7 +91,7 @@ export const useTheme = () => {
   return {
     theme,
     isDarkMode,
-    darkModeEnabled: config.ui.darkModeEnabled,
+    darkModeEnabled: config.ui.enableDarkMode,
     toggleTheme,
     setLightTheme,
     setDarkTheme
@@ -153,19 +153,20 @@ export const useFileUpload = () => {
  * Hook for debug mode
  */
 export const useDebug = () => {
-  const log = (...args: any[]) => {
+  const log = (...args: unknown[]) => {
     if (config.debug.enabled) {
+      // eslint-disable-next-line no-console
       console.log('[DEBUG]', ...args);
     }
   };
 
-  const warn = (...args: any[]) => {
+  const warn = (...args: unknown[]) => {
     if (config.debug.enabled) {
       console.warn('[DEBUG]', ...args);
     }
   };
 
-  const error = (...args: any[]) => {
+  const error = (...args: unknown[]) => {
     if (config.debug.enabled) {
       console.error('[DEBUG]', ...args);
     }

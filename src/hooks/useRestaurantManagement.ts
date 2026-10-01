@@ -1,9 +1,19 @@
-import { useState, useCallback, useEffect } from 'react';
-import { restaurantAPI } from '../api/restaurants';
-import type { 
-  Restaurant, 
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useGetRestaurantsQuery,
+  useCreateRestaurantMutation,
+  useUpdateRestaurantMutation,
+  useDeleteRestaurantMutation,
+  useUpdateRestaurantStatusMutation,
+  type RestaurantsArgs,
+} from '@/services/restaurantsApi';
+import { errorMessage, validationErrors as getValidationErrors } from '@/lib/errors';
+import type {
+  Restaurant,
   RestaurantFormData,
-  RestaurantStatus
+  RestaurantStatus,
+  CreateRestaurantData,
+  UpdateRestaurantData
 } from '../types/restaurant';
 import type { PaginationInfo, UseResourceManagementReturn } from '@/types/components';
 
@@ -44,33 +54,75 @@ interface UseRestaurantManagementReturn extends UseResourceManagementReturn<
   setPerPage: (perPage: number) => void;
 }
 
+const NO_RESTAURANTS: Restaurant[] = [];
+
 export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaurantManagementReturn => {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  
+
   // UI State
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [statusFilter, setStatusFilter] = useState<RestaurantFilter>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilterState] = useState<RestaurantFilter>('all');
+  const [searchTerm, setSearchTermState] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPageState] = useState(initialPerPage);
+  const [pendingActions, setPendingActions] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: initialPerPage,
-    total: 0,
+
+  // Server data (status and search are filtered server-side)
+  const queryArgs = useMemo(() => {
+    const params: Record<string, string | number | boolean> = { page, per_page: perPage };
+    if (statusFilter !== 'all') params['status'] = statusFilter;
+    if (searchTerm) params['search'] = searchTerm;
+    return params as NonNullable<RestaurantsArgs>;
+  }, [page, perPage, statusFilter, searchTerm]);
+
+  const { data, isLoading, error: queryError, refetch } = useGetRestaurantsQuery(queryArgs, {
+    refetchOnMountOrArgChange: true,
   });
-  const [restaurantStats, setRestaurantStats] = useState<RestaurantStats>({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    pending: 0,
-    suspended: 0,
-  });
+  const [createMutation] = useCreateRestaurantMutation();
+  const [updateMutation] = useUpdateRestaurantMutation();
+  const [deleteMutation] = useDeleteRestaurantMutation();
+  const [statusMutation] = useUpdateRestaurantStatusMutation();
+
+  const restaurants = useMemo<Restaurant[]>(
+    () =>
+      data
+        ? data.data.map((restaurant) => ({
+            ...restaurant,
+            status: (restaurant.is_active ? 'active' : 'inactive') as RestaurantStatus,
+          }))
+        : NO_RESTAURANTS,
+    [data]
+  );
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: data ? data.current_page || page : page,
+      lastPage: data?.last_page || 1,
+      perPage: data?.per_page || perPage,
+      total: data?.total || 0,
+    }),
+    [data, page, perPage]
+  );
+
+  const restaurantStats = useMemo<RestaurantStats>(
+    () => ({
+      total: data?.total || 0,
+      active: restaurants.filter((r) => r.status === 'active').length,
+      inactive: restaurants.filter((r) => r.status === 'inactive').length,
+      pending: 0, // API doesn't have pending status
+      suspended: 0, // API doesn't have suspended status
+    }),
+    [data, restaurants]
+  );
+
+  // Loading is true for the first load or an action, not for background refetches
+  const loading = isLoading || pendingActions > 0;
+  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch restaurants') : null);
 
   // Auto-clear messages
   useEffect(() => {
@@ -81,226 +133,107 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     return;
   }, [successMessage]);
 
-  const clearError = () => setError(null);
+  const clearError = () => setActionError(null);
   const clearSuccessMessage = () => setSuccessMessage(null);
 
-  // Fetch restaurants from API
-  const fetchRestaurants = useCallback(async (page: number = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('🔍 Fetching restaurants with params:', {
-        page,
-        per_page: pagination.perPage,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        search: searchTerm || undefined,
-      });
-
-      const apiParams: Record<string, any> = {
-        page,
-        per_page: pagination.perPage,
-      };
-
-      // Build query params
-      if (statusFilter !== 'all') {
-        apiParams['status'] = statusFilter;
-      }
-
-      if (searchTerm) {
-        apiParams['search'] = searchTerm;
-      }
-
-      const response = await restaurantAPI.getRestaurants(apiParams);
-
-      console.log('📡 Restaurants API response:', response);
-
-      // Map API response to local format
-      const mappedRestaurants = response.data.map((restaurant: any) => ({
-        ...restaurant,
-        status: restaurant.is_active ? 'active' : 'inactive',
-      }));
-
-      setRestaurants(mappedRestaurants);
-      setPagination({
-        currentPage: response.current_page || page,
-        lastPage: response.last_page || 1,
-        perPage: response.per_page || pagination.perPage,
-        total: response.total || 0,
-      });
-
-      // Calculate stats
-      const stats: RestaurantStats = {
-        total: response.total || 0,
-        active: mappedRestaurants.filter((r: Restaurant) => r.status === 'active').length,
-        inactive: mappedRestaurants.filter((r: Restaurant) => r.status === 'inactive').length,
-        pending: 0, // API doesn't have pending status
-        suspended: 0, // API doesn't have suspended status
-      };
-      setRestaurantStats(stats);
-
-      console.log('✅ Restaurants loaded:', mappedRestaurants.length);
-    } catch (err: any) {
-      console.error('❌ Error fetching restaurants:', err);
-      setError(err.response?.data?.message || 'Failed to fetch restaurants');
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.perPage, statusFilter, searchTerm]);
-
-  // Fetch on mount and when filters change
-  useEffect(() => {
-    fetchRestaurants(1);
-  }, [statusFilter, searchTerm]);
-
-  // Filtered restaurants (client-side backup if needed)
-  const filteredRestaurants = restaurants;
-
-  // Pagination helper
-  const goToPage = (page: number) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
-    fetchRestaurants(page);
-  };
-
-  // Set items per page
-  const setPerPage = (perPage: number) => {
-    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
-    // Will trigger refetch via useEffect
-  };
-
-  // Create new restaurant
-  const createRestaurant = useCallback(async (formData: RestaurantFormData): Promise<void> => {
-    if (!formData.name.trim()) {
-      setError('Please enter a restaurant name');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('➕ Creating restaurant:', formData);
-      const newRestaurant = await restaurantAPI.createRestaurant(formData as any);
-      
-      // Add to local state
-      setRestaurants(prev => [newRestaurant, ...prev]);
-      setSuccessMessage(`Restaurant "${formData.name}" created successfully!`);
-      console.log('✅ Restaurant created:', newRestaurant);
-      
-      // Refresh list
-      await fetchRestaurants(pagination.currentPage);
-    } catch (err: any) {
-      console.error('❌ Error creating restaurant:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to create restaurant';
-      setError(errorMessage);
-      
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchRestaurants, pagination.currentPage]);
-
-  // Update restaurant
-  const updateRestaurant = useCallback(async (id: number, updates: Partial<RestaurantFormData>): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('🔄 Updating restaurant:', id, updates);
-      const updatedRestaurant = await restaurantAPI.updateRestaurant(id, updates as any);
-      
-      // Update local state
-      setRestaurants(prev =>
-        prev.map(restaurant =>
-          restaurant.id === id ? { ...restaurant, ...updatedRestaurant } : restaurant
-        )
-      );
-      setSuccessMessage(`Restaurant updated successfully!`);
-      console.log('✅ Restaurant updated:', updatedRestaurant);
-      
-      // Refresh list
-      await fetchRestaurants(pagination.currentPage);
-    } catch (err: any) {
-      console.error('❌ Error updating restaurant:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to update restaurant';
-      setError(errorMessage);
-      
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchRestaurants, pagination.currentPage]);
-
-  // Delete restaurant
-  const deleteRestaurant = useCallback(async (id: number): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('🗑️ Deleting restaurant:', id);
-      await restaurantAPI.deleteRestaurant(id);
-      
-      // Remove from local state
-      setRestaurants(prev => prev.filter(restaurant => restaurant.id !== id));
-      setSuccessMessage('Restaurant deleted successfully!');
-      console.log('✅ Restaurant deleted');
-      
-      // Refresh list
-      await fetchRestaurants(pagination.currentPage);
-    } catch (err: any) {
-      console.error('❌ Error deleting restaurant:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to delete restaurant';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchRestaurants, pagination.currentPage]);
-
-  // Update restaurant status
-  const updateRestaurantStatus = useCallback(async (id: number, status: RestaurantStatus): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('🔄 Updating restaurant status:', id, status);
-      const updatedRestaurant = await restaurantAPI.updateRestaurantStatus(id, status as 'active' | 'inactive');
-      
-      // Update local state
-      setRestaurants(prev =>
-        prev.map(restaurant =>
-          restaurant.id === id ? { ...restaurant, ...updatedRestaurant, status } : restaurant
-        )
-      );
-      setSuccessMessage(`Restaurant ${status === 'active' ? 'activated' : 'deactivated'} successfully!`);
-      console.log('✅ Restaurant status updated');
-    } catch (err: any) {
-      console.error('❌ Error updating restaurant status:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to update restaurant status';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const setStatusFilter = useCallback((filter: RestaurantFilter) => {
+    setStatusFilterState(filter);
+    setPage(1);
   }, []);
 
+  const setSearchTerm = useCallback((term: string) => {
+    setSearchTermState(term);
+    setPage(1);
+  }, []);
+
+  // Go to a page (default 1), or just refetch when already there
+  const fetchRestaurants = useCallback(
+    async (target: number = 1) => {
+      if (target !== page) {
+        setPage(target);
+        return;
+      }
+      await refetch();
+    },
+    [page, refetch]
+  );
+
+  const goToPage = (target: number) => {
+    setPage(target);
+  };
+
+  const setPerPage = (next: number) => {
+    setPerPageState(next);
+    setPage(1);
+  };
+
+  // Run a mutation with loading / error / success / validation handling
+  const perform = async (
+    action: () => Promise<unknown>,
+    opts: { success: string; fallback: string; validate?: boolean }
+  ) => {
+    setPendingActions((n) => n + 1);
+    setActionError(null);
+    if (opts.validate) setValidationErrors({});
+    try {
+      await action();
+      setSuccessMessage(opts.success);
+    } catch (err) {
+      setActionError(errorMessage(err, opts.fallback));
+      const fieldErrors = opts.validate ? getValidationErrors(err) : undefined;
+      if (fieldErrors) setValidationErrors(fieldErrors);
+      throw err;
+    } finally {
+      setPendingActions((n) => n - 1);
+    }
+  };
+
+  const createRestaurant = async (formData: RestaurantFormData): Promise<void> => {
+    if (!formData.name.trim()) {
+      setActionError('Please enter a restaurant name');
+      return;
+    }
+    await perform(() => createMutation(formData as unknown as CreateRestaurantData).unwrap(), {
+      success: `Restaurant "${formData.name}" created successfully!`,
+      fallback: 'Failed to create restaurant',
+      validate: true,
+    });
+  };
+
+  const updateRestaurant = (id: number, updates: Partial<RestaurantFormData>): Promise<void> =>
+    perform(() => updateMutation({ id, data: updates as unknown as UpdateRestaurantData }).unwrap(), {
+      success: 'Restaurant updated successfully!',
+      fallback: 'Failed to update restaurant',
+      validate: true,
+    });
+
+  const deleteRestaurant = (id: number): Promise<void> =>
+    perform(() => deleteMutation(id).unwrap(), {
+      success: 'Restaurant deleted successfully!',
+      fallback: 'Failed to delete restaurant',
+    });
+
+  const updateRestaurantStatus = (id: number, status: RestaurantStatus): Promise<void> =>
+    perform(() => statusMutation({ id, status: status as 'active' | 'inactive' }).unwrap(), {
+      success: `Restaurant ${status === 'active' ? 'activated' : 'deactivated'} successfully!`,
+      fallback: 'Failed to update restaurant status',
+    });
+
   // Bulk status update
-  const bulkUpdateStatus = useCallback(async (ids: number[], status: RestaurantStatus): Promise<void> => {
-    setLoading(true);
-    setError(null);
+  const bulkUpdateStatus = async (ids: number[], status: RestaurantStatus): Promise<void> => {
+    setPendingActions((n) => n + 1);
+    setActionError(null);
     try {
       await Promise.all(ids.map(id => updateRestaurantStatus(id, status)));
       setSuccessMessage(`${ids.length} restaurants updated successfully!`);
       setSelectedItems([]);
-    } catch (err: any) {
-      console.error('❌ Error in bulk status update:', err);
-      setError('Failed to update some restaurants');
+    } catch (err) {
+      setActionError('Failed to update some restaurants');
       throw err;
     } finally {
-      setLoading(false);
+      setPendingActions((n) => n - 1);
     }
-  }, [updateRestaurantStatus]);
+  };
 
   // Selection handlers
   const toggleItemSelection = (id: number) => {
@@ -316,7 +249,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
   return {
     // Base properties
     items: restaurants,
-    filteredItems: filteredRestaurants,
+    filteredItems: restaurants,
     selectedItem: selectedRestaurant,
     editingItem: editingRestaurant,
     filter: statusFilter,
@@ -324,7 +257,7 @@ export const useRestaurantManagement = (initialPerPage: number = 10): UseRestaur
     
     // Aliases for backward compatibility
     restaurants,
-    filteredRestaurants,
+    filteredRestaurants: restaurants,
     selectedRestaurant,
     editingRestaurant,
     statusFilter,

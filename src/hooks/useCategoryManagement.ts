@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
-import { menuAPI } from '../api/menu';
-import type { 
-  Category, 
-  CreateCategoryData, 
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useGetCategoriesQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+  type CategoriesArgs,
+} from '@/services/menuApi';
+import { errorMessage, validationErrors as getValidationErrors } from '@/lib/errors';
+import type {
+  Category,
+  CreateCategoryData,
   UpdateCategoryData,
   CategoryFilter,
   CategoryStats,
@@ -10,33 +17,25 @@ import type {
   UseCategoryManagementReturn
 } from '../types/menu';
 
+const NO_CATEGORIES: Category[] = [];
+
 export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryManagementReturn => {
-  // Data State
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  // Selection / editing state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  
+
   // UI State
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<CategoryFilter>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPageState] = useState(initialPerPage);
+  const [pendingActions, setPendingActions] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: initialPerPage,
-    total: 0,
-  });
-  const [categoryStats, setCategoryStats] = useState<CategoryStats>({
-    total: 0,
-    active: 0,
-    inactive: 0,
-  });
 
   // Auto-clear success messages
   useEffect(() => {
@@ -47,155 +46,114 @@ export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryM
     return;
   }, [successMessage]);
 
-  const clearError = () => setError(null);
+  // Search is sent to the server after a short pause; clearing it applies immediately
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), searchTerm ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const queryArgs = useMemo(() => {
+    const params: NonNullable<CategoriesArgs> = { page, limit: perPage };
+    if (statusFilter !== 'all') params.is_active = statusFilter === 'active';
+    if (debouncedSearch) params.searchTerm = debouncedSearch;
+    return params;
+  }, [page, perPage, statusFilter, debouncedSearch]);
+
+  const { data, isLoading, error: queryError, refetch } = useGetCategoriesQuery(queryArgs, {
+    refetchOnMountOrArgChange: true,
+  });
+  const [createCategoryMutation] = useCreateCategoryMutation();
+  const [updateCategoryMutation] = useUpdateCategoryMutation();
+  const [deleteCategoryMutation] = useDeleteCategoryMutation();
+
+  const categories = data?.data ?? NO_CATEGORIES;
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: data ? data.page || 1 : page,
+      lastPage: data?.totalPages || 1,
+      perPage: data?.limit || perPage,
+      total: data?.total || 0,
+    }),
+    [data, page, perPage]
+  );
+
+  const categoryStats = useMemo<CategoryStats>(
+    () => ({
+      total: data?.total || 0,
+      active: categories.filter((c) => c.is_active).length,
+      inactive: categories.filter((c) => !c.is_active).length,
+    }),
+    [data, categories]
+  );
+
+  // Loading is true for the first load or an action, not for background refetches
+  const loading = isLoading || pendingActions > 0;
+  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch categories') : null);
+
+  const clearError = () => setActionError(null);
   const clearSuccessMessage = () => setSuccessMessage(null);
 
-  // Fetch categories from API
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
+  const goToPage = (nextPage: number) => {
+    setPage(nextPage);
+  };
+
+  const setPerPage = (next: number) => {
+    setPerPageState(next);
+    setPage(1);
+  };
+
+  // Run a mutation with loading / error / success / validation handling
+  const perform = async (
+    action: () => Promise<unknown>,
+    opts: { success: string; fallback: string; validate?: boolean }
+  ) => {
+    setPendingActions((n) => n + 1);
+    setActionError(null);
+    if (opts.validate) setValidationErrors({});
     try {
-      setLoading(true);
-      setError(null);
-
-      const apiParams: Record<string, any> = {
-        page: pagination.currentPage,
-        limit: pagination.perPage,
-      };
-
-      if (statusFilter !== 'all') {
-        apiParams['is_active'] = statusFilter === 'active';
-      }
-
-      if (searchTerm) {
-        apiParams['searchTerm'] = searchTerm;
-      }
-
-      const response = await menuAPI.getCategories(apiParams);
-      
-      const categoriesData = response.data || [];
-      setCategories(categoriesData);
-      setFilteredCategories(categoriesData);
-
-      setPagination({
-        currentPage: response.page || 1,
-        lastPage: response.totalPages || 1,
-        perPage: response.limit || pagination.perPage,
-        total: response.total || 0,
-      });
-
-      const stats: CategoryStats = {
-        total: response.total || 0,
-        active: categoriesData.filter((c: Category) => c.is_active).length,
-        inactive: categoriesData.filter((c: Category) => !c.is_active).length,
-      };
-      setCategoryStats(stats);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch categories');
+      await action();
+      setSuccessMessage(opts.success);
+    } catch (err) {
+      const message = errorMessage(err, opts.fallback);
+      setActionError(message);
+      const fieldErrors = opts.validate ? getValidationErrors(err) : undefined;
+      if (fieldErrors) setValidationErrors(fieldErrors);
+      throw new Error(message);
     } finally {
-      setLoading(false);
+      setPendingActions((n) => n - 1);
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchCategories();
-    }, searchTerm ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [pagination.currentPage, pagination.perPage, statusFilter, searchTerm]);
+  const createCategory = (data: CreateCategoryData) =>
+    perform(() => createCategoryMutation(data).unwrap(), {
+      success: `Category "${data.name}" created successfully!`,
+      fallback: 'Failed to create category',
+      validate: true,
+    });
 
-  const goToPage = (page: number) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
-  };
+  const updateCategory = (id: number, data: UpdateCategoryData) =>
+    perform(() => updateCategoryMutation({ id, data }).unwrap(), {
+      success: `Category "${data.name}" updated successfully!`,
+      fallback: 'Failed to update category',
+      validate: true,
+    });
 
-  const setPerPage = (perPage: number) => {
-    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
-  };
+  const deleteCategory = (id: number) =>
+    perform(() => deleteCategoryMutation(id).unwrap(), {
+      success: 'Category deleted successfully!',
+      fallback: 'Failed to delete category',
+    });
 
-  const createCategory = async (data: CreateCategoryData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setValidationErrors({});
-      
-      await menuAPI.createCategory(data);
-      
-      setSuccessMessage(`Category "${data.name}" created successfully!`);
-      await fetchCategories();
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to create category';
-      setError(errorMessage);
-      
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateCategory = async (id: number, data: UpdateCategoryData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      setValidationErrors({});
-      
-      await menuAPI.updateCategory(id, data);
-      
-      setCategories(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
-      setFilteredCategories(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
-      
-      setSuccessMessage(`Category "${data.name}" updated successfully!`);
-      await fetchCategories();
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to update category';
-      setError(errorMessage);
-      
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteCategory = async (id: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await menuAPI.deleteCategory(id);
-      
-      setSuccessMessage('Category deleted successfully!');
-      await fetchCategories();
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to delete category';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateCategoryStatus = async (id: number, isActive: boolean) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await menuAPI.updateCategory(id, { is_active: isActive });
-      
-      setSuccessMessage(`Category ${isActive ? 'activated' : 'deactivated'} successfully!`);
-      await fetchCategories();
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to update category status';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const updateCategoryStatus = (id: number, isActive: boolean) =>
+    perform(() => updateCategoryMutation({ id, data: { is_active: isActive } }).unwrap(), {
+      success: `Category ${isActive ? 'activated' : 'deactivated'} successfully!`,
+      fallback: 'Failed to update category status',
+    });
 
   const toggleItemSelection = (id: number) => {
     setSelectedItems(prev =>
@@ -204,7 +162,7 @@ export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryM
   };
 
   const selectAllItems = () => {
-    setSelectedItems(filteredCategories.map(c => c.id));
+    setSelectedItems(categories.map(c => c.id));
   };
 
   const clearSelection = () => {
@@ -213,7 +171,7 @@ export const useCategoryManagement = (initialPerPage: number = 10): UseCategoryM
 
   return {
     categories,
-    filteredCategories,
+    filteredCategories: categories,
     selectedCategory,
     editingCategory,
     selectedItems,

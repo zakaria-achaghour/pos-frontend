@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse } from './client';
+import { toPage, toEntity } from '@/services/adapter';
 import type {
   Category,
   MenuItem,
@@ -10,160 +10,138 @@ import type {
   CategoryFilters,
   MenuItemFilters,
   CategoriesResponse,
-  MenuItemsResponse
+  MenuItemsResponse,
 } from '../types/menu';
+
+// Page size is the backend's `per_page` (it also accepts `limit`)
+const DEFAULT_LIMIT = 50;
+
+type WithImage = { imageFile?: File | null };
+
+/** Build multipart form data (the API reads the image from the `image` field). */
+const toFormData = (data: object, file: File, method?: 'PUT'): FormData => {
+  const form = new FormData();
+  Object.entries(data).forEach(([key, value]) => {
+    if (key === 'imageFile' || value === undefined || value === null) return;
+    if (Array.isArray(value)) value.forEach((v) => form.append(`${key}[]`, String(v)));
+    else if (typeof value === 'boolean') form.append(key, value ? '1' : '0');
+    else form.append(key, String(value));
+  });
+  form.append('image', file);
+  // Laravel only parses multipart bodies on POST, so updates are tunnelled
+  if (method) form.append('_method', method);
+  return form;
+};
+
+const stripImage = <T extends WithImage>(data: T): Omit<T, 'imageFile'> => {
+  const { imageFile: _imageFile, ...rest } = data;
+  return rest;
+};
+
+const toList = <T>(payload: unknown, page: number, limit: number) => {
+  const { items, pagination } = toPage<T>(payload);
+  return {
+    data: items,
+    total: pagination.total,
+    page: pagination.currentPage || page,
+    limit: pagination.perPage || limit,
+    totalPages: pagination.lastPage,
+  };
+};
 
 // Menu API service
 export const menuAPI = {
   // Category endpoints
   /**
-   * Get all categories with pagination and filters
+   * Get categories (paginated). `search` and `is_active` are filtered server-side.
    */
   getCategories: async (filters: CategoryFilters = {}): Promise<CategoriesResponse> => {
-    const params = new URLSearchParams();
-    
-    if (filters.searchTerm) params.append('search', filters.searchTerm);
-    if (filters.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-
-    const response = await apiClient.get<ApiResponse<CategoriesResponse>>(`/categories?${params}`);
-    
-    console.log('Raw API response:', response.data);
-    
-    // Handle both response formats
-    if (response.data.data && typeof response.data.data === 'object' && 'data' in response.data.data) {
-      const result = response.data.data as CategoriesResponse;
-      console.log('Returning paginated response:', result);
-      return result;
-    }
-    
-    // Fallback: if data is array directly (calculate pagination manually)
-    const categories = Array.isArray(response.data.data) ? response.data.data as Category[] : [];
-    const limit = filters.limit || 50;
-    const total = categories.length;
-    const totalPages = Math.ceil(total / limit);
-    
-    const result = {
-      data: categories,
-      total: total,
-      page: filters.page || 1,
-      limit: limit,
-      totalPages: totalPages
-    };
-    
-    console.log('Returning fallback response:', result);
-    return result;
+    const limit = filters.limit ?? DEFAULT_LIMIT;
+    const response = await apiClient.get('/categories', {
+      params: {
+        search: filters.searchTerm || undefined,
+        is_active: filters.is_active,
+        page: filters.page,
+        per_page: limit,
+      },
+    });
+    return toList<Category>(response.data, filters.page ?? 1, limit);
   },
 
-  /**
-   * Get single category
-   */
   getCategory: async (id: number): Promise<Category> => {
-    const response = await apiClient.get<ApiResponse<Category>>(`/categories/${id}`);
-    return response.data.data;
+    const response = await apiClient.get(`/categories/${id}`);
+    return toEntity<Category>(response.data);
   },
 
-  /**
-   * Create new category
-   */
   createCategory: async (categoryData: CreateCategoryData): Promise<Category> => {
-    const response = await apiClient.post<ApiResponse<Category>>('/categories', categoryData);
-    return response.data.data;
+    const response = await apiClient.post('/categories', categoryData);
+    return toEntity<Category>(response.data);
   },
 
-  /**
-   * Update category
-   */
   updateCategory: async (id: number, updates: UpdateCategoryData): Promise<Category> => {
-    const response = await apiClient.put<ApiResponse<Category>>(`/categories/${id}`, updates);
-    return response.data.data;
+    const response = await apiClient.put(`/categories/${id}`, updates);
+    return toEntity<Category>(response.data);
   },
 
-  /**
-   * Delete category
-   */
   deleteCategory: async (id: number): Promise<void> => {
     await apiClient.delete(`/categories/${id}`);
   },
 
   // Menu Item endpoints
   /**
-   * Get all menu items with pagination and filters
+   * Get menu items (paginated). `category_id`, `is_available` and `search` are filtered server-side.
+   * `search` is accepted as an alias for `searchTerm`.
    */
-  getItems: async (filters: MenuItemFilters = {}): Promise<MenuItemsResponse> => {
-    const params = new URLSearchParams();
-    
-    if (filters.category_id) params.append('category_id', filters.category_id.toString());
-    if (filters.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters.is_available !== undefined) params.append('is_available', filters.is_available.toString());
-    if (filters.searchTerm) params.append('search', filters.searchTerm);
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-    
-    const response = await apiClient.get<ApiResponse<MenuItemsResponse>>(`/items?${params}`);
-    
-    // Handle both response formats
-    if (response.data.data && typeof response.data.data === 'object' && 'data' in response.data.data) {
-      return response.data.data as MenuItemsResponse;
-    }
-    
-    // Fallback: if data is array directly
-    const items = Array.isArray(response.data.data) ? response.data.data as MenuItem[] : [];
-    return {
-      data: items,
-      total: items.length,
-      page: filters.page || 1,
-      limit: filters.limit || 50,
-      totalPages: 1
-    };
+  getItems: async (filters: MenuItemFilters & { search?: string } = {}): Promise<MenuItemsResponse> => {
+    const limit = filters.limit ?? DEFAULT_LIMIT;
+    const response = await apiClient.get('/items', {
+      params: {
+        category_id: filters.category_id || undefined,
+        is_available: filters.is_available,
+        search: filters.searchTerm || filters.search || undefined,
+        page: filters.page,
+        per_page: limit,
+      },
+    });
+    return toList<MenuItem>(response.data, filters.page ?? 1, limit);
   },
 
-  /**
-   * Get single menu item
-   */
   getItem: async (id: number): Promise<MenuItem> => {
-    const response = await apiClient.get<ApiResponse<MenuItem>>(`/items/${id}`);
-    return response.data.data;
+    const response = await apiClient.get(`/items/${id}`);
+    return toEntity<MenuItem>(response.data);
   },
 
   /**
-   * Create new menu item
+   * Create a menu item. If `imageFile` is set it is sent in the same multipart request.
    */
-  createItem: async (itemData: CreateMenuItemData): Promise<MenuItem> => {
-    const response = await apiClient.post<ApiResponse<MenuItem>>('/items', itemData);
-    return response.data.data;
+  createItem: async (itemData: CreateMenuItemData & WithImage): Promise<MenuItem> => {
+    const response = itemData.imageFile
+      ? await apiClient.post('/items', toFormData(itemData, itemData.imageFile))
+      : await apiClient.post('/items', stripImage(itemData));
+    return toEntity<MenuItem>(response.data);
   },
 
   /**
-   * Update menu item
+   * Update a menu item. If `imageFile` is set it is sent in the same multipart request.
    */
-  updateItem: async (id: number, updates: UpdateMenuItemData): Promise<MenuItem> => {
-    const response = await apiClient.put<ApiResponse<MenuItem>>(`/items/${id}`, updates);
-    return response.data.data;
+  updateItem: async (id: number, updates: UpdateMenuItemData & WithImage): Promise<MenuItem> => {
+    const response = updates.imageFile
+      ? await apiClient.post(`/items/${id}`, toFormData(updates, updates.imageFile, 'PUT'))
+      : await apiClient.put(`/items/${id}`, stripImage(updates));
+    return toEntity<MenuItem>(response.data);
   },
 
-  /**
-   * Delete menu item
-   */
   deleteItem: async (id: number): Promise<void> => {
     await apiClient.delete(`/items/${id}`);
   },
 
   /**
-   * Upload menu item image
+   * Replace only the image of an existing item (the API has no dedicated image route).
    */
-  uploadItemImage: async (id: number, file: File): Promise<{ image_url: string }> => {
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    const response = await apiClient.post<ApiResponse<{ image_url: string }>>(`/items/${id}/image`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data.data;
-  }
+  uploadItemImage: async (id: number, file: File): Promise<MenuItem> => {
+    const response = await apiClient.post(`/items/${id}`, toFormData({}, file, 'PUT'));
+    return toEntity<MenuItem>(response.data);
+  },
 };
 
 export default menuAPI;

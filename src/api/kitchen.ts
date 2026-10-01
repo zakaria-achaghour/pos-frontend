@@ -2,21 +2,47 @@ import apiClient from './client';
 import type { PaginatedResponse } from './client';
 import type {
   KitchenTicket,
+  KitchenTicketItem,
+  KitchenTicketStatus,
   KitchenFilters,
   KitchenAnalytics,
   AssignTicketRequest,
   UpdateTicketPriorityRequest,
 } from '@/types/kitchen';
+import { asApiError } from '@/utils/apiError';
 
 /**
  * Helper to unwrap API responses that may or may not be wrapped in { data: ... }
  */
-function unwrapResponse<T>(payload: any): T {
+function unwrapResponse<T>(payload: unknown): T {
   if (payload && typeof payload === 'object' && 'data' in payload) {
-    return payload.data;
+    return (payload as { data: T }).data;
   }
   return payload as T;
 }
+
+/** Order item as returned by the backend (before mapping to KitchenTicketItem). */
+interface RawOrderItem {
+  id: number;
+  menu_item_id: number;
+  quantity: number;
+  special_instructions: string | null;
+  removed_ingredients: string[] | null;
+  added_extras: string[] | null;
+  state?: KitchenTicketStatus;
+  menu_item: {
+    id: number;
+    name: string;
+    description: string;
+    preparation_time: number;
+    category_id: number;
+  };
+}
+
+/** Ticket as returned by the backend: order carries `order_items` instead of `items`. */
+type RawKitchenTicket = Omit<KitchenTicket, 'items' | 'order'> & {
+  order?: KitchenTicket['order'] & { order_items?: RawOrderItem[] };
+};
 
 export const kitchenAPI = {
   /**
@@ -27,7 +53,6 @@ export const kitchenAPI = {
     per_page?: number;
   } = {}): Promise<PaginatedResponse<KitchenTicket>> => {
     try {
-      console.log('🔍 Fetching kitchen tickets with filters:', filters);
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -36,12 +61,11 @@ export const kitchenAPI = {
       });
       
       const response = await apiClient.get(`/kitchen/tickets?${params}`);
-      console.log('📡 Kitchen API response:', response.data);
       
       // Transform backend response to match frontend KitchenTicket type
-      const transformTicket = (ticket: any): KitchenTicket => {
+      const transformTicket = (ticket: RawKitchenTicket): KitchenTicket => {
         // Map order_items to items array with proper structure
-        const items = ticket.order?.order_items?.map((orderItem: any) => ({
+        const items = ticket.order?.order_items?.map((orderItem): KitchenTicketItem => ({
           id: orderItem.id,
           order_item_id: orderItem.id,
           menu_item_id: orderItem.menu_item_id,
@@ -65,7 +89,7 @@ export const kitchenAPI = {
         return {
           ...ticket,
           items
-        };
+        } as KitchenTicket;
       };
       
       // Handle both paginated response and direct array response
@@ -91,7 +115,8 @@ export const kitchenAPI = {
         ...response.data,
         data: response.data.data.map(transformTicket)
       } as PaginatedResponse<KitchenTicket>;
-    } catch (error: any) {
+    } catch (errorRaw) {
+      const error = asApiError(errorRaw);
       console.error('❌ Error fetching kitchen tickets:', error);
       throw error;
     }
@@ -102,10 +127,10 @@ export const kitchenAPI = {
    */
   getTicket: async (id: number): Promise<KitchenTicket> => {
     const response = await apiClient.get(`/kitchen/tickets/${id}`);
-    const ticket = unwrapResponse<any>(response.data);
+    const ticket = unwrapResponse<RawKitchenTicket>(response.data);
     
     // Transform backend response to match frontend type
-    const items = ticket.order?.order_items?.map((orderItem: any) => ({
+    const items = ticket.order?.order_items?.map((orderItem): KitchenTicketItem => ({
       id: orderItem.id,
       order_item_id: orderItem.id,
       menu_item_id: orderItem.menu_item_id,
@@ -129,7 +154,7 @@ export const kitchenAPI = {
     return {
       ...ticket,
       items
-    };
+    } as KitchenTicket;
   },
 
   /**

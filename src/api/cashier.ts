@@ -8,10 +8,11 @@ import type {
   CashierDashboardData,
 } from '@/types/cashier';
 
-const unwrapShift = (payload: any): CashierShift | null => {
-  if (!payload) return null;
+const unwrapShift = (input: unknown): CashierShift | null => {
+  if (!input) return null;
+  const payload = input as Partial<ShiftResponse> & { data?: Partial<ShiftResponse> };
   if ('shift' in payload) {
-    return payload.shift;
+    return payload.shift as CashierShift | null;
   }
   if ('data' in payload && payload.data?.shift !== undefined) {
     return payload.data.shift;

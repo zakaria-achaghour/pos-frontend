@@ -5,7 +5,7 @@ import {
   selectIsLoading,
   selectAuthError,
   selectLoginError,
-  selectHasRole,
+  getRedirectPathForRole,
   loginUser,
   logoutUser,
   clearError,
@@ -19,37 +19,8 @@ export const useAuth = () => {
   const error = useAppSelector(selectAuthError);
   const loginError = useAppSelector(selectLoginError);
   
-  const getRoleBasedRedirect = () => {
-    if (!user) {
-      return '/login';
-    }
-    
-    let redirectPath: string;
-    switch (user.role) {
-      case 'superadmin':
-        redirectPath = '/admin/tenants';
-        break;
-      case 'owner':
-        redirectPath = '/owner/dashboard';
-        break;
-      case 'manager':
-        redirectPath = '/dashboard';
-        break;
-      case 'cashier':
-        redirectPath = '/orders';
-        break;
-      case 'kitchen':
-        redirectPath = '/kitchen';
-        break;
-      case 'waiter':
-        redirectPath = '/tables';
-        break;
-      default:
-        redirectPath = '/orders';
-    }
-    
-    return redirectPath;
-  };
+  const getRoleBasedRedirect = () =>
+    user ? getRedirectPathForRole(user.role) : '/login';
 
   const login = async (email: string, password: string) => {
     const result = await dispatch(loginUser({ email, password }));
@@ -70,8 +41,11 @@ export const useAuth = () => {
     dispatch(logoutUser());
   };
 
+  // Plain check on the current user (selectors must not be called inside handlers)
   const hasRole = (roles: string | string[]) => {
-    return useAppSelector(selectHasRole(roles));
+    if (!user) return false;
+    const roleArray = Array.isArray(roles) ? roles : [roles];
+    return roleArray.includes(user.role);
   };
 
   const clearAuthError = () => {

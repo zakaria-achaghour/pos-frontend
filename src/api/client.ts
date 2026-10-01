@@ -72,13 +72,13 @@ export default apiClient;
 export { apiConfig };
 
 // Types for common API responses
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   message?: string;
   errors?: Record<string, string[]>;
 }
 
-export interface PaginatedResponse<T = any> {
+export interface PaginatedResponse<T = unknown> {
   data: T[];
   current_page?: number;
   last_page?: number;
@@ -90,10 +90,15 @@ export interface PaginatedResponse<T = any> {
   to?: number;
 }
 
+interface ErrorBody {
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 // Error handler utility
 export const handleApiError = (error: AxiosError): string => {
   // First check if there's a specific error message from the backend
-  const backendMessage = (error.response?.data as any)?.message;
+  const backendMessage = (error.response?.data as ErrorBody | undefined)?.message;
   if (backendMessage) {
     return backendMessage;
   }
@@ -107,11 +112,11 @@ export const handleApiError = (error: AxiosError): string => {
   }
   
   if (error.response?.status === 422) {
-    const errors = (error.response.data as any)?.errors;
+    const errors = (error.response.data as ErrorBody | undefined)?.errors;
     if (errors) {
       return Object.values(errors).flat().join(', ');
     }
-    return (error.response.data as any)?.message || 'Validation failed.';
+    return (error.response.data as ErrorBody | undefined)?.message || 'Validation failed.';
   }
   
   if (error.response?.status === 404) {

@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { tableAPI } from '../api/tables';
 import type { TableAnalytics } from '../types/table';
+import { asApiError } from '@/utils/apiError';
 
 export const useTableAnalytics = () => {
   const [analytics, setAnalytics] = useState<TableAnalytics[]>([]);
-  const [occupancyRates, setOccupancyRates] = useState<any>({});
-  const [revenueData, setRevenueData] = useState<any>({});
+  const [occupancyRates, setOccupancyRates] = useState<Record<string, unknown>>({});
+  const [revenueData, setRevenueData] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
@@ -36,7 +37,8 @@ export const useTableAnalytics = () => {
       setOccupancyRates(occupancyData);
       setRevenueData(revenueDataRes);
       setError(null);
-    } catch (err: any) {
+    } catch (errRaw) {
+      const err = asApiError(errRaw);
       console.error('Error fetching table analytics:', err);
       const errorMessage = err.response?.data?.message || 'Failed to load analytics data';
       showError(errorMessage);
@@ -50,7 +52,8 @@ export const useTableAnalytics = () => {
     try {
       const tableAnalytics = await tableAPI.getTableAnalyticsById(tableId);
       return tableAnalytics;
-    } catch (err: any) {
+    } catch (errRaw) {
+      const err = asApiError(errRaw);
       console.error(`Error fetching analytics for table ${tableId}:`, err);
       const errorMessage = err.response?.data?.message || `Failed to load analytics for table ${tableId}`;
       showError(errorMessage);

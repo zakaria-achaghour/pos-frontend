@@ -11,82 +11,75 @@ export const fetchReceipt = async (orderId: number): Promise<ReceiptData> => {
 };
 
 /**
- * Download receipt as PDF or HTML with authentication
- * Opens the receipt in a new tab with proper Bearer token authentication
+ * Print server-rendered receipt HTML without a popup window.
+ *
+ * The HTML goes into a hidden, sandboxed iframe: `sandbox` without `allow-scripts` means any script
+ * smuggled into the receipt (e.g. through a customer name) cannot run, while `allow-same-origin`
+ * lets us call print() on it. No popup, so popup blockers can't interfere.
+ */
+const printHtml = (html: string): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('sandbox', 'allow-same-origin allow-modals');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;inset-inline-end:0;bottom:0;width:0;height:0;border:0;';
+
+    const cleanup = () => window.setTimeout(() => frame.remove(), 60000);
+
+    frame.onload = () => {
+      try {
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        cleanup();
+        resolve();
+      } catch (error) {
+        frame.remove();
+        reject(error);
+      }
+    };
+    frame.srcdoc = html;
+    document.body.appendChild(frame);
+  });
+
+const receiptParams = (format: 'pdf' | 'html', templateId?: number) => ({
+  format,
+  ...(templateId && { template_id: templateId }),
+});
+
+/**
+ * Download the receipt PDF (authenticated request, saved via a blob link),
+ * or print the HTML version.
  */
 export const downloadReceipt = async (orderId: number, format: 'pdf' | 'html' = 'pdf', templateId?: number): Promise<void> => {
-  const params = new URLSearchParams();
-  params.append('format', format);
-  if (templateId) {
-    params.append('template_id', templateId.toString());
+  if (format === 'html') {
+    await printReceipt(orderId, templateId);
+    return;
   }
-  
-  try {
-    // Make authenticated request to get the receipt
-    const response = await apiClient.get(`/orders/${orderId}/receipt?${params.toString()}`, {
-      responseType: format === 'pdf' ? 'blob' : 'text',
-    });
-    
-    if (format === 'pdf') {
-      // Create blob URL and open in new tab for PDF
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt-${orderId}.pdf`;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } else {
-      // Open HTML in new window for printing
-      const htmlContent = response.data;
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-      }
-    }
-  } catch (error) {
-    console.error('Error downloading receipt:', error);
-    throw error;
-  }
+
+  const response = await apiClient.get(`/orders/${orderId}/receipt`, {
+    params: receiptParams('pdf', templateId),
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `receipt-${orderId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Revoking immediately can cancel the download in some browsers
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 10000);
 };
 
 /**
- * Print receipt (opens in new window with authentication)
+ * Print the receipt (authenticated request, printed through a sandboxed iframe).
  */
 export const printReceipt = async (orderId: number, templateId?: number): Promise<void> => {
-  const params = new URLSearchParams();
-  params.append('format', 'html');
-  if (templateId) {
-    params.append('template_id', templateId.toString());
-  }
-  
-  try {
-    // Make authenticated request to get the receipt HTML
-    const response = await apiClient.get(`/orders/${orderId}/receipt?${params.toString()}`, {
-      responseType: 'text',
-    });
-    
-    // Open in new window and trigger print
-    const htmlContent = response.data;
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Wait for content to load, then print
-      printWindow.onload = () => {
-        printWindow.print();
-      };
-    }
-  } catch (error) {
-    console.error('Error printing receipt:', error);
-    throw error;
-  }
+  const response = await apiClient.get<string>(`/orders/${orderId}/receipt`, {
+    params: receiptParams('html', templateId),
+    responseType: 'text',
+  });
+  await printHtml(response.data);
 };
 
 /**

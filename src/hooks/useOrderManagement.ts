@@ -1,6 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { orderAPI } from '../api/orders';
-import type { 
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useGetOrdersQuery,
+  useCreateOrderMutation,
+  useUpdateOrderMutation,
+  useUpdateOrderStatusMutation,
+  useAddOrderItemMutation,
+  useRemoveOrderItemMutation,
+  useCloseOrderMutation,
+  type OrderListArgs,
+} from '@/services/ordersApi';
+import { LIVE_POLL_MS, type ApiError } from '@/services/baseApi';
+import type {
   Order,
   OrderFilter,
   OrderTypeFilter,
@@ -11,40 +21,16 @@ import type {
   UpdateOrderData,
   AddOrderItemData,
   OrderStatus,
-  PaymentMethod
+  PaymentMethod,
 } from '../types/order';
 
-/**
- * @description Custom hook for managing orders with filtering, pagination, and CRUD operations
- * @param {number} initialPerPage - Number of orders to display per page
- * @returns {UseOrderManagementReturn} Order management state and actions
- */
-export const useOrderManagement = (initialPerPage: number = 12): UseOrderManagementReturn => {
-  // Data State
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
-  
-  // UI State
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [statusFilter, setStatusFilter] = useState<OrderFilter>('all');
-  const [typeFilter, setTypeFilter] = useState<OrderTypeFilter>('all');
-  const [tableFilter, setTableFilter] = useState<number | 'all'>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: initialPerPage,
-    total: 0,
-  });
-  const [orderStats, setOrderStats] = useState<OrderStats>({
-    total: 0,
+const EMPTY_ORDERS: Order[] = [];
+
+const isActiveStatus = (status: OrderStatus) => status !== 'completed' && status !== 'cancelled';
+
+const calculateStats = (orders: Order[]): OrderStats => {
+  const stats: OrderStats = {
+    total: orders.length,
     active: 0,
     completed: 0,
     cancelled: 0,
@@ -52,325 +38,213 @@ export const useOrderManagement = (initialPerPage: number = 12): UseOrderManagem
     preparing: 0,
     ready: 0,
     served: 0,
+  };
+  orders.forEach((order) => {
+    if (order.status === 'completed') stats.completed++;
+    else if (order.status === 'cancelled') stats.cancelled++;
+    else stats.active++;
+
+    if (order.status === 'pending') stats.pending++;
+    if (order.status === 'preparing') stats.preparing++;
+    if (order.status === 'ready') stats.ready++;
+    if (order.status === 'served') stats.served++;
   });
+  return stats;
+};
+
+const errorMessage = (err: unknown, fallback: string): string => {
+  const e = err as Partial<ApiError> | undefined;
+  return e?.message || fallback;
+};
+
+/**
+ * Orders list + actions. Server state lives in RTK Query (cached, de-duplicated,
+ * polled); this hook only holds UI state (filters, selection, messages).
+ */
+export const useOrderManagement = (
+  initialPerPage: number = 12,
+  options: { autoRefresh?: boolean } = {}
+): UseOrderManagementReturn => {
+  const { autoRefresh = true } = options;
+  // UI state
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [statusFilter, setStatusFilter] = useState<OrderFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<OrderTypeFilter>('all');
+  const [tableFilter, setTableFilter] = useState<number | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPageState] = useState(initialPerPage);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Server filters. The API has no `search` and no "active" status, so those are applied below.
+  const queryArgs = useMemo<OrderListArgs>(() => {
+    const args: OrderListArgs = { page, per_page: perPage };
+    if (statusFilter !== 'all' && statusFilter !== 'active') args.status = statusFilter;
+    if (typeFilter !== 'all') args.type = typeFilter;
+    if (tableFilter !== 'all') args.table_id = tableFilter;
+    return args;
+  }, [page, perPage, statusFilter, typeFilter, tableFilter]);
+
+  const { data, isLoading, error: queryError, refetch } = useGetOrdersQuery(queryArgs, {
+    pollingInterval: autoRefresh ? LIVE_POLL_MS : 0,
+    skipPollingIfUnfocused: true,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const [createOrderMutation] = useCreateOrderMutation();
+  const [updateOrderMutation] = useUpdateOrderMutation();
+  const [updateStatusMutation] = useUpdateOrderStatusMutation();
+  const [addItemMutation] = useAddOrderItemMutation();
+  const [removeItemMutation] = useRemoveOrderItemMutation();
+  const [closeOrderMutation] = useCloseOrderMutation();
+
+  const orders = data?.items ?? EMPTY_ORDERS;
+
+  const filteredOrders = useMemo(() => {
+    let list = orders;
+    if (statusFilter === 'active') list = list.filter((o) => isActiveStatus(o.status));
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      list = list.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(term) ||
+          String(o.id).includes(term) ||
+          o.customer?.name?.toLowerCase().includes(term) ||
+          o.table?.number?.toLowerCase().includes(term) ||
+          o.items.some((item) => item.menuItem?.name?.toLowerCase().includes(term))
+      );
+    }
+    return list;
+  }, [orders, statusFilter, searchTerm]);
+
+  const orderStats = useMemo(() => calculateStats(filteredOrders), [filteredOrders]);
+
+  const pagination = useMemo<PaginationInfo>(
+    () => ({
+      currentPage: data?.pagination.currentPage ?? page,
+      lastPage: data?.pagination.lastPage ?? 1,
+      perPage: data?.pagination.perPage ?? perPage,
+      total: data?.pagination.total ?? 0,
+    }),
+    [data, page, perPage]
+  );
 
   // Auto-clear success messages
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
+    if (!successMessage) return undefined;
+    const timer = setTimeout(() => setSuccessMessage(null), 3000);
+    return () => clearTimeout(timer);
   }, [successMessage]);
 
-  // Calculate stats from orders
-  const calculateStats = useCallback((ordersList: Order[]) => {
-    const stats: OrderStats = {
-      total: ordersList.length,
-      active: 0,
-      completed: 0,
-      cancelled: 0,
-      pending: 0,
-      preparing: 0,
-      ready: 0,
-      served: 0,
-    };
+  // Runs a mutation with shared loading / error / success handling
+  const perform = useCallback(
+    async <T,>(action: () => Promise<T>, success: string, failure: string): Promise<T> => {
+      setActionLoading(true);
+      setActionError(null);
+      setValidationErrors({});
+      try {
+        const result = await action();
+        setSuccessMessage(success);
+        return result;
+      } catch (err) {
+        const apiErr = err as Partial<ApiError>;
+        if (apiErr.errors) setValidationErrors(apiErr.errors);
+        setActionError(errorMessage(err, failure));
+        throw err;
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    []
+  );
 
-    ordersList.forEach(order => {
-      if (order.status === 'completed') stats.completed++;
-      else if (order.status === 'cancelled') stats.cancelled++;
-      else stats.active++;
-
-      if (order.status === 'pending') stats.pending++;
-      if (order.status === 'preparing') stats.preparing++;
-      if (order.status === 'ready') stats.ready++;
-      if (order.status === 'served') stats.served++;
-    });
-
-    setOrderStats(stats);
-  }, []);
-
-  // Filter and search orders - REMOVED: Now using server-side filtering in fetchOrders
-  // Client-side filtering was overriding API pagination
-  /*
-  useEffect(() => {
-    let filtered = [...orders];
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => {
-        if (statusFilter === 'active') {
-          return order.status !== 'completed' && order.status !== 'cancelled';
-        }
-        return order.status === statusFilter;
-      });
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(order => order.type === typeFilter);
-    }
-
-    // Table filter
-    if (tableFilter !== 'all') {
-      filtered = filtered.filter(order => order.tableId === tableFilter);
-    }
-
-    // Search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.orderNumber?.toLowerCase().includes(term) ||
-        order.customer?.name?.toLowerCase().includes(term) ||
-        order.table?.number?.toLowerCase().includes(term) ||
-        order.items?.some(item => item.menuItem?.name?.toLowerCase().includes(term))
-      );
-    }
-
-    // Sort by creation date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    setFilteredOrders(filtered);
-    calculateStats(filtered);
-
-    // Update pagination
-    const totalPages = Math.ceil(filtered.length / pagination.perPage);
-    setPagination(prev => ({
-      ...prev,
-      total: filtered.length,
-      lastPage: totalPages,
-      currentPage: Math.min(prev.currentPage, totalPages || 1),
-    }));
-  }, [orders, statusFilter, typeFilter, tableFilter, searchTerm, pagination.perPage, calculateStats]);
-  */
-
-  // Fetch orders from API with server-side filtering
   const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: any = {
-        page: pagination.currentPage,
-        per_page: pagination.perPage,
-      };
+    await refetch();
+  }, [refetch]);
 
-      // Add filters to API request
-      if (statusFilter !== 'all') {
-        params.status = statusFilter;
-      }
-      if (typeFilter !== 'all') {
-        params.type = typeFilter;
-      }
-      if (tableFilter !== 'all') {
-        params.table_id = tableFilter;
-      }
-      if (searchTerm) {
-        params.search = searchTerm;
-      }
+  const createOrder = (body: CreateOrderData): Promise<Order> =>
+    perform(() => createOrderMutation(body).unwrap(), 'Order created successfully!', 'Failed to create order');
 
-      const response = await orderAPI.getOrders(params);
-      
-      const ordersData = Array.isArray(response) ? response : response.data || [];
-      setOrders(ordersData);
-      setFilteredOrders(ordersData); // Set filtered orders directly from API
-      
-      // Update pagination from response if available
-      if (!Array.isArray(response) && response) {
-        setPagination({
-          currentPage: Number(response.current_page ?? pagination.currentPage) || pagination.currentPage,
-          lastPage: Number(response.last_page ?? 1) || 1,
-          perPage: Number(response.per_page ?? ordersData.length) || ordersData.length || pagination.perPage,
-          total: Number(response.total ?? ordersData.length) || ordersData.length,
-        });
-      }
-
-      // Calculate stats from fetched orders
-      calculateStats(ordersData);
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to fetch orders');
-      console.error('Failed to fetch orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.currentPage, pagination.perPage, statusFilter, typeFilter, tableFilter, searchTerm, calculateStats]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
-
-  // Create new order
-  const createOrder = async (data: CreateOrderData): Promise<Order> => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-    try {
-      const newOrder = await orderAPI.createOrder(data);
-      setSuccessMessage('Order created successfully!');
-      await fetchOrders();
-      return newOrder;
-    } catch (err: any) {
-      if (err.response?.data?.errors) {
-        setValidationErrors(err.response.data.errors);
-      }
-      setError(err.response?.data?.message || err.message || 'Failed to create order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update order
-  const updateOrder = async (id: number, data: UpdateOrderData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Note: Update API endpoint when available
-      // await orderAPI.updateOrder(id, data);
-      setOrders(prev => prev.map(order => 
-        order.id === id ? { ...order, ...data } : order
-      ));
-      setSuccessMessage('Order updated successfully!');
-      await fetchOrders();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to update order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete order
-  const deleteOrder = async (id: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Note: Delete API endpoint when available
-      // await orderAPI.deleteOrder(id);
-      setOrders(prev => prev.filter(order => order.id !== id));
-      setSuccessMessage('Order deleted successfully!');
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update order status
-  const updateOrderStatus = async (id: number, status: OrderStatus) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await orderAPI.updateOrderStatus(id, status);
-      setSuccessMessage(`Order status updated to ${status}!`);
-      await fetchOrders(); // Refresh orders after status update
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to update order status');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add item to order
-  const addOrderItem = async (orderId: number, item: AddOrderItemData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await orderAPI.addItem(orderId, item);
-      setSuccessMessage('Item added to order!');
-      await fetchOrders();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to add item to order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Remove item from order
-  const removeOrderItem = async (orderId: number, itemId: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await orderAPI.removeItem(orderId, itemId);
-      setSuccessMessage('Item removed from order!');
-      await fetchOrders();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to remove item from order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Close order (payment)
-  const closeOrder = async (orderId: number, paymentData: { payment_method: PaymentMethod; amount_paid: number }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await orderAPI.closeOrder(orderId, paymentData);
-      setSuccessMessage('Order closed successfully!');
-      await fetchOrders();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to close order');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Selection actions
-  const toggleOrderSelection = (id: number) => {
-    setSelectedOrders(prev =>
-      prev.includes(id) ? prev.filter(orderId => orderId !== id) : [...prev, id]
+  const updateOrder = async (id: number, body: UpdateOrderData) => {
+    await perform(
+      () => updateOrderMutation({ id, data: body as unknown as Record<string, unknown> }).unwrap(),
+      'Order updated successfully!',
+      'Failed to update order'
     );
   };
 
-  const selectAllOrders = () => {
-    setSelectedOrders(filteredOrders.map(order => order.id));
+  // The API has no delete route: "delete" cancels the order (which also frees the table).
+  const deleteOrder = async (id: number) => {
+    await perform(
+      () => updateStatusMutation({ id, status: 'cancelled' }).unwrap(),
+      'Order cancelled successfully!',
+      'Failed to cancel order'
+    );
   };
 
-  const clearSelection = () => {
-    setSelectedOrders([]);
+  const updateOrderStatus = async (id: number, status: OrderStatus) => {
+    await perform(
+      () => updateStatusMutation({ id, status }).unwrap(),
+      `Order status updated to ${status}!`,
+      'Failed to update order status'
+    );
   };
 
-  // Pagination actions
-  const goToPage = (page: number) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
+  const addOrderItem = async (orderId: number, item: AddOrderItemData) => {
+    await perform(() => addItemMutation({ orderId, item }).unwrap(), 'Item added to order!', 'Failed to add item to order');
   };
 
-  const setPerPage = (perPage: number) => {
-    setPagination(prev => ({ ...prev, perPage, currentPage: 1 }));
+  const removeOrderItem = async (orderId: number, itemId: number) => {
+    await perform(
+      () => removeItemMutation({ orderId, itemId }).unwrap(),
+      'Item removed from order!',
+      'Failed to remove item from order'
+    );
   };
 
-  // Clear functions
-  const clearError = () => setError(null);
-  const clearSuccessMessage = () => setSuccessMessage(null);
+  const closeOrder = async (orderId: number, paymentData: { payment_method: PaymentMethod; amount_paid: number }) => {
+    await perform(
+      () => closeOrderMutation({ orderId, ...paymentData }).unwrap(),
+      'Order closed successfully!',
+      'Failed to close order'
+    );
+  };
 
-  // Filter actions that reset to page 1
+  // Selection
+  const toggleOrderSelection = (id: number) => {
+    setSelectedOrders((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+  const selectAllOrders = () => setSelectedOrders(filteredOrders.map((o) => o.id));
+  const clearSelection = () => setSelectedOrders([]);
+
+  // Pagination
+  const goToPage = (next: number) => setPage(next);
+  const setPerPage = (next: number) => {
+    setPerPageState(next);
+    setPage(1);
+  };
+
+  // Filters reset to page 1
   const handleSetStatusFilter = (filter: OrderFilter) => {
     setStatusFilter(filter);
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setPage(1);
   };
-
   const handleSetTypeFilter = (filter: OrderTypeFilter) => {
     setTypeFilter(filter);
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setPage(1);
   };
-
   const handleSetTableFilter = (tableId: number | 'all') => {
     setTableFilter(tableId);
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setPage(1);
   };
 
-  const handleSetSearchTerm = (term: string) => {
-    setSearchTerm(term);
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
+  const error = actionError ?? (queryError ? errorMessage(queryError, 'Failed to fetch orders') : null);
 
   return {
     // Data
@@ -386,7 +260,8 @@ export const useOrderManagement = (initialPerPage: number = 12): UseOrderManagem
     typeFilter,
     tableFilter,
     searchTerm,
-    loading,
+    // true only for the first load or an action: background polling never flashes a skeleton
+    loading: isLoading || actionLoading,
     error,
     successMessage,
     validationErrors,
@@ -419,8 +294,10 @@ export const useOrderManagement = (initialPerPage: number = 12): UseOrderManagem
     setStatusFilter: handleSetStatusFilter,
     setTypeFilter: handleSetTypeFilter,
     setTableFilter: handleSetTableFilter,
-    setSearchTerm: handleSetSearchTerm,
-    clearError,
-    clearSuccessMessage,
+    setSearchTerm,
+    clearError: () => setActionError(null),
+    clearSuccessMessage: () => setSuccessMessage(null),
   };
 };
+
+export default useOrderManagement;

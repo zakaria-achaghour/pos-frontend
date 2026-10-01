@@ -342,3 +342,5 @@ export interface OrderListProps {
   onPayment?: (order: Order) => void;
   hasFilters?: boolean;
 }
+
+export type { PaginationInfo };
