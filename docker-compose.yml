@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Set API URL that your frontend will call
-        VITE_API_URL: "http://localhost/8080/api"
+        VITE_API_URL: "http://localhost:8080/api"
     container_name: pos-frontend
     ports:
       - "8085:8085"
