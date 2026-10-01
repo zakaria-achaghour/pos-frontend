@@ -1,39 +1,11 @@
-import React from 'react';
+import React, { useId, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TableFormProps } from '@/types/table';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import type { Table, TableFormData, TableStatus, TableShape } from '@/types/table';
+import type { TableFormData, TableStatus, TableShape } from '@/types/table';
 import Button from '@/components/ui/button/Button';
-
-const tableValidationSchema = Yup.object().shape({
-  number: Yup.string()
-    .required('Table number is required')
-    .min(1, 'Table number must be at least 1 character')
-    .max(10, 'Table number must be at most 10 characters'),
-  capacity: Yup.number()
-    .required('Capacity is required')
-    .min(1, 'Capacity must be at least 1')
-    .max(20, 'Capacity must be at most 20'),
-  shape: Yup.string()
-    .oneOf(['round', 'square', 'rectangular', 'rectangle'], 'Invalid table shape')
-    .required('Shape is required'),
-  status: Yup.string()
-    .oneOf(['available', 'occupied', 'reserved', 'cleaning', 'out-of-order', 'maintenance'], 'Invalid status')
-    .required('Status is required'),
-  section: Yup.string()
-    .required('Section is required')
-    .min(1, 'Section name must be at least 1 character')
-    .max(50, 'Section name must be at most 50 characters'),
-  floor: Yup.number()
-    .required('Floor is required')
-    .min(1, 'Floor must be at least 1')
-    .max(50, 'Floor must be at most 50'),
-  description: Yup.string()
-    .max(200, 'Description must be at most 200 characters'),
-  features: Yup.array()
-    .of(Yup.string())
-    .default([])
-});
+import { tableStatusLabel, tableStatusStyle } from './tableStatus';
 
 const TableForm: React.FC<TableFormProps> = ({ 
   table, 
@@ -42,6 +14,44 @@ const TableForm: React.FC<TableFormProps> = ({
   isLoading = false,
   serverErrors = {} 
 }) => {
+  const { t } = useTranslation();
+  const formId = useId();
+  const fid = (name: string) => `${formId}-${name}`;
+
+  const tableValidationSchema = useMemo(
+    () =>
+      Yup.object().shape({
+        number: Yup.string()
+          .required(t('tableAdmin.form.validation.numberRequired'))
+          .min(1, t('tableAdmin.form.validation.numberMin', { count: 1 }))
+          .max(10, t('tableAdmin.form.validation.numberMax', { count: 10 })),
+        capacity: Yup.number()
+          .required(t('tableAdmin.form.validation.capacityRequired'))
+          .min(1, t('tableAdmin.form.validation.capacityMin', { count: 1 }))
+          .max(20, t('tableAdmin.form.validation.capacityMax', { count: 20 })),
+        shape: Yup.string()
+          .oneOf(['round', 'square', 'rectangular', 'rectangle'], t('tableAdmin.form.validation.shapeInvalid'))
+          .required(t('tableAdmin.form.validation.shapeRequired')),
+        status: Yup.string()
+          .oneOf(
+            ['available', 'occupied', 'reserved', 'cleaning', 'out-of-order', 'maintenance'],
+            t('tableAdmin.form.validation.statusInvalid')
+          )
+          .required(t('tableAdmin.form.validation.statusRequired')),
+        section: Yup.string()
+          .required(t('tableAdmin.form.validation.sectionRequired'))
+          .min(1, t('tableAdmin.form.validation.sectionMin', { count: 1 }))
+          .max(50, t('tableAdmin.form.validation.sectionMax', { count: 50 })),
+        floor: Yup.number()
+          .required(t('tableAdmin.form.validation.floorRequired'))
+          .min(1, t('tableAdmin.form.validation.floorMin', { count: 1 }))
+          .max(50, t('tableAdmin.form.validation.floorMax', { count: 50 })),
+        description: Yup.string().max(200, t('tableAdmin.form.validation.descriptionMax', { count: 200 })),
+        features: Yup.array().of(Yup.string()).default([]),
+      }),
+    [t]
+  );
+
   const initialValues: TableFormData = {
     number: table?.number || '',
     capacity: table?.capacity || 4,
@@ -53,43 +63,42 @@ const TableForm: React.FC<TableFormProps> = ({
     features: table?.features || []
   };
 
-  const statusOptions: { value: TableStatus; label: string; color: string }[] = [
-    { value: 'available', label: 'Available', color: 'text-green-600' },
-    { value: 'occupied', label: 'Occupied', color: 'text-red-600' },
-    { value: 'reserved', label: 'Reserved', color: 'text-yellow-600' },
-    { value: 'cleaning', label: 'Cleaning', color: 'text-blue-600' },
-    { value: 'out-of-order', label: 'Out of Order', color: 'text-gray-600' },
-    { value: 'maintenance', label: 'Maintenance', color: 'text-purple-600' }
-  ];
+  const statusValues: TableStatus[] = ['available', 'occupied', 'reserved', 'cleaning', 'out-of-order', 'maintenance'];
+  const statusOptions = statusValues.map((value) => ({
+    value,
+    label: tableStatusLabel(t, value),
+    color: tableStatusStyle(value).text,
+  }));
 
   const shapeOptions: { value: TableShape; label: string; icon: string }[] = [
-    { value: 'round', label: 'Round', icon: '⭕' },
-    { value: 'square', label: 'Square', icon: '⬜' },
-    { value: 'rectangular', label: 'Rectangular', icon: '▭' },
-    { value: 'rectangle', label: 'Rectangle', icon: '▭' }
+    { value: 'round', label: t('tableAdmin.shape.round'), icon: '⭕' },
+    { value: 'square', label: t('tableAdmin.shape.square'), icon: '⬜' },
+    { value: 'rectangular', label: t('tableAdmin.shape.rectangular'), icon: '▭' },
+    { value: 'rectangle', label: t('tableAdmin.shape.rectangle'), icon: '▭' },
   ];
 
-  const availableFeatures = [
-    'Window View',
-    'Private Booth',
-    'High Chair Available',
-    'Wheelchair Accessible',
-    'Power Outlet',
-    'Quiet Area',
-    'Near Kitchen',
-    'Bar Seating',
-    'Outdoor Seating',
-    'VIP Section'
+  // The English strings are the stored values; only the labels are translated.
+  const availableFeatures: { value: string; label: string }[] = [
+    { value: 'Window View', label: t('tableAdmin.features.windowView') },
+    { value: 'Private Booth', label: t('tableAdmin.features.privateBooth') },
+    { value: 'High Chair Available', label: t('tableAdmin.features.highChair') },
+    { value: 'Wheelchair Accessible', label: t('tableAdmin.features.wheelchair') },
+    { value: 'Power Outlet', label: t('tableAdmin.features.powerOutlet') },
+    { value: 'Quiet Area', label: t('tableAdmin.features.quietArea') },
+    { value: 'Near Kitchen', label: t('tableAdmin.features.nearKitchen') },
+    { value: 'Bar Seating', label: t('tableAdmin.features.barSeating') },
+    { value: 'Outdoor Seating', label: t('tableAdmin.features.outdoorSeating') },
+    { value: 'VIP Section', label: t('tableAdmin.features.vipSection') },
   ];
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-lg dark:bg-gray-900">
       <div className="mb-6">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          {table ? 'Edit Table' : 'Create New Table'}
+          {table ? t('tableAdmin.form.editTitle') : t('tableAdmin.form.createTitle')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-          {table ? 'Update table information' : 'Add a new table to your restaurant'}
+          {table ? t('tableAdmin.form.editSubtitle') : t('tableAdmin.form.createSubtitle')}
         </p>
       </div>
 
@@ -99,19 +108,19 @@ const TableForm: React.FC<TableFormProps> = ({
         onSubmit={onSubmit}
         enableReinitialize
       >
-        {({ values, setFieldValue, errors, touched }) => (
+        {({ values, setFieldValue }) => (
           <Form className="space-y-6">
             {/* Basic Information */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label htmlFor="number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Table Number *
+                <label htmlFor={fid('number')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.number')}
                 </label>
                 <Field
-                  id="number"
+                  id={fid('number')}
                   name="number"
                   type="text"
-                  placeholder="e.g., T-01, A1, Table 1"
+                  placeholder={t('tableAdmin.form.numberPlaceholder')}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                 />
                 <ErrorMessage name="number" component="p" className="mt-1 text-sm text-red-600" />
@@ -121,21 +130,21 @@ const TableForm: React.FC<TableFormProps> = ({
               </div>
 
               <div>
-                <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Capacity *
+                <label htmlFor={fid('capacity')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.capacity')}
                 </label>
                 <Field
-                  id="capacity"
+                  id={fid('capacity')}
                   name="capacity"
                   type="number"
                   min="1"
                   max="20"
-                  placeholder="Number of seats"
+                  placeholder={t('tableAdmin.form.capacityPlaceholder')}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                 />
                 <ErrorMessage name="capacity" component="p" className="mt-1 text-sm text-red-600" />
                 <p className="mt-1 text-xs text-gray-500">
-                  Current: {values.capacity} {values.capacity === 1 ? 'seat' : 'seats'}
+                  {t('tableAdmin.form.currentCapacity', { count: Number(values.capacity) || 0 })}
                 </p>
                 {serverErrors.capacity && (
                   <p className="mt-1 text-sm text-red-600">{serverErrors.capacity[0]}</p>
@@ -146,12 +155,12 @@ const TableForm: React.FC<TableFormProps> = ({
             {/* Shape and Status */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label htmlFor="shape" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Table Shape *
+                <label htmlFor={fid('shape')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.shape')}
                 </label>
                 <Field
                   as="select"
-                  id="shape"
+                  id={fid('shape')}
                   name="shape"
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 >
@@ -168,12 +177,12 @@ const TableForm: React.FC<TableFormProps> = ({
               </div>
 
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Status *
+                <label htmlFor={fid('status')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.status')}
                 </label>
                 <Field
                   as="select"
-                  id="status"
+                  id={fid('status')}
                   name="status"
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 >
@@ -193,14 +202,14 @@ const TableForm: React.FC<TableFormProps> = ({
             {/* Location */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label htmlFor="section" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Section *
+                <label htmlFor={fid('section')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.section')}
                 </label>
                 <Field
-                  id="section"
+                  id={fid('section')}
                   name="section"
                   type="text"
-                  placeholder="e.g., Main Hall, Patio, VIP"
+                  placeholder={t('tableAdmin.form.sectionPlaceholder')}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                 />
                 <ErrorMessage name="section" component="p" className="mt-1 text-sm text-red-600" />
@@ -210,16 +219,16 @@ const TableForm: React.FC<TableFormProps> = ({
               </div>
 
               <div>
-                <label htmlFor="floor" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Floor *
+                <label htmlFor={fid('floor')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tableAdmin.form.floor')}
                 </label>
                 <Field
-                  id="floor"
+                  id={fid('floor')}
                   name="floor"
                   type="number"
                   min="1"
                   max="50"
-                  placeholder="Floor number"
+                  placeholder={t('tableAdmin.form.floorPlaceholder')}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                 />
                 <ErrorMessage name="floor" component="p" className="mt-1 text-sm text-red-600" />
@@ -231,20 +240,20 @@ const TableForm: React.FC<TableFormProps> = ({
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
+              <label htmlFor={fid('description')} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tableAdmin.form.description')}
               </label>
               <Field
                 as="textarea"
-                id="description"
+                id={fid('description')}
                 name="description"
                 rows={3}
-                placeholder="Additional details about this table..."
+                placeholder={t('tableAdmin.form.descriptionPlaceholder')}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
               />
               <ErrorMessage name="description" component="p" className="mt-1 text-sm text-red-600" />
               <p className="mt-1 text-xs text-gray-500">
-                {values.description ? values.description.length : 0}/200 characters
+                {t('tableAdmin.form.charCount', { current: values.description ? values.description.length : 0, max: 200 })}
               </p>
               {serverErrors.description && (
                 <p className="mt-1 text-sm text-red-600">{serverErrors.description[0]}</p>
@@ -252,12 +261,12 @@ const TableForm: React.FC<TableFormProps> = ({
             </div>
 
             {/* Features */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Table Features
-              </label>
+            <fieldset>
+              <legend className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                {t('tableAdmin.form.features')}
+              </legend>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {availableFeatures.map(feature => (
+                {availableFeatures.map(({ value: feature, label: featureLabel }) => (
                   <label key={feature} className="flex items-center">
                     <input
                       type="checkbox"
@@ -271,29 +280,29 @@ const TableForm: React.FC<TableFormProps> = ({
                       }}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
                     />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                    <span className="ms-2 text-sm text-gray-700 dark:text-gray-300">{featureLabel}</span>
                   </label>
                 ))}
               </div>
               {serverErrors.features && (
                 <p className="mt-1 text-sm text-red-600">{serverErrors.features[0]}</p>
               )}
-            </div>
+            </fieldset>
 
             {/* Preview */}
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preview:</h4>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('tableAdmin.form.preview')}</h4>
               <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                <div>📋 <strong>{values.number || 'Table Number'}</strong></div>
-                <div>👥 {values.capacity} seat{values.capacity !== 1 ? 's' : ''}</div>
-                <div>🔲 {values.shape} shape</div>
-                <div>📍 Section: {values.section || 'Not specified'}, Floor: {values.floor}</div>
-                <div>🏷️ Status: <span className={statusOptions.find(opt => opt.value === values.status)?.color}>
+                <div>📋 <strong>{values.number || t('tableAdmin.form.previewNumber')}</strong></div>
+                <div>👥 {t('tables.seats', { count: Number(values.capacity) || 0 })}</div>
+                <div>🔲 {t('tableAdmin.form.previewShape', { shape: shapeOptions.find(opt => opt.value === values.shape)?.label ?? values.shape })}</div>
+                <div>📍 {t('tableAdmin.form.previewLocation', { section: values.section || t('tableAdmin.form.notSpecified'), floor: values.floor })}</div>
+                <div>🏷️ {t('tableAdmin.form.previewStatus')} <span className={statusOptions.find(opt => opt.value === values.status)?.color}>
                   {statusOptions.find(opt => opt.value === values.status)?.label}
                 </span></div>
                 {values.description && <div>📝 {values.description}</div>}
                 {values.features.length > 0 && (
-                  <div>✨ Features: {values.features.join(', ')}</div>
+                  <div>✨ {t('tableAdmin.form.previewFeatures', { features: values.features.map(f => availableFeatures.find(a => a.value === f)?.label ?? f).join(', ') })}</div>
                 )}
               </div>
             </div>
@@ -307,7 +316,7 @@ const TableForm: React.FC<TableFormProps> = ({
                   onClick={onCancel}
                   disabled={isLoading}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               )}
               <Button
@@ -317,14 +326,14 @@ const TableForm: React.FC<TableFormProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="animate-spin -ms-1 me-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {table ? 'Updating...' : 'Creating...'}
+                    {table ? t('tableAdmin.form.updating') : t('tableAdmin.form.creating')}
                   </>
                 ) : (
-                  table ? 'Update Table' : 'Create Table'
+                  table ? t('tableAdmin.form.update') : t('tableAdmin.form.create')
                 )}
               </Button>
             </div>

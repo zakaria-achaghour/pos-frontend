@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Table, TableStatus } from '@/types/table';
 import TableCard from './TableCard';
 
@@ -21,22 +22,23 @@ const TableList: React.FC<TableListComponentProps> = ({
   onStatusChange,
   onSelectTable,
   selectedTables = [],
-  isLoading = false,
   viewMode = 'grid',
   className = ''
 }) => {
+  const { t } = useTranslation();
+
   if (tables.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 dark:bg-gray-900 dark:border-gray-800">
         <div className="text-center">
-          <div className="text-6xl mb-4">🍽️</div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No tables found</h3>
+          <div className="text-6xl mb-4" aria-hidden="true">🍽️</div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('tableAdmin.list.emptyTitle')}</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-            No tables match your current filters. Try adjusting your search criteria or create a new table to get started.
+            {t('tableAdmin.list.emptyBody')}
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-sm mx-auto dark:bg-blue-900/20 dark:border-blue-800">
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              💡 <strong>Tip:</strong> Use the "Clear Filters" button to see all tables or click "Create Table" to add your first table.
+              <span aria-hidden="true">💡 </span><strong>{t('tableAdmin.list.tipLabel')}</strong> {t('tableAdmin.list.tip')}
             </div>
           </div>
         </div>
