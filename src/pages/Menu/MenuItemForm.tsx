@@ -152,7 +152,7 @@ export default function MenuItemForm() {
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
-    
+
     try {
       const data: CreateMenuItemData = {
         ...(values as CreateMenuItemData),
@@ -161,7 +161,7 @@ export default function MenuItemForm() {
       };
 
       let itemId: number;
-      
+
       if (isEditMode && id) {
         await menuAPI.updateItem(Number(id), data);
         itemId = Number(id);
@@ -234,24 +234,24 @@ export default function MenuItemForm() {
       {/* Header */}
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-fg">
             {isEditMode ? t('menuAdmin.form.headingEdit') : t('menuAdmin.form.headingAdd')}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             {isEditMode ? t('menuAdmin.form.subtitleEdit') : t('menuAdmin.form.subtitleAdd')}
           </p>
         </div>
         <button
           type="button"
           onClick={() => navigate('/menu/items')}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 border border-line rounded-lg text-fg hover:bg-bg transition-colors"
         >
           {t('menuAdmin.form.back')}
         </button>
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-surface rounded-2xl shadow-sm p-6 border border-line">
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -262,29 +262,29 @@ export default function MenuItemForm() {
             <Form className="space-y-6">
               {/* Basic Information */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.basicInfo')}</h2>
+                <h2 className="text-lg font-semibold text-fg mb-4">{t('menuAdmin.form.basicInfo')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name */}
                   <div className="md:col-span-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('menuAdmin.form.name')} <span className="text-red-500" aria-hidden="true">*</span>
+                    <label htmlFor="name" className="block text-sm font-medium text-fg mb-1">
+                      {t('menuAdmin.form.name')} <span className="text-danger" aria-hidden="true">*</span>
                     </label>
                     <Field
                       id="name"
                       name="name"
                       type="text"
                       placeholder={t('menuAdmin.form.namePlaceholder')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.name && touched.name ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.name && touched.name ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="name" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="name" component="div" className="text-danger text-sm mt-1" />
                   </div>
 
                   {/* Description */}
                   <div className="md:col-span-2">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="description" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.description')}
                     </label>
                     <Field
@@ -293,17 +293,17 @@ export default function MenuItemForm() {
                       name="description"
                       rows={3}
                       placeholder={t('menuAdmin.form.descriptionPlaceholder')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.description && touched.description ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.description && touched.description ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="description" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="description" component="div" className="text-danger text-sm mt-1" />
                   </div>
 
                   {/* Image Upload */}
                   <div className="md:col-span-2">
-                    <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="image" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.image')}
                     </label>
                     <div className="flex items-start gap-4">
@@ -312,7 +312,7 @@ export default function MenuItemForm() {
                           <img
                             src={imagePreview}
                             alt={t('menuAdmin.form.imagePreviewAlt')}
-                            className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                            className="w-24 h-24 object-cover rounded-lg border border-line"
                           />
                         </div>
                       )}
@@ -323,9 +323,9 @@ export default function MenuItemForm() {
                           accept="image/*"
                           onChange={handleImageChange}
                           disabled={isSubmitting || loading}
-                          className="block w-full text-sm text-gray-500 file:me-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                          className="block w-full text-sm text-fg-muted file:me-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/15 disabled:opacity-50"
                         />
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-fg-muted">
                           {t('menuAdmin.form.imageHint')}
                         </p>
                       </div>
@@ -334,15 +334,15 @@ export default function MenuItemForm() {
 
                   {/* Category */}
                   <div>
-                    <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('menuAdmin.category')} <span className="text-red-500" aria-hidden="true">*</span>
+                    <label htmlFor="category_id" className="block text-sm font-medium text-fg mb-1">
+                      {t('menuAdmin.category')} <span className="text-danger" aria-hidden="true">*</span>
                     </label>
                     <Field
                       as="select"
                       id="category_id"
                       name="category_id"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.category_id && touched.category_id ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.category_id && touched.category_id ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     >
@@ -353,12 +353,12 @@ export default function MenuItemForm() {
                         </option>
                       ))}
                     </Field>
-                    <ErrorMessage name="category_id" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="category_id" component="div" className="text-danger text-sm mt-1" />
                   </div>
 
                   {/* Preparation Time */}
                   <div>
-                    <label htmlFor="preparation_time" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="preparation_time" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.prepTime')}
                     </label>
                     <Field
@@ -367,24 +367,24 @@ export default function MenuItemForm() {
                       type="number"
                       min="1"
                       placeholder={t('menuAdmin.form.prepPlaceholder')}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.preparation_time && touched.preparation_time ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.preparation_time && touched.preparation_time ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="preparation_time" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="preparation_time" component="div" className="text-danger text-sm mt-1" />
                   </div>
                 </div>
               </div>
 
               {/* Pricing */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.pricing')}</h2>
+                <h2 className="text-lg font-semibold text-fg mb-4">{t('menuAdmin.form.pricing')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Price */}
                   <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('menuAdmin.form.price', { currency: DEFAULT_CURRENCY })} <span className="text-red-500" aria-hidden="true">*</span>
+                    <label htmlFor="price" className="block text-sm font-medium text-fg mb-1">
+                      {t('menuAdmin.form.price', { currency: DEFAULT_CURRENCY })} <span className="text-danger" aria-hidden="true">*</span>
                     </label>
                     <Field
                       id="price"
@@ -393,17 +393,17 @@ export default function MenuItemForm() {
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.price && touched.price ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.price && touched.price ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="price" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="price" component="div" className="text-danger text-sm mt-1" />
                   </div>
 
                   {/* Cost */}
                   <div>
-                    <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="cost" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.cost', { currency: DEFAULT_CURRENCY })}
                     </label>
                     <Field
@@ -413,23 +413,23 @@ export default function MenuItemForm() {
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.cost && touched.cost ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.cost && touched.cost ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="cost" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="cost" component="div" className="text-danger text-sm mt-1" />
                   </div>
                 </div>
               </div>
 
               {/* Additional Details */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.form.additional')}</h2>
+                <h2 className="text-lg font-semibold text-fg mb-4">{t('menuAdmin.form.additional')}</h2>
                 <div className="space-y-4">
                   {/* Ingredients */}
                   <div>
-                    <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="ingredients" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.ingredients')}
                     </label>
                     <input
@@ -438,14 +438,14 @@ export default function MenuItemForm() {
                       value={ingredients}
                       onChange={(e) => setIngredients(e.target.value)}
                       placeholder={t('menuAdmin.form.ingredientsPlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       disabled={isSubmitting || loading}
                     />
                   </div>
 
                   {/* Allergens */}
                   <div>
-                    <label htmlFor="allergens" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="allergens" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.allergens')}
                     </label>
                     <input
@@ -454,14 +454,14 @@ export default function MenuItemForm() {
                       value={allergens}
                       onChange={(e) => setAllergens(e.target.value)}
                       placeholder={t('menuAdmin.form.allergensPlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                       disabled={isSubmitting || loading}
                     />
                   </div>
 
                   {/* Sort Order */}
                   <div>
-                    <label htmlFor="sort_order" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="sort_order" className="block text-sm font-medium text-fg mb-1">
                       {t('menuAdmin.form.sortOrder')}
                     </label>
                     <Field
@@ -470,19 +470,19 @@ export default function MenuItemForm() {
                       type="number"
                       min="0"
                       placeholder="0"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.sort_order && touched.sort_order ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+                        errors.sort_order && touched.sort_order ? 'border-danger' : 'border-line'
                       }`}
                       disabled={isSubmitting || loading}
                     />
-                    <ErrorMessage name="sort_order" component="div" className="text-red-600 text-sm mt-1" />
+                    <ErrorMessage name="sort_order" component="div" className="text-danger text-sm mt-1" />
                   </div>
                 </div>
               </div>
 
               {/* Status Toggles */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('menuAdmin.status')}</h2>
+                <h2 className="text-lg font-semibold text-fg mb-4">{t('menuAdmin.status')}</h2>
                 <div className="space-y-3">
                   {/* Is Available */}
                   <div className="flex items-center">
@@ -490,10 +490,10 @@ export default function MenuItemForm() {
                       id="is_available"
                       name="is_available"
                       type="checkbox"
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-primary border-line rounded focus:ring-primary"
                       disabled={isSubmitting || loading}
                     />
-                    <label htmlFor="is_available" className="ms-2 text-sm font-medium text-gray-700">
+                    <label htmlFor="is_available" className="ms-2 text-sm font-medium text-fg">
                       {t('menuAdmin.form.isAvailable')}
                     </label>
                   </div>
@@ -504,10 +504,10 @@ export default function MenuItemForm() {
                       id="is_active"
                       name="is_active"
                       type="checkbox"
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-primary border-line rounded focus:ring-primary"
                       disabled={isSubmitting || loading}
                     />
-                    <label htmlFor="is_active" className="ms-2 text-sm font-medium text-gray-700">
+                    <label htmlFor="is_active" className="ms-2 text-sm font-medium text-fg">
                       {t('menuAdmin.form.isActive')}
                     </label>
                   </div>
@@ -519,14 +519,14 @@ export default function MenuItemForm() {
                 <button
                   type="button"
                   onClick={() => navigate('/menu/items')}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 border border-line rounded-lg text-fg hover:bg-bg transition-colors"
                   disabled={isSubmitting || loading}
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isSubmitting || loading}
                 >
                   {isSubmitting || loading ? (

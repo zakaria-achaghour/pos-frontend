@@ -595,7 +595,7 @@ export default function QuickOrderCreate() {
 
         {/* Cart (lg and up): sticky beside the menu */}
         <aside
-          className="sticky top-24 hidden max-h-[calc(100dvh-7rem)] overflow-hidden rounded-2xl border border-line shadow-sm lg:block"
+          className="sticky top-24 hidden h-[calc(100dvh-12rem)] min-h-96 overflow-hidden rounded-2xl border border-line shadow-sm lg:block"
           aria-label={t('cart.title')}
         >
           {cartPanel}

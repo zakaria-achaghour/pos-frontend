@@ -6,7 +6,7 @@ export default function DemoDataBanner() {
   return (
     <div
       role="status"
-      className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200"
+      className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2 text-sm text-warning"
     >
       {t('dashboard.demoBanner')}
     </div>

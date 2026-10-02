@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 import PageMeta from '@/components/common/PageMeta';
-import { Button, Skeleton, useToast } from '@/components/kit';
+import { Button, Icon, Skeleton, useToast } from '@/components/kit';
 import KdsTicket from '@/components/pos/kitchen/KdsTicket';
 import { useKitchenManagement } from '@/hooks/useKitchenManagement';
 import { useNow } from '@/hooks/useNow';
@@ -19,7 +19,7 @@ const BOARD_PAGE_SIZE = 60;
 const NEW_BADGE_MS = 12000;
 
 /**
- * Kitchen display: dark, full-width, three lanes (New / Cooking / Ready).
+ * Kitchen display: responsive, theme-aware, three lanes (New / Cooking / Ready).
  * Live timers change color with ticket age; new tickets chime and are highlighted.
  *
  * Ticket status flow (backend):  pending → [Start] → preparing → [Done] → ready
@@ -117,18 +117,18 @@ const KitchenManagement: React.FC = () => {
   const initialLoading = loading.list && tickets.length === 0;
 
   const controlClass =
-    'h-12 rounded-lg border border-line bg-surface px-3 text-base font-medium text-fg';
+    'h-11 max-w-full rounded-lg border border-line bg-surface px-3 text-sm font-medium text-fg';
 
   return (
-    // Forced dark: the kitchen is viewed from a distance, often in a dim room
-    <div className="dark -mx-4 -my-4 min-h-[calc(100vh-4rem)] bg-bg p-4 text-fg">
+    // Follow the shared theme; the header theme switch also controls the kitchen.
+    <div className="kitchen-board space-y-5 text-fg">
       <PageMeta title={`${t('kitchen.title')} | POS`} description={t('kitchen.title')} />
 
       {/* Toolbar */}
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <h1 className="me-auto text-2xl font-black">{t('kitchen.title')}</h1>
+      <div className="kitchen-toolbar flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-surface p-5">
+        <h1 className="me-auto w-full text-2xl font-semibold tracking-tight">{t('kitchen.title')}</h1>
 
-        <label className="flex flex-col text-sm font-medium text-fg-muted">
+        <label className="flex min-w-0 flex-col gap-2 text-xs font-medium text-fg-muted">
           {t('kitchen.date')}
           <input
             type="date"
@@ -138,7 +138,7 @@ const KitchenManagement: React.FC = () => {
           />
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-fg-muted">
+        <label className="flex min-w-0 flex-col gap-2 text-xs font-medium text-fg-muted">
           {t('kitchen.priority')}
           <select
             value={priorityFilter}
@@ -157,7 +157,7 @@ const KitchenManagement: React.FC = () => {
           </select>
         </label>
 
-        <label className="flex h-12 items-center gap-2 text-base font-medium">
+        <label className="flex h-11 items-center gap-2 rounded-lg bg-surface-2 px-3 text-sm font-medium">
           <input
             type="checkbox"
             checked={autoRefresh}
@@ -167,13 +167,13 @@ const KitchenManagement: React.FC = () => {
           {t('kitchen.autoRefresh')}
         </label>
 
-        <Button variant="secondary" size="lg" aria-pressed={soundOn} onClick={toggleSound}>
+        <Button variant="secondary" size="md" aria-pressed={soundOn} onClick={toggleSound}>
           {soundOn ? t('kitchen.soundOn') : t('kitchen.soundOff')}
         </Button>
-        <Button variant="secondary" size="lg" loading={loading.list && tickets.length > 0} onClick={() => void fetchTickets()}>
+        <Button variant="secondary" size="md" loading={loading.list && tickets.length > 0} onClick={() => void fetchTickets()}>
           {t('common.refresh')}
         </Button>
-        <Button variant="secondary" size="lg" onClick={toggleFullscreen}>
+        <Button variant="secondary" size="md" onClick={toggleFullscreen}>
           {t('kitchen.fullscreen')}
         </Button>
       </div>
@@ -194,7 +194,7 @@ const KitchenManagement: React.FC = () => {
       )}
 
       {/* Lane switcher (small screens); all lanes show side by side from lg */}
-      <div role="tablist" aria-label={t('kitchen.lanesLabel')} className="mb-4 grid grid-cols-3 gap-2 lg:hidden">
+      <div role="group" aria-label={t('kitchen.lanesLabel')} className="mb-4 grid grid-cols-3 gap-2 lg:hidden">
         {LANES.map((lane) => {
           const style = orderStatusStyle(lane);
           const selected = activeLane === lane;
@@ -202,8 +202,7 @@ const KitchenManagement: React.FC = () => {
             <button
               key={lane}
               type="button"
-              role="tab"
-              aria-selected={selected}
+              aria-pressed={selected}
               onClick={() => setActiveLane(lane)}
               className={twMerge(
                 'min-h-14 rounded-xl border-2 px-2 text-base font-bold',
@@ -222,11 +221,6 @@ const KitchenManagement: React.FC = () => {
             <Skeleton key={i} className="h-96" />
           ))}
         </div>
-      ) : tickets.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-surface py-16 text-center">
-          <p className="text-2xl font-bold">{t('kitchen.empty')}</p>
-          <p className="mt-2 text-fg-muted">{t('kitchen.emptyHint')}</p>
-        </div>
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
           {LANES.map((lane) => {
@@ -235,21 +229,23 @@ const KitchenManagement: React.FC = () => {
               <section
                 key={lane}
                 aria-label={dynamicT(`kitchen.lane.${lane}`)}
-                className={twMerge('space-y-4', activeLane === lane ? 'block' : 'hidden lg:block')}
+                className={twMerge('min-w-0 space-y-3 rounded-2xl border border-line bg-surface-2/50 p-3', activeLane === lane ? 'block' : 'hidden lg:block')}
               >
                 <h2
                   className={twMerge(
-                    'hidden items-center justify-between rounded-xl px-4 py-2 text-lg font-bold lg:flex',
-                    style.solid
+                    'hidden items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold lg:flex',
+                    style.pill
                   )}
                 >
                   <span>{dynamicT(`kitchen.lane.${lane}`)}</span>
                   <span className="tabular-nums">{byLane[lane].length}</span>
                 </h2>
                 {byLane[lane].length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-line py-10 text-center text-fg-muted">
-                    {t('kitchen.emptyLane')}
-                  </p>
+                  <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-line bg-surface px-4 py-10 text-center">
+                    <span className="mb-4 rounded-2xl bg-surface-2 p-3 text-fg-muted"><Icon name={style.icon} className="h-6 w-6"/></span>
+                    <p className="text-sm font-medium text-fg">{t('kitchen.emptyLane')}</p>
+                    <p className="mt-2 max-w-48 text-xs leading-5 text-fg-muted">{t('kitchen.emptyHint')}</p>
+                  </div>
                 ) : (
                   byLane[lane].map((ticket) => (
                     <KdsTicket

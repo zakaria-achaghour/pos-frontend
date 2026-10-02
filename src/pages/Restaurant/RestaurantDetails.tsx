@@ -81,8 +81,8 @@ export default function RestaurantDetails() {
 
   const getStatusBadge = (status: string) => {
     return status === 'active'
-      ? 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium'
-      : 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium';
+      ? 'px-3 py-1 bg-success/10 text-success rounded-full text-sm font-medium'
+      : 'px-3 py-1 bg-danger/10 text-danger rounded-full text-sm font-medium';
   };
 
   if (loading) {
@@ -97,17 +97,17 @@ export default function RestaurantDetails() {
           ]}
         />
 
-        <div className="bg-white rounded-xl shadow p-6 animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+        <div className="bg-surface rounded-xl shadow-sm p-6 animate-pulse border border-line">
+          <div className="h-8 bg-surface-2 rounded w-1/4 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="h-16 bg-surface-2 rounded"></div>
               ))}
             </div>
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="h-16 bg-surface-2 rounded"></div>
               ))}
             </div>
           </div>
@@ -120,9 +120,9 @@ export default function RestaurantDetails() {
     return (
       <div>
         <PageMeta title={t('tenants.notFoundMeta')} description={t('tenants.notFound')} />
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
           <div className="text-center py-8">
-            <p className="text-gray-500">{error || t('tenants.notFound')}</p>
+            <p className="text-fg-muted">{error || t('tenants.notFound')}</p>
             <Button
               variant="primary"
               onClick={() => navigate('/admin/tenants')}
@@ -147,11 +147,11 @@ export default function RestaurantDetails() {
         ]}
       />
 
-      <div className="bg-white rounded-xl shadow">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-surface rounded-xl shadow-sm border border-line">
+        <div className="p-6 border-b border-line">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold text-gray-900">{restaurant.name}</h2>
+              <h2 className="text-xl font-semibold text-fg">{restaurant.name}</h2>
               <span className={getStatusBadge(restaurant.status)}>
                 {dynamicT(`tenants.status.${restaurant.status}`, { defaultValue: restaurant.status })}
               </span>
@@ -159,7 +159,7 @@ export default function RestaurantDetails() {
             <div className="flex gap-3">
               <Link
                 to={`/admin/restaurants/${restaurant.id}/edit`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
               >
                 {t('tenants.actions.edit')}
               </Link>
@@ -183,59 +183,59 @@ export default function RestaurantDetails() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
+              <h3 className="text-lg font-medium text-fg mb-4">{t('tenants.form.basicInfo')}</h3>
 
               <div className="space-y-3">
                 <div>
-                  <span className="block text-sm font-medium text-gray-500">{t('tenants.details.name')}</span>
-                  <p className="text-gray-900">{restaurant.name}</p>
+                  <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.name')}</span>
+                  <p className="text-fg">{restaurant.name}</p>
                 </div>
 
                 {restaurant.description && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.description')}</span>
-                    <p className="text-gray-900">{restaurant.description}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.description')}</span>
+                    <p className="text-fg">{restaurant.description}</p>
                   </div>
                 )}
 
                 <div>
-                  <span className="block text-sm font-medium text-gray-500">{t('tenants.details.address')}</span>
-                  <p className="text-gray-900">{typeof restaurant.address === 'string' ? restaurant.address : [restaurant.address.street, restaurant.address.city, restaurant.address.state, restaurant.address.zipCode, restaurant.address.country].filter(Boolean).join(', ')}</p>
+                  <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.address')}</span>
+                  <p className="text-fg">{typeof restaurant.address === 'string' ? restaurant.address : [restaurant.address.street, restaurant.address.city, restaurant.address.state, restaurant.address.zipCode, restaurant.address.country].filter(Boolean).join(', ')}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.details.city')}</span>
-                    <p className="text-gray-900">{restaurant.city}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.city')}</span>
+                    <p className="text-fg">{restaurant.city}</p>
                   </div>
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.details.country')}</span>
-                    <p className="text-gray-900">{restaurant.country}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.country')}</span>
+                    <p className="text-fg">{restaurant.country}</p>
                   </div>
                 </div>
 
                 {restaurant.phone && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.phone')}</span>
-                    <p className="text-gray-900">{restaurant.phone}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.phone')}</span>
+                    <p className="text-fg">{restaurant.phone}</p>
                   </div>
                 )}
 
                 {restaurant.email && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.email')}</span>
-                    <p className="text-gray-900">{restaurant.email}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.email')}</span>
+                    <p className="text-fg">{restaurant.email}</p>
                   </div>
                 )}
 
                 {restaurant.website && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.website')}</span>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.website')}</span>
                     <a
                       href={restaurant.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-primary hover:text-primary"
                     >
                       {restaurant.website}
                     </a>
@@ -246,70 +246,70 @@ export default function RestaurantDetails() {
 
             {/* Business & Owner Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
+              <h3 className="text-lg font-medium text-fg mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
 
               <div className="space-y-3">
                 {restaurant.license_number && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.license')}</span>
-                    <p className="text-gray-900">{restaurant.license_number}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.license')}</span>
+                    <p className="text-fg">{restaurant.license_number}</p>
                   </div>
                 )}
 
                 {restaurant.tax_number && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.taxNumber')}</span>
-                    <p className="text-gray-900">{restaurant.tax_number}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.taxNumber')}</span>
+                    <p className="text-fg">{restaurant.tax_number}</p>
                   </div>
                 )}
 
                 <div>
-                  <span className="block text-sm font-medium text-gray-500">{t('tenants.details.ownerName')}</span>
-                  <p className="text-gray-900">{restaurant.owner_name}</p>
+                  <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.ownerName')}</span>
+                  <p className="text-fg">{restaurant.owner_name}</p>
                 </div>
 
                 <div>
-                  <span className="block text-sm font-medium text-gray-500">{t('tenants.details.ownerEmail')}</span>
-                  <p className="text-gray-900">{restaurant.owner_email}</p>
+                  <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.ownerEmail')}</span>
+                  <p className="text-fg">{restaurant.owner_email}</p>
                 </div>
 
                 {restaurant.owner_phone && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.details.ownerPhone')}</span>
-                    <p className="text-gray-900">{restaurant.owner_phone}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.ownerPhone')}</span>
+                    <p className="text-fg">{restaurant.owner_phone}</p>
                   </div>
                 )}
 
                 {restaurant.subscription_plan && (
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.form.plan')}</span>
-                    <p className="text-gray-900">{dynamicT(`tenants.plan.${restaurant.subscription_plan}`, { defaultValue: restaurant.subscription_plan })}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.plan')}</span>
+                    <p className="text-fg">{dynamicT(`tenants.plan.${restaurant.subscription_plan}`, { defaultValue: restaurant.subscription_plan })}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
                   {restaurant.timezone && (
                     <div>
-                      <span className="block text-sm font-medium text-gray-500">{t('tenants.form.timezone')}</span>
-                      <p className="text-gray-900">{restaurant.timezone}</p>
+                      <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.timezone')}</span>
+                      <p className="text-fg">{restaurant.timezone}</p>
                     </div>
                   )}
                   {restaurant.currency && (
                     <div>
-                      <span className="block text-sm font-medium text-gray-500">{t('tenants.form.currency')}</span>
-                      <p className="text-gray-900">{restaurant.currency}</p>
+                      <span className="block text-sm font-medium text-fg-muted">{t('tenants.form.currency')}</span>
+                      <p className="text-fg">{restaurant.currency}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.details.created')}</span>
-                    <p className="text-gray-900">{new Date(restaurant.created_at ?? '').toLocaleDateString(i18n.language)}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.created')}</span>
+                    <p className="text-fg">{new Date(restaurant.created_at ?? '').toLocaleDateString(i18n.language)}</p>
                   </div>
                   <div>
-                    <span className="block text-sm font-medium text-gray-500">{t('tenants.details.updated')}</span>
-                    <p className="text-gray-900">{new Date(restaurant.updated_at ?? '').toLocaleDateString(i18n.language)}</p>
+                    <span className="block text-sm font-medium text-fg-muted">{t('tenants.details.updated')}</span>
+                    <p className="text-fg">{new Date(restaurant.updated_at ?? '').toLocaleDateString(i18n.language)}</p>
                   </div>
                 </div>
               </div>

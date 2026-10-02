@@ -45,7 +45,7 @@ export default function AdminTenantOverview() {
       // TODO: Replace with actual API call
       // const response = await api.get(`/admin/restaurants/${id}/overview`);
       // setTenant(response.data);
-      
+
       setTimeout(() => {
         setTenant({ ...mockTenantOverview, id: parseInt(id || '1') });
         setLoading(false);
@@ -62,15 +62,15 @@ export default function AdminTenantOverview() {
         <PageMeta title={t('tenants.overview.metaTitle')} description={t('tenants.overview.metaDescription')} />
         <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="bg-surface p-6 rounded-xl shadow-sm animate-pulse border border-line">
+            <div className="h-8 bg-surface-2 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-surface-2 rounded w-1/4"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-white p-4 rounded-xl shadow animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              <div key={i} className="bg-surface p-4 rounded-xl shadow-sm animate-pulse border border-line">
+                <div className="h-4 bg-surface-2 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-surface-2 rounded w-1/2"></div>
               </div>
             ))}
           </div>
@@ -84,8 +84,8 @@ export default function AdminTenantOverview() {
       <div>
         <PageMeta title={t('tenants.overview.metaTitle')} description={t('tenants.overview.metaDescription')} />
         <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{t('tenants.notFound')}</p>
+        <div className="bg-danger/10 border border-danger/30 rounded-lg p-4">
+          <p className="text-danger">{t('tenants.notFound')}</p>
         </div>
       </div>
     );
@@ -96,44 +96,44 @@ export default function AdminTenantOverview() {
       <PageMeta title={t('tenants.overview.metaTitleNamed', { name: tenant.name })} description={t('tenants.overview.metaDescription')} />
       <PageBreadcrumb pageTitle={t('tenants.overview.title')} />
       <DemoDataBanner />
-      
+
       <div className="space-y-6">
         {/* Restaurant Info */}
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{tenant.name}</h2>
-          <p className="text-gray-600">{t('tenants.overview.locatedIn', { city: tenant.city })}</p>
+        <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+          <h2 className="text-2xl font-bold text-fg mb-2">{tenant.name}</h2>
+          <p className="text-fg-muted">{t('tenants.overview.locatedIn', { city: tenant.city })}</p>
         </div>
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Tables */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.tables')}</h3>
-            <p className="text-3xl font-bold text-gray-900">{tenant.tables}</p>
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+            <h3 className="text-sm font-medium text-fg-muted mb-2">{t('tenants.overview.tables')}</h3>
+            <p className="text-3xl font-bold text-fg">{tenant.tables}</p>
           </div>
 
           {/* Categories */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.categories')}</h3>
-            <p className="text-3xl font-bold text-gray-900">{tenant.categories}</p>
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+            <h3 className="text-sm font-medium text-fg-muted mb-2">{t('tenants.overview.categories')}</h3>
+            <p className="text-3xl font-bold text-fg">{tenant.categories}</p>
           </div>
 
           {/* Menu Items */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.menuItems')}</h3>
-            <p className="text-3xl font-bold text-gray-900">{tenant.items}</p>
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+            <h3 className="text-sm font-medium text-fg-muted mb-2">{t('tenants.overview.menuItems')}</h3>
+            <p className="text-3xl font-bold text-fg">{tenant.items}</p>
           </div>
 
           {/* Orders Today */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.ordersToday')}</h3>
-            <p className="text-3xl font-bold text-blue-600">{tenant.orders_today}</p>
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+            <h3 className="text-sm font-medium text-fg-muted mb-2">{t('tenants.overview.ordersToday')}</h3>
+            <p className="text-3xl font-bold text-primary">{tenant.orders_today}</p>
           </div>
 
           {/* Sales Today */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('tenants.overview.salesToday')}</h3>
-            <p className="text-3xl font-bold text-green-600">{formatMoney(tenant.sales_today)}</p>
+          <div className="bg-surface p-6 rounded-xl shadow-sm border border-line">
+            <h3 className="text-sm font-medium text-fg-muted mb-2">{t('tenants.overview.salesToday')}</h3>
+            <p className="text-3xl font-bold text-success">{formatMoney(tenant.sales_today)}</p>
           </div>
         </div>
       </div>

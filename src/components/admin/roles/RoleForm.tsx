@@ -86,8 +86,8 @@ export default function RoleForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Role Name */}
       <div>
-        <label htmlFor={nameId} className="block text-sm font-medium text-gray-700 mb-1">
-          {t('rbac.roleForm.name')} <span className="text-red-500">*</span>
+        <label htmlFor={nameId} className="block text-sm font-medium text-fg mb-1">
+          {t('rbac.roleForm.name')} <span className="text-danger">*</span>
         </label>
         <input
           type="text"
@@ -96,73 +96,73 @@ export default function RoleForm({
           aria-invalid={getErrorMessage('name') ? true : undefined}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            getErrorMessage('name') ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+            getErrorMessage('name') ? 'border-danger' : 'border-line'
           }`}
           placeholder={t('rbac.roleForm.namePlaceholder')}
           disabled={isLoading}
         />
         {getErrorMessage('name') && (
-          <p className="mt-1 text-sm text-red-600">{getErrorMessage('name')}</p>
+          <p className="mt-1 text-sm text-danger">{getErrorMessage('name')}</p>
         )}
       </div>
 
       {/* Permissions */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span id={permsId} className="block text-sm font-medium text-gray-700">
-            {t('rbac.roleForm.permissions')} <span className="text-red-500">*</span>
+          <span id={permsId} className="block text-sm font-medium text-fg">
+            {t('rbac.roleForm.permissions')} <span className="text-danger">*</span>
           </span>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={selectAllPermissions}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              className="text-xs text-primary hover:text-primary font-medium"
               disabled={isLoading}
             >
               {t('rbac.roleForm.selectAll')}
             </button>
-            <span className="text-gray-300" aria-hidden="true">|</span>
+            <span className="text-fg-muted" aria-hidden="true">|</span>
             <button
               type="button"
               onClick={deselectAllPermissions}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              className="text-xs text-primary hover:text-primary font-medium"
               disabled={isLoading}
             >
               {t('rbac.roleForm.clearAll')}
             </button>
           </div>
         </div>
-        
-        <div role="group" aria-labelledby={permsId} className="border border-gray-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
+
+        <div role="group" aria-labelledby={permsId} className="border border-line rounded-lg p-4 max-h-64 overflow-y-auto bg-bg">
           {availablePermissions.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">{t('rbac.roleForm.noPermissions')}</p>
+            <p className="text-sm text-fg-muted text-center py-4">{t('rbac.roleForm.noPermissions')}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {availablePermissions.map((permission) => (
                 <label
                   key={permission.id}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                  className="flex items-center gap-2 p-2 hover:bg-surface-2 rounded cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     checked={formData.permissions.includes(permission.name)}
                     onChange={() => handlePermissionToggle(permission.name)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-primary border-line rounded focus:ring-primary"
                     disabled={isLoading}
                   />
-                  <span className="text-sm text-gray-700">{permission.name}</span>
+                  <span className="text-sm text-fg">{permission.name}</span>
                 </label>
               ))}
             </div>
           )}
         </div>
-        
-        <p className="mt-1 text-xs text-gray-500">
+
+        <p className="mt-1 text-xs text-fg-muted">
           {t('rbac.roleForm.selected', { count: formData.permissions.length })}
         </p>
         {getErrorMessage('permissions') && (
-          <p className="mt-1 text-sm text-red-600">{getErrorMessage('permissions')}</p>
+          <p className="mt-1 text-sm text-danger">{getErrorMessage('permissions')}</p>
         )}
       </div>
 
@@ -172,14 +172,14 @@ export default function RoleForm({
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="px-4 py-2 border border-line rounded-lg text-fg hover:bg-bg disabled:opacity-60"
         >
           {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-60"
         >
           {isLoading ? t('rbac.saving') : isEdit ? t('rbac.roleForm.update') : t('rbac.roleForm.create')}
         </button>

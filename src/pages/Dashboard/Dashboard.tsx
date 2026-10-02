@@ -9,6 +9,7 @@ import { dashboardAPI } from '@/api/dashboard';
 import type { DashboardPeriod, DashboardOverviewResponse } from '@/types/dashboard';
 import { handleApiError } from '@/api/client';
 import type { AxiosError } from 'axios';
+import { CartIcon, DollarLineIcon, PieChartIcon } from '@/icons';
 
 const timeframeOptions: Array<{ key: DashboardPeriod; labelKey: `dashboard.period.${DashboardPeriod}` }> = [
   { key: 'today', labelKey: 'dashboard.period.today' },
@@ -17,9 +18,9 @@ const timeframeOptions: Array<{ key: DashboardPeriod; labelKey: `dashboard.perio
 ];
 
 const SkeletonCard = () => (
-  <div className="bg-white p-6 rounded-lg shadow animate-pulse">
-    <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
-    <div className="h-8 bg-gray-200 rounded w-2/3" />
+  <div className="dashboard-panel animate-pulse">
+    <div className="h-4 bg-surface-2 rounded w-1/2 mb-3" />
+    <div className="h-8 bg-surface-2 rounded w-2/3" />
   </div>
 );
 
@@ -51,33 +52,32 @@ export default function Dashboard() {
   }, [period]);
 
   const metricCards = [
-    { label: period === 'today' ? t('dashboard.salesToday') : t('dashboard.totalSales'), value: overview?.sales_today ?? 0, currency: true },
-    { label: period === 'today' ? t('dashboard.ordersToday') : t('dashboard.orders'), value: overview?.orders_today ?? 0, currency: false },
-    { label: t('dashboard.avgTicket'), value: overview?.avg_ticket ?? 0, currency: true },
+    { label: period === 'today' ? t('dashboard.salesToday') : t('dashboard.totalSales'), value: overview?.sales_today ?? 0, currency: true, accent: 'accent-revenue', Icon: DollarLineIcon },
+    { label: period === 'today' ? t('dashboard.ordersToday') : t('dashboard.orders'), value: overview?.orders_today ?? 0, currency: false, accent: 'accent-orders', Icon: CartIcon },
+    { label: t('dashboard.avgTicket'), value: overview?.avg_ticket ?? 0, currency: true, accent: 'accent-staff', Icon: PieChartIcon },
   ];
 
   return (
     <div className="space-y-6">
       <PageMeta title={t('dashboard.metaTitle')} description={t('dashboard.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('nav.dashboard')} />
+      <PageBreadcrumb hideTitle pageTitle={t('nav.dashboard')} />
 
       {error && (
         <Alert variant="error" title={t('nav.dashboard')} message={error} />
       )}
 
-      <div className="bg-indigo-500 text-white p-6 rounded-lg">
-        <h1 className="text-2xl font-bold">{t('dashboard.greeting', { name: user?.name || t('dashboard.guest') })} 👋</h1>
-        <p className="text-indigo-100">{t('dashboard.subtitle')}</p>
+      <div className="dashboard-hero">
+        <h1 className="text-2xl font-bold">{t('dashboard.greeting', { name: user?.name || t('dashboard.guest') })}</h1>
+        <p className="text-fg-muted">{t('dashboard.subtitle')}</p>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="period-switch">
         {timeframeOptions.map((option) => (
           <button
             key={option.key}
             onClick={() => setPeriod(option.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              period === option.key ? 'bg-indigo-500 text-white' : 'bg-white text-gray-700 border hover:bg-gray-50'
-            }`}
+            aria-pressed={period === option.key}
+            className="transition-colors hover:bg-surface-2"
           >
             {t(option.labelKey)}
           </button>
@@ -88,9 +88,14 @@ export default function Dashboard() {
         {loading
           ? metricCards.map((_, index) => <SkeletonCard key={`skeleton-${index}`} />)
           : metricCards.map((card) => (
-              <div key={card.label} className="bg-white p-6 rounded-lg shadow">
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+              <div key={card.label} className={`metric-card ${card.accent}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-fg-muted">{card.label}</p>
+                  <span className="accent-chip">
+                    <card.Icon aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                </div>
+                <p className="metric-value text-fg mt-3">
                   {card.currency
                     ? formatMoney(card.value)
                     : Number(card.value).toLocaleString(numberLocale)}
@@ -99,25 +104,25 @@ export default function Dashboard() {
             ))}
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.paymentMethods')}</h3>
+      <div className="dashboard-panel">
+        <h3 className="text-lg font-semibold text-fg mb-4">{t('dashboard.paymentMethods')}</h3>
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-6 bg-gray-200 rounded animate-pulse" />
+              <div key={i} className="h-6 bg-surface-2 rounded animate-pulse" />
             ))}
           </div>
         ) : overview?.payment_methods?.length ? (
           <div className="space-y-3">
             {overview.payment_methods.map((method) => (
               <div key={method.method} className="flex items-center justify-between">
-                <span className="text-gray-600">{method.label || method.method}</span>
-                <span className="font-semibold text-gray-900">{formatMoney(method.total)}</span>
+                <span className="text-fg-muted">{method.label || method.method}</span>
+                <span className="font-semibold text-fg">{formatMoney(method.total)}</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">{t('dashboard.noPaymentData')}</p>
+          <p className="text-fg-muted">{t('dashboard.noPaymentData')}</p>
         )}
       </div>
     </div>

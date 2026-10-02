@@ -4,21 +4,21 @@
 export const getOrderStatusColor = (status: string): string => {
     switch (status) {
         case 'pending':
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-surface-2 text-fg';
         case 'accepted':
-            return 'bg-blue-100 text-blue-800';
+            return 'bg-primary/10 text-primary';
         case 'preparing':
-            return 'bg-orange-100 text-orange-800';
+            return 'bg-warning/10 text-warning';
         case 'ready':
-            return 'bg-purple-100 text-purple-800';
+            return 'bg-sec-staff/10 text-sec-staff';
         case 'served':
-            return 'bg-indigo-100 text-indigo-800';
+            return 'bg-primary/10 text-primary';
         case 'completed':
-            return 'bg-green-100 text-green-800';
+            return 'bg-success/10 text-success';
         case 'cancelled':
-            return 'bg-red-100 text-red-800';
+            return 'bg-danger/10 text-danger';
         default:
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-surface-2 text-fg';
     }
 };
 
@@ -28,17 +28,17 @@ export const getOrderStatusColor = (status: string): string => {
 export const getPaymentStatusColor = (status: string): string => {
     switch (status) {
         case 'pending':
-            return 'bg-yellow-100 text-yellow-800';
+            return 'bg-warning/10 text-warning';
         case 'processing':
-            return 'bg-blue-100 text-blue-800';
+            return 'bg-primary/10 text-primary';
         case 'completed':
-            return 'bg-green-100 text-green-800';
+            return 'bg-success/10 text-success';
         case 'failed':
-            return 'bg-red-100 text-red-800';
+            return 'bg-danger/10 text-danger';
         case 'refunded':
-            return 'bg-orange-100 text-orange-800';
+            return 'bg-warning/10 text-warning';
         default:
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-surface-2 text-fg';
     }
 };
 

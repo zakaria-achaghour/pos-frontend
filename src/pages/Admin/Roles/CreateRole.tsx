@@ -30,7 +30,7 @@ export default function CreateRole() {
   return (
     <div className="space-y-6">
       <PageMeta title={t('rbac.roles.createMetaTitle')} description={t('rbac.roles.createMetaDescription')} />
-      <PageBreadcrumb 
+      <PageBreadcrumb hideTitle
         pageTitle={t('rbac.roles.createTitle')}
         breadcrumbItems={[
           { label: t('rbac.breadcrumb.admin'), href: '/admin' },
@@ -45,10 +45,10 @@ export default function CreateRole() {
       )}
 
       {/* Form Card */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{t('rbac.roles.createHeading')}</h1>
-          <p className="text-gray-600 mt-1">{t('rbac.roles.createSubtitle')}</p>
+          <h1 className="text-2xl font-bold text-fg">{t('rbac.roles.createHeading')}</h1>
+          <p className="text-fg-muted mt-1">{t('rbac.roles.createSubtitle')}</p>
         </div>
 
         <RoleForm

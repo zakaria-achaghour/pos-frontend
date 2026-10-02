@@ -15,11 +15,12 @@ interface BreadcrumbAliasItem {
 
 interface BreadcrumbProps {
   pageTitle: string;
+  hideTitle?: boolean;
   breadcrumbItems?: BreadcrumbItem[];
   items?: BreadcrumbAliasItem[];
 }
 
-const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems, items: aliasItems }) => {
+const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, hideTitle = false, breadcrumbItems, items: aliasItems }) => {
   const { t } = useTranslation();
   const normalizedItems: BreadcrumbItem[] | undefined =
     breadcrumbItems ??
@@ -33,26 +34,25 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems,
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <h2
-        className="text-xl font-semibold text-gray-800 dark:text-white/90"
-        x-text="pageName"
+      {!hideTitle && <h1
+        className="text-2xl font-semibold tracking-tight text-fg md:text-3xl"
       >
         {pageTitle}
-      </h2>
+      </h1>}
       <nav aria-label={t("rbac.breadcrumb.label")}>
-        <ol className="flex items-center gap-1.5">
+        <ol className="flex flex-wrap items-center gap-1.5">
           {items.map((item, index) => {
             const isLast = index === items.length - 1;
             return (
-              <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
+              <li key={`${item.label}-${index}`} className="flex flex-wrap items-center gap-1.5">
                 {item.href && !isLast ? (
                   <Link
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
+                    className="inline-flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-muted"
                     to={item.href}
                   >
                     {item.label}
                     <svg
-                      className="stroke-current"
+                      className="stroke-current rtl:rotate-180"
                       width="17"
                       height="16"
                       viewBox="0 0 17 16"
@@ -69,7 +69,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle, breadcrumbItems,
                     </svg>
                   </Link>
                 ) : (
-                  <span className={`text-sm ${isLast ? "text-gray-800 dark:text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
+                  <span className={`text-sm ${isLast ? "text-fg dark:text-fg" : "text-fg-muted dark:text-fg-muted"}`}>
                     {item.label}
                   </span>
                 )}

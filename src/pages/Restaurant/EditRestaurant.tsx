@@ -209,17 +209,17 @@ export default function EditRestaurant() {
           ]}
         />
 
-        <div className="bg-white rounded-xl shadow p-6 animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+        <div className="bg-surface rounded-xl shadow-sm p-6 animate-pulse border border-line">
+          <div className="h-8 bg-surface-2 rounded w-1/4 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="h-16 bg-surface-2 rounded"></div>
               ))}
             </div>
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                <div key={i} className="h-16 bg-surface-2 rounded"></div>
               ))}
             </div>
           </div>
@@ -232,9 +232,9 @@ export default function EditRestaurant() {
     return (
       <div>
         <PageMeta title={t('tenants.notFoundMeta')} description={t('tenants.notFound')} />
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
           <div className="text-center py-8">
-            <p className="text-gray-500">{t('tenants.notFound')}</p>
+            <p className="text-fg-muted">{t('tenants.notFound')}</p>
             <Button
               variant="primary"
               onClick={() => navigate('/admin/tenants')}
@@ -271,14 +271,14 @@ export default function EditRestaurant() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{t('tenants.edit.sectionTitle')}</h2>
+      <div className="bg-surface rounded-xl shadow-sm border border-line">
+        <div className="p-6 border-b border-line">
+          <h2 className="text-xl font-semibold text-fg">{t('tenants.edit.sectionTitle')}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
           {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-6 p-4 bg-danger/10 border border-danger text-danger rounded">
               {error}
             </div>
           )}
@@ -286,7 +286,7 @@ export default function EditRestaurant() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.basicInfo')}</h3>
+              <h3 className="text-lg font-medium text-fg mb-4">{t('tenants.form.basicInfo')}</h3>
 
               <div>
                 <Label htmlFor="name">{t('tenants.form.name')}</Label>
@@ -309,7 +309,7 @@ export default function EditRestaurant() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   placeholder={t('tenants.form.descriptionPh')}
                 />
               </div>
@@ -348,7 +348,7 @@ export default function EditRestaurant() {
                     value={formData.country}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="Morocco">{t('tenants.form.countries.morocco')}</option>
                     <option value="France">{t('tenants.form.countries.france')}</option>
@@ -403,7 +403,7 @@ export default function EditRestaurant() {
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 >
                   <option value="active">{t('tenants.status.active')}</option>
                   <option value="inactive">{t('tenants.status.inactive')}</option>
@@ -413,7 +413,7 @@ export default function EditRestaurant() {
 
             {/* Business & Owner Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
+              <h3 className="text-lg font-medium text-fg mb-4">{t('tenants.form.businessOwnerInfo')}</h3>
 
               <div>
                 <Label htmlFor="license_number">{t('tenants.form.license')}</Label>
@@ -484,7 +484,7 @@ export default function EditRestaurant() {
                   name="subscription_plan"
                   value={formData.subscription_plan}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 >
                   <option value="basic">{t('tenants.plan.basic')}</option>
                   <option value="premium">{t('tenants.plan.premium')}</option>
@@ -500,7 +500,7 @@ export default function EditRestaurant() {
                     name="timezone"
                     value={formData.timezone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="Africa/Casablanca">Africa/Casablanca</option>
                     <option value="Europe/Paris">Europe/Paris</option>
@@ -515,7 +515,7 @@ export default function EditRestaurant() {
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="MAD">{t('tenants.form.currencies.mad')}</option>
                     <option value="EUR">{t('tenants.form.currencies.eur')}</option>
@@ -527,7 +527,7 @@ export default function EditRestaurant() {
           </div>
 
           {/* Form Actions */}
-          <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end gap-4">
+          <div className="mt-8 pt-6 border-t border-line flex justify-end gap-4">
             <Button
               type="button"
               variant="secondary"

@@ -52,7 +52,7 @@ const OrderCartComponent = ({
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-surface text-fg">
       {/* Header: what this order is */}
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
         <div className="min-w-0">
           <h2 className="text-lg font-bold">{t('cart.title')}</h2>
           {summary && (
@@ -150,7 +150,7 @@ const OrderCartComponent = ({
       </div>
 
       {/* Totals + CTA */}
-      <div className="space-y-3 border-t border-line px-4 py-4">
+      <div className="shrink-0 space-y-3 border-t border-line px-4 py-4">
         <div className="flex items-baseline justify-between">
           <span className="text-base font-semibold text-fg-muted">{t('cart.subtotal')}</span>
           <span className="text-pos-total font-black tabular-nums">{formatMoney(subtotal)}</span>

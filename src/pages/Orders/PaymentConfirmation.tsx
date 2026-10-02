@@ -98,7 +98,7 @@ export default function PaymentConfirmation() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div role="status" className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">{t('paymentConfirmation.loading')}</p>
+            <p className="text-fg-muted">{t('paymentConfirmation.loading')}</p>
           </div>
         </div>
       </div>
@@ -115,9 +115,9 @@ export default function PaymentConfirmation() {
         <PageBreadcrumb pageTitle={t('paymentConfirmation.title')} />
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center max-w-md">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+            <div className="bg-danger/10 border border-danger/30 rounded-lg p-6 mb-6">
               <svg
-                className="h-12 w-12 text-red-500 mx-auto mb-4"
+                className="h-12 w-12 text-danger mx-auto mb-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -129,8 +129,8 @@ export default function PaymentConfirmation() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('paymentConfirmation.errorTitle')}</h3>
-              <p role="alert" className="text-gray-600">{error || t('paymentConfirmation.notFound')}</p>
+              <h3 className="text-lg font-semibold text-fg mb-2">{t('paymentConfirmation.errorTitle')}</h3>
+              <p role="alert" className="text-fg-muted">{error || t('paymentConfirmation.notFound')}</p>
             </div>
             <Button onClick={handleBackToOrders}>{t('paymentConfirmation.backToOrders')}</Button>
           </div>
@@ -149,11 +149,11 @@ export default function PaymentConfirmation() {
 
       <div className="max-w-2xl mx-auto">
         {/* Success Message */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 p-8 text-center">
-            <div className="bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+        <div className="bg-surface rounded-xl shadow-lg overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-success to-success p-8 text-center">
+            <div className="bg-surface rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
               <svg
-                className="h-12 w-12 text-green-500"
+                className="h-12 w-12 text-success"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -167,33 +167,33 @@ export default function PaymentConfirmation() {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">{t('paymentConfirmation.successTitle')}</h2>
-            <p className="text-green-50 text-lg">{t('paymentConfirmation.thanks')}</p>
+            <p className="text-white text-lg">{t('paymentConfirmation.thanks')}</p>
           </div>
 
           {/* Order Details */}
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-sm text-gray-500">{t('paymentConfirmation.orderNumber')}</p>
-                <p className="text-lg font-semibold text-gray-900">{order.orderNumber}</p>
+                <p className="text-sm text-fg-muted">{t('paymentConfirmation.orderNumber')}</p>
+                <p className="text-lg font-semibold text-fg">{order.orderNumber}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">{t('paymentConfirmation.table')}</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-sm text-fg-muted">{t('paymentConfirmation.table')}</p>
+                <p className="text-lg font-semibold text-fg">
                   {order.table?.number || t('paymentConfirmation.notAvailable')}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">{t('paymentConfirmation.paymentMethod')}</p>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-sm text-fg-muted">{t('paymentConfirmation.paymentMethod')}</p>
+                <p className="text-lg font-semibold text-fg">
                   {dynamicT(`payment.method.${order.payment_method || order.paymentMethod || 'cash'}`, {
                     defaultValue: String(order.payment_method || order.paymentMethod),
                   })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">{t('paymentConfirmation.totalAmount')}</p>
-                <p className="text-lg font-semibold text-green-600">
+                <p className="text-sm text-fg-muted">{t('paymentConfirmation.totalAmount')}</p>
+                <p className="text-lg font-semibold text-success">
                   {formatMoney(order.total)}
                 </p>
               </div>
@@ -201,7 +201,7 @@ export default function PaymentConfirmation() {
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('paymentConfirmation.receiptOptions')}</h3>
+              <h3 className="text-lg font-semibold text-fg mb-3">{t('paymentConfirmation.receiptOptions')}</h3>
 
               <Button fullWidth onClick={handleViewReceipt}>
                 {t('paymentConfirmation.viewReceipt')}
@@ -233,10 +233,10 @@ export default function PaymentConfirmation() {
         </div>
 
         {/* Additional Information */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <svg
-              className="h-5 w-5 text-blue-600 mt-0.5"
+              className="h-5 w-5 text-primary mt-0.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -249,8 +249,8 @@ export default function PaymentConfirmation() {
               />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-blue-800 font-medium mb-1">{t('paymentConfirmation.infoTitle')}</p>
-              <p className="text-sm text-blue-700">{t('paymentConfirmation.infoBody')}</p>
+              <p className="text-sm text-primary font-medium mb-1">{t('paymentConfirmation.infoTitle')}</p>
+              <p className="text-sm text-primary">{t('paymentConfirmation.infoBody')}</p>
             </div>
           </div>
         </div>

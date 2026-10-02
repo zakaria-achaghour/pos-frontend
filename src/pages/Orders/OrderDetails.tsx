@@ -210,19 +210,19 @@ export default function OrderDetails() {
         <PageMeta title={t('orderDetails.meta.title')} description={t('orderDetails.meta.description')} />
         <PageBreadcrumb pageTitle={t('orderDetails.title')} />
         <div role="status" aria-label={t('common.loading')} className="space-y-6 animate-pulse">
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
+            <div className="h-8 bg-surface-2 rounded w-1/3 mb-4"></div>
             <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/5"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+              <div className="h-4 bg-surface-2 rounded w-1/4"></div>
+              <div className="h-4 bg-surface-2 rounded w-1/5"></div>
+              <div className="h-4 bg-surface-2 rounded w-1/6"></div>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
+            <div className="h-6 bg-surface-2 rounded w-1/4 mb-4"></div>
             <div className="space-y-3">
               {[1, 2].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                <div key={i} className="h-12 bg-surface-2 rounded"></div>
               ))}
             </div>
           </div>
@@ -236,8 +236,8 @@ export default function OrderDetails() {
       <div>
         <PageMeta title={t('orderDetails.meta.title')} description={t('orderDetails.meta.description')} />
         <PageBreadcrumb pageTitle={t('orderDetails.title')} />
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{t('orderDetails.notFound')}</p>
+        <div className="bg-danger/10 border border-danger/30 rounded-lg p-4">
+          <p className="text-danger">{t('orderDetails.notFound')}</p>
         </div>
       </div>
     );
@@ -250,11 +250,11 @@ export default function OrderDetails() {
 
       <div className="space-y-6">
         {/* Order Header */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
           <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{t('orders.orderNumber', { n: order.id })}</h2>
-              <p className="text-sm text-gray-500 mt-1">{t('orderDetails.orderId', { id: order.id })}</p>
+              <h2 className="text-2xl font-bold text-fg">{t('orders.orderNumber', { n: order.id })}</h2>
+              <p className="text-sm text-fg-muted mt-1">{t('orderDetails.orderId', { id: order.id })}</p>
             </div>
             <div className="flex gap-2">
               {/* Order Status Badge */}
@@ -273,25 +273,25 @@ export default function OrderDetails() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">{t('orderDetails.table')}</span>
+              <span className="text-fg-muted">{t('orderDetails.table')}</span>
               <p className="font-medium">{getTableDisplay()}</p>
             </div>
             <div>
-              <span className="text-gray-500">{t('orderDetails.time')}</span>
+              <span className="text-fg-muted">{t('orderDetails.time')}</span>
               <p className="font-medium">{formatDate(order.created_at)}</p>
             </div>
             <div>
-              <span className="text-gray-500">{t('orderDetails.type')}</span>
+              <span className="text-fg-muted">{t('orderDetails.type')}</span>
               <p className="font-medium">{typeLabel(order.type)}</p>
             </div>
             <div>
-              <span className="text-gray-500">{t('orderDetails.total')}</span>
+              <span className="text-fg-muted">{t('orderDetails.total')}</span>
               <p className="font-bold text-lg">{formatMoney(order.total)}</p>
             </div>
           </div>
 
           {order.priority && order.priority !== 'normal' && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-line">
               <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${priorityStyle(order.priority).pill}`}>
                 {t('orderDetails.priority', { priority: dynamicT(`priority.${order.priority}`, { defaultValue: order.priority }) })}
               </span>
@@ -300,18 +300,18 @@ export default function OrderDetails() {
         </div>
 
         {/* Order Items */}
-        <div className="bg-white rounded-xl shadow">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">{t('orderDetails.items')}</h3>
+        <div className="bg-surface rounded-xl shadow-sm border border-line">
+          <div className="p-6 border-b border-line">
+            <h3 className="text-xl font-semibold text-fg">{t('orderDetails.items')}</h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               {order.order_items.map((item) => (
-                <div key={item.id} className="bg-gray-50 rounded-lg p-4">
+                <div key={item.id} className="bg-bg rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className="font-medium text-fg">
                           {item.menu_item?.name || t('orderDetails.itemFallback', { n: item.menu_item_id })}
                         </h4>
                         <StatusPill
@@ -320,31 +320,31 @@ export default function OrderDetails() {
                           size="sm"
                         />
                       </div>
-                      <p className="text-sm text-gray-500">{t('orderDetails.each', { price: formatMoney(item.unit_price) })}</p>
+                      <p className="text-sm text-fg-muted">{t('orderDetails.each', { price: formatMoney(item.unit_price) })}</p>
 
                       {/* Special Instructions */}
                       {item.special_instructions && (
-                        <p className="text-sm text-blue-600 mt-2">
+                        <p className="text-sm text-primary mt-2">
                           <span className="font-medium">{t('orderDetails.note')}</span> {item.special_instructions}
                         </p>
                       )}
 
                       {/* Removed Ingredients */}
                       {item.removed_ingredients && item.removed_ingredients.length > 0 && (
-                        <p className="text-sm text-red-600 mt-2">
+                        <p className="text-sm text-danger mt-2">
                           <span className="font-medium">{t('orderDetails.without')}</span> {item.removed_ingredients.join(', ')}
                         </p>
                       )}
 
                       {/* Added Extras */}
                       {item.added_extras && item.added_extras.length > 0 && (
-                        <p className="text-sm text-green-600 mt-2">
+                        <p className="text-sm text-success mt-2">
                           <span className="font-medium">{t('orderDetails.extra')}</span> {item.added_extras.join(', ')}
                         </p>
                       )}
                     </div>
                     <div className="text-center min-w-[80px]">
-                      <span className="text-gray-600 text-lg">× {item.quantity}</span>
+                      <span className="text-fg-muted text-lg">× {item.quantity}</span>
                     </div>
                     <div className="text-end min-w-[120px]">
                       <span className="font-semibold text-lg">{formatMoney(parseFloat(item.unit_price) * item.quantity)}</span>
@@ -355,26 +355,26 @@ export default function OrderDetails() {
             </div>
 
             {/* Order Summary */}
-            <div className="border-t border-gray-200 pt-6 mt-6 space-y-2">
+            <div className="border-t border-line pt-6 mt-6 space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">{t('orderDetails.subtotal')}</span>
+                <span className="text-fg-muted">{t('orderDetails.subtotal')}</span>
                 <span className="font-medium">{formatMoney(order.subtotal)}</span>
               </div>
               {parseFloat(order.tax_amount) > 0 && (
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">{t('orderDetails.tax')}</span>
+                  <span className="text-fg-muted">{t('orderDetails.tax')}</span>
                   <span className="font-medium">{formatMoney(order.tax_amount)}</span>
                 </div>
               )}
               {parseFloat(order.discount_amount) > 0 && (
-                <div className="flex justify-between items-center text-sm text-green-600">
+                <div className="flex justify-between items-center text-sm text-success">
                   <span>{t('orderDetails.discount')}</span>
                   <span className="font-medium">-{formatMoney(order.discount_amount)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-                <span className="text-lg font-medium text-gray-600">{t('orderDetails.orderTotal')}</span>
-                <span className="text-2xl font-bold text-green-600">{formatMoney(order.total)}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-line">
+                <span className="text-lg font-medium text-fg-muted">{t('orderDetails.orderTotal')}</span>
+                <span className="text-2xl font-bold text-success">{formatMoney(order.total)}</span>
               </div>
             </div>
           </div>
@@ -383,8 +383,8 @@ export default function OrderDetails() {
         {/* Order Status Actions */}
         {user && ['owner', 'manager', 'waiter'].includes(user.role) &&
           order.status !== 'completed' && order.status !== 'cancelled' && (
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.updateStatus')}</h3>
+            <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
+              <h3 className="text-lg font-semibold text-fg mb-4">{t('orderDetails.updateStatus')}</h3>
               <div className="flex flex-wrap gap-3">
                 {order.status === 'pending' && (
                   <Button onClick={() => handleUpdateStatus('accepted')} disabled={processing}>
@@ -420,8 +420,8 @@ export default function OrderDetails() {
 
         {/* Receipt Actions */}
         {isReceiptAvailable() && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.receiptActions')}</h3>
+          <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
+            <h3 className="text-lg font-semibold text-fg mb-4">{t('orderDetails.receiptActions')}</h3>
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="secondary"
@@ -443,8 +443,8 @@ export default function OrderDetails() {
 
         {/* Payment Actions */}
         {canProcessPayment() && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('orderDetails.paymentActions')}</h3>
+          <div className="bg-surface rounded-xl shadow-sm p-6 border border-line">
+            <h3 className="text-lg font-semibold text-fg mb-4">{t('orderDetails.paymentActions')}</h3>
             <div className="flex gap-3">
               <Button
                 variant="success"

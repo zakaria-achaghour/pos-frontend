@@ -16,19 +16,6 @@ const TableCard: React.FC<TableCardProps> = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const getShapeIcon = (shape: string) => {
-    switch (shape) {
-      case 'round':
-        return '⭕';
-      case 'square':
-        return '⬜';
-      case 'rectangle':
-        return '▭';
-      default:
-        return '⬜';
-    }
-  };
-
   const handleCreateOrder = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate('/orders/new', { state: { tableId: table.id } });
@@ -37,10 +24,10 @@ const TableCard: React.FC<TableCardProps> = ({
   const header = (
     <>
       <div className="flex items-center gap-2">
-        <span className="text-2xl" aria-hidden="true">{getShapeIcon(table.shape)}</span>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="5" width="14" height="14" rx={table.shape === 'round' ? 7 : 3}/><path d="M9 2h6M9 22h6M2 9v6M22 9v6"/></svg></span>
         <div className="text-start">
-          <h3 className="font-semibold text-gray-900">{t('tableAdmin.card.title', { n: table.number })}</h3>
-          <p className="text-sm text-gray-500">{t('tables.seats', { count: table.capacity })}</p>
+          <h3 className="font-semibold text-fg">{t('tableAdmin.card.title', { n: table.number })}</h3>
+          <p className="text-sm text-fg-muted">{t('tables.seats', { count: table.capacity })}</p>
         </div>
       </div>
       <StatusPill style={tableStatusStyle(table.status)} label={tableStatusLabel(t, table.status)} size="sm" />
@@ -49,8 +36,8 @@ const TableCard: React.FC<TableCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow p-4 border-2 transition-all hover:shadow-lg ${
-        isSelected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200'
+      className={`bg-surface rounded-2xl p-5 border transition-colors hover:border-brand-300 ${
+        isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-line'
       }`}
     >
       {/* Header */}
@@ -70,7 +57,7 @@ const TableCard: React.FC<TableCardProps> = ({
 
       {/* Section/Location */}
       {table.section && (
-        <div className="mb-3 text-sm text-gray-600">
+        <div className="mb-3 text-sm text-fg-muted">
           <span className="font-medium">{t('tableAdmin.card.section')}:</span> {table.section}
           {table.floor && ` • ${t('tableAdmin.card.floor', { floor: table.floor })}`}
         </div>
@@ -78,19 +65,19 @@ const TableCard: React.FC<TableCardProps> = ({
 
       {/* Description */}
       {table.description && (
-        <div className="mb-3 text-sm text-gray-600 line-clamp-2">
+        <div className="mb-3 text-sm text-fg-muted line-clamp-2">
           {table.description}
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-100">
+      <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-line">
         {/* Create Order Button (only for available or occupied tables) */}
         {(table.status === 'available' || table.status === 'occupied') && (
           <button
             type="button"
             onClick={handleCreateOrder}
-            className="w-full px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all flex items-center justify-center gap-2"
+            className="w-full px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded-lg transition-all flex items-center justify-center gap-2"
           >
             <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -100,7 +87,7 @@ const TableCard: React.FC<TableCardProps> = ({
         )}
 
         {/* Status and Actions Row */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {onStatusChange && (
             <select
               value={table.status}
@@ -109,7 +96,7 @@ const TableCard: React.FC<TableCardProps> = ({
                 e.stopPropagation();
                 onStatusChange(e.target.value as TableStatus);
               }}
-              className="flex-1 text-sm px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="min-w-0 flex-1 text-sm px-2 py-1 border border-line rounded focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="available">{t('tableState.available')}</option>
               <option value="occupied">{t('tableState.occupied')}</option>
@@ -124,7 +111,7 @@ const TableCard: React.FC<TableCardProps> = ({
               e.stopPropagation();
               onEdit(table);
             }}
-            className="px-3 py-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+            className="px-3 py-1 text-sm font-medium text-primary hover:text-primary hover:bg-primary/15 rounded transition-colors"
           >
             {t('tableAdmin.card.edit')}
           </button>
@@ -134,7 +121,7 @@ const TableCard: React.FC<TableCardProps> = ({
               e.stopPropagation();
               onDelete(table.id);
             }}
-            className="px-3 py-1 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            className="px-3 py-1 text-sm font-medium text-danger hover:text-danger hover:bg-danger/15 rounded transition-colors"
           >
             {t('tableAdmin.card.delete')}
           </button>

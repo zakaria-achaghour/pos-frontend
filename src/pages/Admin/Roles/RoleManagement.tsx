@@ -61,7 +61,7 @@ export default function RoleManagement() {
   return (
     <div className="space-y-6">
       <PageMeta title={t('rbac.roles.metaTitle')} description={t('rbac.roles.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('rbac.roles.title')} />
+      <PageBreadcrumb hideTitle pageTitle={t('rbac.roles.title')} />
 
       {/* Success Message */}
       {successMessage && (
@@ -74,25 +74,25 @@ export default function RoleManagement() {
       )}
 
       {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('rbac.roles.title')}</h1>
-            <p className="text-gray-600">{t('rbac.roles.subtitle')}</p>
+            <h1 className="text-2xl font-bold text-fg">{t('rbac.roles.title')}</h1>
+            <p className="text-fg-muted">{t('rbac.roles.subtitle')}</p>
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{pagination.total}</div>
-              <div className="text-sm text-gray-600">{t('rbac.roles.total')}</div>
+              <div className="text-2xl font-bold text-primary">{pagination.total}</div>
+              <div className="text-sm text-fg-muted">{t('rbac.roles.total')}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Search and Actions */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="bg-surface p-4 rounded-2xl shadow-sm border border-line">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="w-full md:w-96">
             <label htmlFor={searchId} className="sr-only">{t('rbac.roles.searchLabel')}</label>
@@ -101,13 +101,13 @@ export default function RoleManagement() {
               type="text"
               placeholder={t('rbac.roles.searchPlaceholder')}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
           <button
             type="button"
             onClick={() => navigate('/admin/roles/create')}
-            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            className="w-full md:w-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover font-medium"
           >
             <span aria-hidden="true">➕</span> {t('rbac.roles.create')}
           </button>
@@ -132,7 +132,7 @@ export default function RoleManagement() {
 
       {/* Pagination */}
       {pagination.lastPage > 1 && (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-surface rounded-2xl shadow-sm border border-line">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}
@@ -149,14 +149,14 @@ export default function RoleManagement() {
         size="sm"
       >
         <div className="space-y-6">
-          <p className="text-gray-700">
+          <p className="text-fg">
             <Trans
               i18nKey="rbac.roles.deleteConfirm"
               values={{ name: roleToDelete?.name }}
               components={{ strong: <span className="font-semibold" /> }}
             />
             {roleToDelete && roleToDelete.users_count > 0 && (
-              <span className="block mt-2 text-red-600">
+              <span className="block mt-2 text-danger">
                 <span aria-hidden="true">⚠️</span> {t('rbac.roles.assignedWarning', { count: roleToDelete.users_count })}
               </span>
             )}
@@ -165,14 +165,14 @@ export default function RoleManagement() {
             <button
               onClick={() => setRoleToDelete(null)}
               disabled={loading}
-              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="px-4 py-2 rounded border border-line text-fg hover:bg-surface-2"
             >
               {t('common.cancel')}
             </button>
             <button
               onClick={handleConfirmDelete}
               disabled={loading}
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              className="px-4 py-2 rounded bg-danger text-white hover:bg-danger/90 disabled:opacity-60"
             >
               {loading ? t('rbac.deleting') : t('rbac.roles.deleteAction')}
             </button>

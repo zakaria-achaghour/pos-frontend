@@ -136,7 +136,7 @@ export default function TableManagement() {
     <div className="space-y-6">
       {/* Page Meta and Breadcrumb */}
       <PageMeta title={t('tableAdmin.metaTitle')} description={t('tableAdmin.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('tableAdmin.breadcrumb')} />
+      <PageBreadcrumb hideTitle pageTitle={t('tableAdmin.breadcrumb')} />
 
       {/* Success Message */}
       {successMessage && (
@@ -158,9 +158,9 @@ export default function TableManagement() {
 
       {/* Validation Errors */}
       {Object.keys(validationErrors).length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-800">
-          <h4 className="text-red-800 font-medium mb-2 dark:text-red-200">{t('tableAdmin.fixErrors')}</h4>
-          <ul className="list-disc list-inside text-red-700 text-sm space-y-1 dark:text-red-300">
+        <div className="bg-danger/10 border border-danger/30 rounded-lg p-4">
+          <h4 className="text-danger font-medium mb-2">{t('tableAdmin.fixErrors')}</h4>
+          <ul className="list-disc list-inside text-danger text-sm space-y-1">
             {Object.entries(validationErrors).map(([field, errors]) => {
               const errorMessage = Array.isArray(errors) ? errors[0] : String(errors);
               return (
@@ -174,18 +174,18 @@ export default function TableManagement() {
       )}
 
       {/* Header with Stats */}
-      <div className="bg-white p-6 rounded-lg shadow dark:bg-gray-900">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm dark:bg-surface border border-line">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tableAdmin.breadcrumb')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('tableAdmin.subtitle')}</p>
+            <h1 className="text-2xl font-bold text-fg dark:text-fg">{t('tableAdmin.breadcrumb')}</h1>
+            <p className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.subtitle')}</p>
           </div>
 
           {/* Add Table Button */}
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+            className="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
           >
             <svg aria-hidden="true" className="w-5 h-5 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -197,29 +197,29 @@ export default function TableManagement() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-lg font-bold text-gray-900 dark:text-white">{tableStats.total}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('tableAdmin.totalTables')}</div>
+            <div className="text-lg font-bold text-fg dark:text-fg">{tableStats.total}</div>
+            <div className="text-sm text-fg-muted dark:text-fg-muted">{t('tableAdmin.totalTables')}</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-green-600">{tableStats.available}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('tableState.available')}</div>
+            <div className="text-lg font-bold text-success">{tableStats.available}</div>
+            <div className="text-sm text-fg-muted dark:text-fg-muted">{t('tableState.available')}</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-red-600">{tableStats.occupied}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('tableState.occupied')}</div>
+            <div className="text-lg font-bold text-danger">{tableStats.occupied}</div>
+            <div className="text-sm text-fg-muted dark:text-fg-muted">{t('tableState.occupied')}</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">{tableStats.totalCapacity}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('tableAdmin.totalCapacity')}</div>
+            <div className="text-lg font-bold text-primary">{tableStats.totalCapacity}</div>
+            <div className="text-sm text-fg-muted dark:text-fg-muted">{t('tableAdmin.totalCapacity')}</div>
           </div>
         </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedTables.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800">
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="text-sm text-primary">
               {t('tableAdmin.bulk.selected', { count: selectedTables.length })}
             </div>
             <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export default function TableManagement() {
                 id={bulkActionId}
                 value={bulkAction}
                 onChange={(e) => setBulkAction(e.target.value as TableStatus | '')}
-                className="px-3 py-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-blue-600 dark:bg-blue-900/20 dark:text-white"
+                className="px-3 py-2 border border-primary/30 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary dark:text-fg"
               >
                 <option value="">{t('tableAdmin.bulk.selectAction')}</option>
                 <option value="available">{t('tableAdmin.bulk.markAvailable')}</option>
@@ -240,14 +240,14 @@ export default function TableManagement() {
                 type="button"
                 onClick={handleBulkStatusChange}
                 disabled={!bulkAction || loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('tableAdmin.bulk.apply')}
               </button>
               <button
                 type="button"
                 onClick={() => clearSelection()}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                className="px-4 py-2 bg-surface-2 text-fg rounded-lg hover:bg-line dark:bg-surface-2 dark:text-fg-muted"
               >
                 {t('tableAdmin.bulk.clear')}
               </button>
@@ -319,7 +319,7 @@ export default function TableManagement() {
 
       {/* Pagination */}
       {pagination.lastPage > 1 && (
-        <div className="bg-white rounded-lg shadow dark:bg-gray-900">
+        <div className="bg-surface rounded-2xl shadow-sm dark:bg-surface border border-line">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}
@@ -381,7 +381,7 @@ export default function TableManagement() {
           </div>
         }
       >
-        <p className="text-gray-700 dark:text-gray-300">
+        <p className="text-fg dark:text-fg-muted">
           {t('tableAdmin.delete.body', { n: tableToDelete?.number ?? '' })}
         </p>
       </Modal>
@@ -398,34 +398,34 @@ export default function TableManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Table Information */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-fg">
                 <span aria-hidden="true">📋</span> {t('tableAdmin.details.information')}
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.number')}</span>
-                  <span className="font-medium dark:text-white">{selectedTable.number}</span>
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.number')}</span>
+                  <span className="font-medium dark:text-fg">{selectedTable.number}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.capacity')}</span>
-                  <span className="font-medium dark:text-white">{t('tables.seats', { count: selectedTable.capacity })}</span>
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.capacity')}</span>
+                  <span className="font-medium dark:text-fg">{t('tables.seats', { count: selectedTable.capacity })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.shape')}</span>
-                  <span className="font-medium dark:text-white">
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.shape')}</span>
+                  <span className="font-medium dark:text-fg">
                     {selectedTable.shape ? dynamicT(`tableAdmin.shape.${selectedTable.shape}`, { defaultValue: selectedTable.shape }) : t('tableAdmin.details.na')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.section')}</span>
-                  <span className="font-medium dark:text-white">{selectedTable.section || t('tableAdmin.details.na')}</span>
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.section')}</span>
+                  <span className="font-medium dark:text-fg">{selectedTable.section || t('tableAdmin.details.na')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.floor')}</span>
-                  <span className="font-medium dark:text-white">{selectedTable.floor || t('tableAdmin.details.na')}</span>
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.floor')}</span>
+                  <span className="font-medium dark:text-fg">{selectedTable.floor || t('tableAdmin.details.na')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.status')}</span>
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.status')}</span>
                   <StatusPill
                     style={tableStatusStyle(selectedTable.status)}
                     label={tableStatusLabel(t, selectedTable.status)}
@@ -437,22 +437,22 @@ export default function TableManagement() {
 
             {/* Additional Details */}
             <div>
-              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-fg">
                 <span aria-hidden="true">ℹ️</span> {t('tableAdmin.details.additional')}
               </h4>
               <div className="space-y-3 text-sm">
                 {selectedTable.description && (
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.description')}</span>
-                    <p className="mt-1 text-gray-900 dark:text-white">{selectedTable.description}</p>
+                    <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.description')}</span>
+                    <p className="mt-1 text-fg dark:text-fg">{selectedTable.description}</p>
                   </div>
                 )}
                 {selectedTable.features && selectedTable.features.length > 0 && (
                   <div>
-                    <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.features')}</span>
+                    <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.features')}</span>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {selectedTable.features.map((feature: string, index: number) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs dark:bg-blue-900/30 dark:text-blue-300">
+                        <span key={index} className="px-2 py-1 bg-primary/10 text-primary rounded text-xs">
                           {feature}
                         </span>
                       ))}
@@ -460,14 +460,14 @@ export default function TableManagement() {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.created')}</span>
-                  <span className="font-medium dark:text-white">
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.created')}</span>
+                  <span className="font-medium dark:text-fg">
                     {selectedTable.created_at ? new Date(selectedTable.created_at).toLocaleDateString(i18n.language) : t('tableAdmin.details.na')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('tableAdmin.details.updated')}</span>
-                  <span className="font-medium dark:text-white">
+                  <span className="text-fg-muted dark:text-fg-muted">{t('tableAdmin.details.updated')}</span>
+                  <span className="font-medium dark:text-fg">
                     {selectedTable.updated_at ? new Date(selectedTable.updated_at).toLocaleDateString(i18n.language) : t('tableAdmin.details.na')}
                   </span>
                 </div>
@@ -477,7 +477,7 @@ export default function TableManagement() {
             {/* Current Reservation/Occupancy */}
             {(selectedTable.status === 'occupied' || selectedTable.status === 'reserved') && (
               <div className="md:col-span-2">
-                <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-white">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 dark:text-fg">
                   <span aria-hidden="true">{selectedTable.status === 'occupied' ? '👥' : '📅'}</span>{' '}
                   {selectedTable.status === 'occupied' ? t('tableAdmin.details.occupancy') : t('tableAdmin.details.reservation')}
                 </h4>
@@ -488,7 +488,7 @@ export default function TableManagement() {
                       label={selectedTable.status === 'occupied' ? t('tableAdmin.details.currentlyOccupied') : t('tableState.reserved')}
                     />
                     {(selectedTable as Table & { current_order_id?: number }).current_order_id && (
-                      <span className="font-medium dark:text-white">
+                      <span className="font-medium dark:text-fg">
                         {t('tables.orderNumber', { n: (selectedTable as Table & { current_order_id?: number }).current_order_id })}
                       </span>
                     )}

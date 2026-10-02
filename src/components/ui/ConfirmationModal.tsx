@@ -1,5 +1,5 @@
-import React from 'react';
-import { MODAL_BACKDROP_CLASS } from '@/utils/modalStyles';
+import { useTranslation } from 'react-i18next';
+import { Button, Icon, Modal } from '@/components/kit';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -11,103 +11,15 @@ interface ConfirmationModalProps {
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
 }
-
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  type = 'warning'
-}) => {
-  if (!isOpen) return null;
-
-  const getTypeStyles = () => {
-    switch (type) {
-      case 'danger':
-        return {
-          iconColor: 'text-red-600',
-          confirmButton: 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-        };
-      case 'warning':
-        return {
-          iconColor: 'text-yellow-600',
-          confirmButton: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
-        };
-      default:
-        return {
-          iconColor: 'text-blue-600',
-          confirmButton: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-        };
-    }
-  };
-
-  const styles = getTypeStyles();
-
+export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText, type = 'warning' }: ConfirmationModalProps) {
+  const { t } = useTranslation();
+  const tone = { danger: 'bg-danger/10 text-danger', warning: 'bg-warning/10 text-warning', info: 'bg-brand-50 text-brand-700' }[type];
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div 
-          className={`fixed inset-0 transition-opacity ${MODAL_BACKDROP_CLASS}`}
-          onClick={onClose}
-        ></div>
-
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-start overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-${type === 'danger' ? 'red' : type === 'warning' ? 'yellow' : 'blue'}-100 sm:mx-0 sm:h-10 sm:w-10`}>
-                {type === 'danger' && (
-                  <svg className={`h-6 w-6 ${styles.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                )}
-                {type === 'warning' && (
-                  <svg className={`h-6 w-6 ${styles.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                )}
-                {type === 'info' && (
-                  <svg className={`h-6 w-6 ${styles.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-              </div>
-              <div className="mt-3 text-center sm:mt-0 sm:ms-4 sm:text-start">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    {message}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white ${styles.confirmButton} focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ms-3 sm:w-auto sm:text-sm`}
-              onClick={onConfirm}
-            >
-              {confirmText}
-            </button>
-            <button
-              type="button"
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ms-3 sm:w-auto sm:text-sm"
-              onClick={onClose}
-            >
-              {cancelText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm" footer={<>
+      <Button variant="secondary" size="md" onClick={onClose}>{cancelText || t('common.cancel')}</Button>
+      <Button variant={type === 'danger' ? 'danger' : 'primary'} size="md" onClick={onConfirm}>{confirmText || t('ux.confirm')}</Button>
+    </>}>
+      <div className="flex items-start gap-4 py-2"><span className={`shrink-0 rounded-xl p-3 ${tone}`}><Icon name="alert" className="h-6 w-6"/></span><p className="text-sm leading-6 text-fg-muted">{message}</p></div>
+    </Modal>
   );
-};
-
-export default ConfirmationModal;
+}

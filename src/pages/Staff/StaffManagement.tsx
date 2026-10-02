@@ -114,7 +114,7 @@ export default function StaffManagement() {
   return (
     <div className="space-y-6">
       <PageMeta title={t('staffAdmin.metaTitle')} description={t('staffAdmin.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('staffAdmin.pageTitle')} />
+      <PageBreadcrumb hideTitle pageTitle={t('staffAdmin.pageTitle')} />
 
       {/* Success Message */}
       {successMessage && (
@@ -136,9 +136,9 @@ export default function StaffManagement() {
 
       {/* Validation Errors */}
       {Object.keys(validationErrors).length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h4 className="text-red-800 font-medium mb-2">{t('staffAdmin.fixErrors')}</h4>
-          <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+        <div className="bg-danger/10 border border-danger/30 rounded-lg p-4">
+          <h4 className="text-danger font-medium mb-2">{t('staffAdmin.fixErrors')}</h4>
+          <ul className="list-disc list-inside text-danger text-sm space-y-1">
             {Object.entries(validationErrors).map(([field, errors]) => (
               <li key={field}>
                 {errors[0]}
@@ -149,30 +149,30 @@ export default function StaffManagement() {
       )}
 
       {/* Header with Stats */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('staffAdmin.pageTitle')}</h1>
-            <p className="text-gray-600">{t('staffAdmin.subtitle')}</p>
+            <h1 className="text-2xl font-bold text-fg">{t('staffAdmin.pageTitle')}</h1>
+            <p className="text-fg-muted">{t('staffAdmin.subtitle')}</p>
           </div>
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">{staffStats.total}</div>
-              <div className="text-sm text-gray-600">{t('staffAdmin.stats.total')}</div>
+              <div className="text-lg font-bold text-fg">{staffStats.total}</div>
+              <div className="text-sm text-fg-muted">{t('staffAdmin.stats.total')}</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{staffStats.onShift}</div>
-              <div className="text-sm text-gray-600">{t('staffAdmin.stats.onShift')}</div>
+              <div className="text-lg font-bold text-success">{staffStats.onShift}</div>
+              <div className="text-sm text-fg-muted">{t('staffAdmin.stats.onShift')}</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{staffStats.active}</div>
-              <div className="text-sm text-gray-600">{t('staffAdmin.stats.active')}</div>
+              <div className="text-lg font-bold text-primary">{staffStats.active}</div>
+              <div className="text-sm text-fg-muted">{t('staffAdmin.stats.active')}</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-purple-600">{formatMoney(staffStats.totalSalary)}</div>
-              <div className="text-sm text-gray-600">{t('staffAdmin.stats.totalSalaries')}</div>
+              <div className="text-lg font-bold text-sec-staff">{formatMoney(staffStats.totalSalary)}</div>
+              <div className="text-sm text-fg-muted">{t('staffAdmin.stats.totalSalaries')}</div>
             </div>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function StaffManagement() {
       )}
 
       {pagination.lastPage > 1 && (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-surface rounded-2xl shadow-sm border border-line">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}
@@ -266,7 +266,7 @@ export default function StaffManagement() {
         size="sm"
       >
         <div className="space-y-6">
-          <p className="text-gray-700">
+          <p className="text-fg">
             <Trans
               i18nKey="staffAdmin.deleteConfirm"
               values={{ name: memberToDelete?.name }}
@@ -276,14 +276,14 @@ export default function StaffManagement() {
           <div className="flex justify-end gap-3">
             <button
               onClick={() => setMemberToDelete(null)}
-              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="px-4 py-2 rounded border border-line text-fg hover:bg-surface-2"
               disabled={loading}
             >
               {t('common.cancel')}
             </button>
             <button
               onClick={handleConfirmDelete}
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              className="px-4 py-2 rounded bg-danger text-white hover:bg-danger/90 disabled:opacity-60"
               disabled={loading}
             >
               {loading ? t('staffAdmin.deleting') : t('staffAdmin.delete')}
@@ -308,29 +308,29 @@ export default function StaffManagement() {
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.email')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.email')}</span>
                   <span className="font-medium">{selectedMember.email}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.phone')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.phone')}</span>
                   <span className="font-medium">{selectedMember.phone || t('staffAdmin.details.notAvailable')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.role')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.role')}</span>
                   <span className="font-medium">{dynamicT(`roles.${selectedMember.role}`, { defaultValue: selectedMember.role })}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.hireDate')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.hireDate')}</span>
                   <span className="font-medium">{selectedMember.hireDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.salary')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.salary')}</span>
                   <span className="font-medium">{formatMoney(selectedMember.salary)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.status')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.status')}</span>
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedMember.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    selectedMember.status === 'active' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                   }`}>
                     {dynamicT(`staffAdmin.status.${selectedMember.status}`, { defaultValue: selectedMember.status })}
                   </span>
@@ -345,24 +345,24 @@ export default function StaffManagement() {
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.ordersCompleted')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.ordersCompleted')}</span>
                   <span className="font-medium">{selectedMember.performance.ordersCompleted}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.revenueGenerated')}</span>
-                  <span className="font-medium text-green-600">{formatMoney(selectedMember.performance.revenueGenerated)}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.revenueGenerated')}</span>
+                  <span className="font-medium text-success">{formatMoney(selectedMember.performance.revenueGenerated)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.customerRating')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.customerRating')}</span>
                   <span className="font-medium">⭐ {selectedMember.performance.customerRating.toFixed(1)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.punctuality')}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.punctuality')}</span>
                   <span className="font-medium">{selectedMember.performance.punctualityScore}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">{t('staffAdmin.details.tipsEarned')}</span>
-                  <span className="font-medium text-green-600">{formatMoney(selectedMember.performance.tips)}</span>
+                  <span className="text-fg-muted">{t('staffAdmin.details.tipsEarned')}</span>
+                  <span className="font-medium text-success">{formatMoney(selectedMember.performance.tips)}</span>
                 </div>
               </div>
             </div>
@@ -373,19 +373,19 @@ export default function StaffManagement() {
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <span aria-hidden="true">⏰</span> {t('staffAdmin.details.currentShift')}
                 </h4>
-                <div className="bg-blue-50 rounded-lg p-4">
+                <div className="bg-primary/10 rounded-lg p-4">
                   {selectedMember.currentShift.isActive ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-blue-700"><span aria-hidden="true">🟢</span> {t('staffAdmin.details.onDuty')}</span>
+                      <span className="text-primary"><span aria-hidden="true">🟢</span> {t('staffAdmin.details.onDuty')}</span>
                       <span className="font-medium">{t('staffAdmin.details.since', { time: selectedMember.currentShift.clockIn })}</span>
                     </div>
                   ) : (
-                    <span className="text-gray-600">{t('staffAdmin.details.offDuty')}</span>
+                    <span className="text-fg-muted">{t('staffAdmin.details.offDuty')}</span>
                   )}
 
                   {selectedMember.role === 'waiter' && selectedMember.currentShift.tableAssignments && (
                     <div className="mt-2">
-                      <span className="text-blue-700 text-sm">{t('staffAdmin.details.assignedTables')} </span>
+                      <span className="text-primary text-sm">{t('staffAdmin.details.assignedTables')} </span>
                       <span className="font-medium">
                         {selectedMember.currentShift.tableAssignments.map((n) => `T${n}`).join(', ') || t('staffAdmin.details.none')}
                       </span>

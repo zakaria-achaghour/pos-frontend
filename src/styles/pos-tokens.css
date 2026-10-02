@@ -1,8 +1,8 @@
 /*
  * POS design tokens (additive on top of the TailAdmin theme in index.css).
  *
- * Palette: deep forest green + sage/cream, warm amber for "new", soft blue for "cooking",
- * leaf green for "ready". Serif display headings.
+ * Palette: neutral white/slate surfaces with blue actions, warm amber for "new", soft blue for "cooking",
+ * leaf green for "ready". Sans-serif display headings.
  *
  * Surfaces and text are CSS variables that `.dark` overrides, so
  * `bg-surface text-fg border-line` work in both themes without `dark:` classes.
@@ -10,67 +10,60 @@
  * src/design/status.ts instead of picking colors per screen.
  */
 @theme {
-  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  /* Forest scale. The template's hardcoded `brand`, `indigo` and `blue` utilities are remapped to it
-     so older screens match the new look without being edited one by one. */
-  --color-brand-25: #f6faf7;
-  --color-brand-50: #eef5f0;
-  --color-brand-100: #dcebe0;
-  --color-brand-200: #bfd8c6;
-  --color-brand-300: #96bca3;
-  --color-brand-400: #639a79;
-  --color-brand-500: #3a7a58;
-  --color-brand-600: #2a5f49;
-  --color-brand-700: #1f4b3a;
-  --color-brand-800: #183c2e;
-  --color-brand-900: #122e23;
-  --color-brand-950: #0b1d15;
+  /* One action palette, separate from status colors. */
+  --color-brand-25: #f8faff;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+  --color-indigo-25: #f8faff;
+  --color-indigo-50: #eff6ff;
+  --color-indigo-100: #dbeafe;
+  --color-indigo-200: #bfdbfe;
+  --color-indigo-300: #93c5fd;
+  --color-indigo-400: #60a5fa;
+  --color-indigo-500: #3b82f6;
+  --color-indigo-600: #2563eb;
+  --color-indigo-700: #1d4ed8;
+  --color-indigo-800: #1e40af;
+  --color-indigo-900: #1e3a8a;
+  --color-indigo-950: #172554;
 
-  --color-indigo-50: #eef5f0;
-  --color-indigo-100: #dcebe0;
-  --color-indigo-200: #bfd8c6;
-  --color-indigo-300: #96bca3;
-  --color-indigo-400: #639a79;
-  --color-indigo-500: #3a7a58;
-  --color-indigo-600: #2a5f49;
-  --color-indigo-700: #1f4b3a;
-  --color-indigo-800: #183c2e;
-  --color-indigo-900: #122e23;
-  --color-indigo-950: #0b1d15;
-
-  --color-blue-50: #eef5f0;
-  --color-blue-100: #dcebe0;
-  --color-blue-200: #bfd8c6;
-  --color-blue-300: #96bca3;
-  --color-blue-400: #639a79;
-  --color-blue-500: #3a7a58;
-  --color-blue-600: #2a5f49;
-  --color-blue-700: #1f4b3a;
-  --color-blue-800: #183c2e;
-  --color-blue-900: #122e23;
-  --color-blue-950: #0b1d15;
-
-  /* surfaces + text */
-  --color-bg: #f4f4ec;
-  --color-surface: #fdfdf9;
-  --color-surface-2: #eceee2;
-  --color-line: #dcdfd0;
-  --color-fg: #1b2a23;
-  --color-fg-muted: #5c6a60;
-
-  /* app shell (dark green sidebar, like the section bars in the reference) */
-  --color-sidebar: #1e4a3a;
-  --color-sidebar-fg: #e8f0ea;
-
-  /* actions */
-  --color-primary: #1f4b3a;
-  --color-primary-hover: #173a2d;
+  --color-bg: #f7f8fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f3f8;
+  --color-line: #e4e8f0;
+  --color-fg: #202938;
+  --color-fg-muted: #657287;
+  --color-sidebar: #ffffff;
+  --color-sidebar-fg: #475569;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
   --color-primary-fg: #ffffff;
-  --color-danger: #b4352a;
+  --color-danger: #c83232;
   --color-danger-fg: #ffffff;
-  --color-success: #2d8a52;
-  --color-warning: #b8680c;
+  --color-success: #16804a;
+  --color-warning: #a65d08;
+  --color-info: #0369a1;
+
+  /* section accents: one hue per area, used for icons, metric cards and quick actions.
+     Never used for status; status colors live below. */
+  --color-sec-orders: #2563eb;
+  --color-sec-kitchen: #c2410c;
+  --color-sec-tables: #0f766e;
+  --color-sec-menu: #b45309;
+  --color-sec-staff: #7c3aed;
+  --color-sec-revenue: #047857;
+  --color-sec-admin: #475569;
 
   /* order lifecycle: amber = new, blue = cooking, green = ready */
   --color-status-new: #b8680c;
@@ -106,20 +99,62 @@
 }
 
 .dark {
-  --color-bg: #0e1813;
-  --color-surface: #15241d;
-  --color-surface-2: #1d3027;
-  --color-line: #28402f;
-  --color-fg: #e9f1ea;
-  --color-fg-muted: #9db0a3;
-  --color-sidebar: #0b1712;
-  --color-sidebar-fg: #e8f0ea;
-  --color-primary: #7fcf9d;
-  --color-primary-hover: #99dab1;
-  --color-primary-fg: #0b1712;
+  color-scheme: dark;
+  --color-bg: #111827;
+  --color-surface: #1b2535;
+  --color-surface-2: #253247;
+  --color-line: #364359;
+  --color-fg: #edf2fa;
+  --color-fg-muted: #a8b6ca;
+  --color-sidebar: #172131;
+  --color-sidebar-fg: #b7c4d6;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-fg: #ffffff;
+  --color-danger: #e5484d;
+  --color-success: #23a163;
+  --color-warning: #f0a32b;
+  --color-info: #38bdf8;
+
+  --color-sec-orders: #60a5fa;
+  --color-sec-kitchen: #fb923c;
+  --color-sec-tables: #2dd4bf;
+  --color-sec-menu: #fbbf24;
+  --color-sec-staff: #a78bfa;
+  --color-sec-revenue: #34d399;
+  --color-sec-admin: #94a3b8;
 }
 
-/* Serif display headings (page and section titles) */
+/* Section accent: set --accent on a container; .accent-chip / .metric-card pick it up. */
+.accent-orders { --accent: var(--color-sec-orders); }
+.accent-kitchen { --accent: var(--color-sec-kitchen); }
+.accent-tables { --accent: var(--color-sec-tables); }
+.accent-menu { --accent: var(--color-sec-menu); }
+.accent-staff { --accent: var(--color-sec-staff); }
+.accent-revenue { --accent: var(--color-sec-revenue); }
+.accent-admin { --accent: var(--color-sec-admin); }
+
+.accent-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  color: var(--accent, var(--color-primary));
+  background: color-mix(in oklab, var(--accent, var(--color-primary)) 13%, transparent);
+}
+.accent-text { color: var(--accent, var(--color-primary)); }
+.accent-tile {
+  color: var(--accent, var(--color-primary));
+  background: color-mix(in oklab, var(--accent, var(--color-primary)) 9%, var(--color-surface));
+  border: 1px solid color-mix(in oklab, var(--accent, var(--color-primary)) 22%, transparent);
+}
+.accent-tile:hover { background: color-mix(in oklab, var(--accent, var(--color-primary)) 15%, var(--color-surface)); }
+
+
+/* Sans-serif display headings (page and section titles) */
 @layer base {
   h1,
   h2 {

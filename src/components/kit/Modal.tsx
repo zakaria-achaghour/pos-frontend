@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,6 +13,8 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** set false for payment-style dialogs that must not close on outside click */
   closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
+  showCloseButton?: boolean;
   /** accessible name for the close button */
   closeLabel?: string;
   className?: string;
@@ -34,9 +37,12 @@ export default function Modal({
   footer,
   size = 'md',
   closeOnBackdrop = true,
-  closeLabel = 'Close',
+  closeLabel,
+  closeOnEscape = true,
+  showCloseButton = true,
   className,
 }: ModalProps) {
+  const { t } = useTranslation();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -55,7 +61,7 @@ export default function Modal({
     (first ?? panel)?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && closeOnEscape) {
         e.stopPropagation();
         onCloseRef.current();
         return;
@@ -83,13 +89,13 @@ export default function Modal({
       document.body.style.overflow = previousOverflow;
       opener?.focus?.();
     };
-  }, [isOpen]);
+  }, [isOpen, closeOnEscape]);
 
   if (!isOpen) return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100000] flex items-end justify-center bg-slate-950/35 backdrop-blur-sm p-0 sm:items-center sm:p-4"
       onMouseDown={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose();
       }}
@@ -101,7 +107,7 @@ export default function Modal({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={twMerge(
-          'flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface text-fg shadow-xl sm:rounded-2xl',
+          'flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface text-fg shadow-xl sm:rounded-2xl',
           SIZE[size],
           className
         )}
@@ -110,16 +116,16 @@ export default function Modal({
           <h2 id={titleId} className="text-lg font-semibold">
             {title}
           </h2>
-          <button
+          {showCloseButton && <button
             type="button"
             onClick={onClose}
-            aria-label={closeLabel}
+            aria-label={closeLabel || t('common.close')}
             className="flex h-11 w-11 items-center justify-center rounded-lg text-fg-muted hover:bg-surface-2"
           >
             <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
-          </button>
+          </button>}
         </div>
         <div className="overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="flex flex-wrap justify-end gap-3 border-t border-line px-5 py-4">{footer}</div>}

@@ -40,11 +40,11 @@ const OrderList: React.FC<OrderListProps> = ({
     return (
       <div role="status" aria-label={t('common.loading')} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-6 bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
+          <div key={i} className="bg-surface rounded-2xl shadow-sm p-6 animate-pulse border border-line">
+            <div className="h-6 bg-surface-2 rounded mb-4"></div>
+            <div className="h-4 bg-surface-2 rounded mb-2"></div>
+            <div className="h-4 bg-surface-2 rounded mb-4 w-3/4"></div>
+            <div className="h-10 bg-surface-2 rounded"></div>
           </div>
         ))}
       </div>
@@ -54,10 +54,10 @@ const OrderList: React.FC<OrderListProps> = ({
   if (ordersToDisplay.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <h3 className="text-xl font-semibold text-fg mb-2">
           {hasFilters ? t('orderList.empty.filteredTitle') : t('orderList.empty.title')}
         </h3>
-        <p className="text-gray-500 text-center max-w-md">
+        <p className="text-fg-muted text-center max-w-md">
           {hasFilters ? t('orderList.empty.filteredHint') : t('orderList.empty.hint')}
         </p>
       </div>
@@ -70,6 +70,7 @@ const OrderList: React.FC<OrderListProps> = ({
         const label = order.orderNumber || `#${order.id}`;
         const method = order.payment_method || order.paymentMethod;
         const canChange = order.status === 'pending' || order.status === 'accepted';
+        const canCancel = order.status !== 'completed' && order.status !== 'cancelled';
         const next = NEXT_STATUS[order.status];
         const discount = Number(order.discount_amount || order.discount);
         const tax = Number(order.tax_amount || order.tax);
@@ -77,17 +78,17 @@ const OrderList: React.FC<OrderListProps> = ({
         return (
         <div
           key={order.id}
-          className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+          className="bg-surface rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-line"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b">
+          <div className="bg-surface p-4 border-b">
             <div className="flex justify-between items-start mb-2 gap-2">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
+                <h3 className="text-lg font-bold text-fg">
                   {order.orderNumber || t('orders.orderNumber', { n: order.id })}
                 </h3>
                 {order.type && (
-                  <p className="text-sm text-gray-600">{typeKey ? t(typeKey) : order.type}</p>
+                  <p className="text-sm text-fg-muted">{typeKey ? t(typeKey) : order.type}</p>
                 )}
               </div>
               <StatusPill
@@ -98,7 +99,7 @@ const OrderList: React.FC<OrderListProps> = ({
             </div>
 
             {order.table && (
-              <p className="text-sm text-gray-700 font-medium">
+              <p className="text-sm text-fg font-medium">
                 {t('order.tableNumber', { n: order.table.number })}
               </p>
             )}
@@ -108,30 +109,30 @@ const OrderList: React.FC<OrderListProps> = ({
           <div className="p-4 space-y-3">
             {order.customer && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">{t('orderList.customer')}</span>
-                <span className="font-medium text-gray-900">{order.customer.name}</span>
+                <span className="text-fg-muted">{t('orderList.customer')}</span>
+                <span className="font-medium text-fg">{order.customer.name}</span>
               </div>
             )}
 
             {order.server && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">{t('orderList.server')}</span>
-                <span className="font-medium text-gray-900">{order.server.name}</span>
+                <span className="text-fg-muted">{t('orderList.server')}</span>
+                <span className="font-medium text-fg">{order.server.name}</span>
               </div>
             )}
 
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">{t('orderList.items')}</span>
-              <span className="font-medium text-gray-900">{order.items?.length || 0}</span>
+              <span className="text-fg-muted">{t('orderList.items')}</span>
+              <span className="font-medium text-fg">{order.items?.length || 0}</span>
             </div>
 
             <div className="pt-3 border-t">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">{t('orderList.total')}</span>
-                <span className="text-2xl font-bold text-blue-600">{formatMoney(order.total)}</span>
+                <span className="text-fg-muted font-medium">{t('orderList.total')}</span>
+                <span className="text-2xl font-bold text-primary">{formatMoney(order.total)}</span>
               </div>
               {order.subtotal && (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-fg-muted mt-1">
                   <div className="flex justify-between">
                     <span>{t('orderList.subtotal')}</span>
                     <span>{formatMoney(order.subtotal)}</span>
@@ -153,25 +154,25 @@ const OrderList: React.FC<OrderListProps> = ({
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t">
-              <span className="text-sm text-gray-600">{t('orderList.payment')}</span>
+              <span className="text-sm text-fg-muted">{t('orderList.payment')}</span>
               <div className="flex flex-col items-end gap-1">
                 <span
                   className={`px-2 py-1 rounded text-xs font-semibold ${method
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-orange-100 text-orange-700'
+                    ? 'bg-success/10 text-success'
+                    : 'bg-warning/10 text-warning'
                     }`}
                 >
                   {method ? t('orderList.paid') : t('orderList.readyToPay')}
                 </span>
                 {method && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-fg-muted">
                     {method === 'split' ? t('orderList.split') : dynamicT(`payment.method.${method}`, { defaultValue: method })}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="text-xs text-gray-500 pt-2">
+            <div className="text-xs text-fg-muted pt-2">
               <div>{t('orderList.created', { date: formatDate(order.createdAt) })}</div>
               {order.updatedAt && order.updatedAt !== order.createdAt && (
                 <div>{t('orderList.updated', { date: formatDate(order.updatedAt) })}</div>
@@ -180,18 +181,11 @@ const OrderList: React.FC<OrderListProps> = ({
           </div>
 
           {/* Footer - Action Buttons */}
-          <div className="p-4 bg-gray-50 border-t space-y-2">
-            {onUpdateStatus && order.status !== 'completed' && order.status !== 'cancelled' && (
-              <div className="grid grid-cols-2 gap-2">
-                {next && (
-                  <Button size="md" variant="secondary" onClick={() => onUpdateStatus(order.id, next.to, label)}>
-                    {t(next.key)}
-                  </Button>
-                )}
-                <Button size="md" variant="danger" onClick={() => onUpdateStatus(order.id, 'cancelled', label)}>
-                  {t('orderList.cancel')}
-                </Button>
-              </div>
+          <div className="p-4 bg-bg border-t space-y-2">
+            {onUpdateStatus && next && order.status !== 'completed' && order.status !== 'cancelled' && (
+              <Button size="md" variant="primary" fullWidth onClick={() => onUpdateStatus(order.id, next.to, label)}>
+                {t(next.key)}
+              </Button>
             )}
 
             {onPayment && !method && order.status !== 'cancelled' && (
@@ -206,9 +200,10 @@ const OrderList: React.FC<OrderListProps> = ({
               </Button>
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 pt-1">
               <Button
                 size="md"
+                variant="secondary"
                 className="px-2"
                 onClick={() => onViewDetails(order)}
                 title={t('orderList.viewTitle')}
@@ -229,11 +224,11 @@ const OrderList: React.FC<OrderListProps> = ({
 
               <Button
                 size="md"
-                variant="danger"
-                className="px-2"
+                variant="ghost"
+                className="px-2 border border-danger/40 text-danger hover:bg-danger/10"
                 onClick={() => onDelete(order.id, label)}
-                disabled={!canChange}
-                title={canChange ? t('orderList.cancelTitle') : t('orderList.cancelDisabled')}
+                disabled={!canCancel}
+                title={canCancel ? t('orderList.cancelTitle') : t('orderList.cancelDisabled')}
               >
                 {t('orderList.cancel')}
               </Button>

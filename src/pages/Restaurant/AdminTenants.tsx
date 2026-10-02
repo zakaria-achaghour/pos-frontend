@@ -18,7 +18,7 @@ export default function AdminTenants() {
   const {
     // Data
     restaurants = [],
-    
+
     // UI State
     statusFilter = 'all',
     searchTerm = '',
@@ -27,17 +27,17 @@ export default function AdminTenants() {
     successMessage,
     pagination = { currentPage: 1, lastPage: 1, total: 0, perPage: 10 },
     selectedItems = [],
-    
+
     // Actions
     deleteRestaurant,
     updateRestaurantStatus,
     goToPage = () => {},
-    
+
     // UI Actions
     setStatusFilter = () => {},
     setSearchTerm = () => {},
     toggleItemSelection = () => {},
-    
+
     // Computed values
     restaurantStats = { total: 0, active: 0, inactive: 0, pending: 0, suspended: 0 },
   } = useRestaurantManagement(10); // 10 restaurants per page
@@ -102,8 +102,8 @@ export default function AdminTenants() {
   return (
     <div>
       <PageMeta title={t('tenants.list.metaTitle')} description={t('tenants.list.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('tenants.breadcrumb.restaurants')} />
-      
+      <PageBreadcrumb hideTitle pageTitle={t('tenants.breadcrumb.restaurants')} />
+
       {/* Success Alert */}
       {successMessage && (
         <div className="mb-6">
@@ -128,10 +128,10 @@ export default function AdminTenants() {
 
       {/* Header with Add Button */}
       <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">{t('tenants.list.heading')}</h1>
+        <h1 className="text-2xl font-bold text-fg">{t('tenants.list.heading')}</h1>
         <button
           onClick={() => navigate('/admin/restaurants/create')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors font-medium"
         >
           {t('tenants.list.add')}
         </button>
