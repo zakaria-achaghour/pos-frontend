@@ -77,14 +77,14 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           <Form id={FORM_ID} className="space-y-4">
             {/* Submit Error Display */}
             {submitError && (
-              <div role="alert" className="bg-red-50 border-s-4 border-red-500 p-3 rounded">
+              <div role="alert" className="bg-danger/10 border-s-4 border-danger p-3 rounded">
                 <div className="flex items-start gap-2">
-                  <svg aria-hidden="true" className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg aria-hidden="true" className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-red-800">{t('categoriesAdmin.modal.submitErrorTitle')}</p>
-                    <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                    <p className="text-sm font-medium text-danger">{t('categoriesAdmin.modal.submitErrorTitle')}</p>
+                    <p className="text-sm text-danger mt-1">{submitError}</p>
                   </div>
                 </div>
               </div>
@@ -92,7 +92,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 
             {/* Category Name */}
             <div>
-              <label htmlFor="category-name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="category-name" className="block text-sm font-medium text-fg mb-1">
                 {t('categoriesAdmin.modal.nameLabel')}
               </label>
               <Field
@@ -101,23 +101,23 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="text"
                 placeholder={t('categoriesAdmin.modal.namePlaceholder')}
                 disabled={isSubmitting}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  errors.name && touched.name ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-surface-2 disabled:cursor-not-allowed ${
+                  errors.name && touched.name ? 'border-danger' : 'border-line'
                 }`}
               />
               <ErrorMessage
                 name="name"
                 component="div"
-                className="text-red-500 text-sm mt-1 flex items-center gap-1"
+                className="text-danger text-sm mt-1 flex items-center gap-1"
               />
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-fg-muted mt-1">
                 {t('categoriesAdmin.modal.charCount', { current: values.name.length, max: NAME_MAX })}
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="category-description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="category-description" className="block text-sm font-medium text-fg mb-1">
                 {t('categoriesAdmin.modal.descriptionLabel')}
               </label>
               <Field
@@ -127,23 +127,23 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 rows={3}
                 disabled={isSubmitting}
                 placeholder={t('categoriesAdmin.modal.descriptionPlaceholder')}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  errors.description && touched.description ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none disabled:bg-surface-2 disabled:cursor-not-allowed ${
+                  errors.description && touched.description ? 'border-danger' : 'border-line'
                 }`}
               />
               <ErrorMessage
                 name="description"
                 component="div"
-                className="text-red-500 text-sm mt-1"
+                className="text-danger text-sm mt-1"
               />
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-fg-muted mt-1">
                 {t('categoriesAdmin.modal.charCount', { current: values.description?.length || 0, max: DESCRIPTION_MAX })}
               </div>
             </div>
 
             {/* Sort Order */}
             <div>
-              <label htmlFor="category-sort-order" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="category-sort-order" className="block text-sm font-medium text-fg mb-1">
                 {t('categoriesAdmin.modal.sortOrderLabel')}
               </label>
               <Field
@@ -153,16 +153,16 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 min="0"
                 placeholder="0"
                 disabled={isSubmitting}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  errors.sort_order && touched.sort_order ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-surface-2 disabled:cursor-not-allowed ${
+                  errors.sort_order && touched.sort_order ? 'border-danger' : 'border-line'
                 }`}
               />
               <ErrorMessage
                 name="sort_order"
                 component="div"
-                className="text-red-500 text-sm mt-1"
+                className="text-danger text-sm mt-1"
               />
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-fg-muted mt-1">
                 {t('categoriesAdmin.modal.sortOrderHint')}
               </div>
             </div>
@@ -173,9 +173,9 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 id="category-active"
                 name="is_active"
                 type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary focus:ring-primary border-line rounded"
               />
-              <label htmlFor="category-active" className="ms-2 block text-sm text-gray-900">
+              <label htmlFor="category-active" className="ms-2 block text-sm text-fg">
                 {t('categoriesAdmin.modal.activeLabel')}
               </label>
             </div>
@@ -195,11 +195,11 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
             </div>
 
             {/* Form Preview */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-              <div className="text-sm font-medium text-gray-700 mb-2">{t('categoriesAdmin.modal.preview')}</div>
-              <div className="text-sm text-gray-600">
+            <div className="mt-4 p-3 bg-bg rounded-lg border">
+              <div className="text-sm font-medium text-fg mb-2">{t('categoriesAdmin.modal.preview')}</div>
+              <div className="text-sm text-fg-muted">
                 <div><span aria-hidden="true">📂 </span><strong>{values.name || t('categoriesAdmin.modal.previewName')}</strong></div>
-                <div className={values.is_active ? 'text-green-600' : 'text-red-600'}>
+                <div className={values.is_active ? 'text-success' : 'text-danger'}>
                   {values.is_active ? `✓ ${t('categoriesAdmin.list.active')}` : `✗ ${t('categoriesAdmin.list.inactive')}`}
                 </div>
                 {values.description && (
@@ -210,8 +210,8 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 
             {/* Status Info */}
             {!values.is_active && (
-              <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-xs text-red-800">
+              <div className="mt-3 p-2 bg-danger/10 border border-danger/30 rounded-lg">
+                <div className="text-xs text-danger">
                   {t('categoriesAdmin.modal.inactiveInfo')}
                 </div>
               </div>

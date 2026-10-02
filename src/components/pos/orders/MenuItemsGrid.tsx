@@ -1,3 +1,4 @@
+import EmptyState from '@/components/common/EmptyState';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/kit';
@@ -13,7 +14,7 @@ interface MenuItemsGridProps {
 
 // Columns are sized by the space actually available (the cart takes a share of the screen),
 // not by viewport breakpoints.
-const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-3';
+const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))] gap-3';
 
 const MenuItemsGridComponent = ({ items, loading, onAddToCart, onCustomize }: MenuItemsGridProps) => {
   const { t } = useTranslation();
@@ -30,10 +31,7 @@ const MenuItemsGridComponent = ({ items, loading, onAddToCart, onCustomize }: Me
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center text-fg-muted">
-        <p className="text-lg font-semibold text-fg">{t('menu.emptyTitle')}</p>
-        <p className="text-sm">{t('menu.emptyHint')}</p>
-      </div>
+      <EmptyState title={t('menu.emptyTitle')} description={t('menu.emptyHint')}/>
     );
   }
 

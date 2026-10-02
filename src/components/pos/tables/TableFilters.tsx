@@ -22,7 +22,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
     { value: 'out-of-order', label: t('tableAdmin.outOfOrder') },
     { value: 'maintenance', label: t('tableState.maintenance') },
   ];
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.search ||
     filters.status !== 'all' ||
     filters.shape !== 'all' ||
@@ -31,7 +31,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
     filters.location;
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 space-y-4">
+    <div className="bg-surface rounded-2xl shadow-sm p-4 space-y-4 border border-line">
       {/* Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -42,7 +42,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
             placeholder={t('tableAdmin.filters.searchPlaceholder')}
             value={filters.search || ''}
             onChange={(e) => onFilterChange('search', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
       </div>
@@ -51,14 +51,14 @@ const TableFilters: React.FC<TableFiltersProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Status Filter */}
         <div>
-          <label htmlFor={statusId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={statusId} className="block text-sm font-medium text-fg mb-1">
             {t('tableAdmin.filters.status')}
           </label>
           <select
             id={statusId}
             value={filters.status || 'all'}
             onChange={(e) => onFilterChange('status', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           >
             <option value="all">{t('tableAdmin.filters.allStatus')}</option>
             {options.map((option) => (
@@ -71,14 +71,14 @@ const TableFilters: React.FC<TableFiltersProps> = ({
 
         {/* Shape Filter */}
         <div>
-          <label htmlFor={shapeId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={shapeId} className="block text-sm font-medium text-fg mb-1">
             {t('tableAdmin.filters.shape')}
           </label>
           <select
             id={shapeId}
             value={filters.shape || 'all'}
             onChange={(e) => onFilterChange('shape', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           >
             <option value="all">{t('tableAdmin.filters.allShapes')}</option>
             <option value="round">{t('tableAdmin.shape.round')}</option>
@@ -90,7 +90,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
 
         {/* Min Capacity */}
         <div>
-          <label htmlFor={minId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={minId} className="block text-sm font-medium text-fg mb-1">
             {t('tableAdmin.filters.minCapacity')}
           </label>
           <input
@@ -100,13 +100,13 @@ const TableFilters: React.FC<TableFiltersProps> = ({
             placeholder={t('tableAdmin.filters.min')}
             value={filters.minCapacity || ''}
             onChange={(e) => onFilterChange('minCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
 
         {/* Max Capacity */}
         <div>
-          <label htmlFor={maxId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={maxId} className="block text-sm font-medium text-fg mb-1">
             {t('tableAdmin.filters.maxCapacity')}
           </label>
           <input
@@ -116,14 +116,14 @@ const TableFilters: React.FC<TableFiltersProps> = ({
             placeholder={t('tableAdmin.filters.max')}
             value={filters.maxCapacity || ''}
             onChange={(e) => onFilterChange('maxCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
       </div>
 
       {/* Location Filter */}
       <div>
-        <label htmlFor={locationId} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={locationId} className="block text-sm font-medium text-fg mb-1">
           {t('tableAdmin.filters.location')}
         </label>
         <input
@@ -132,7 +132,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
           placeholder={t('tableAdmin.filters.locationPlaceholder')}
           value={filters.location || ''}
           onChange={(e) => onFilterChange('location', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
         />
       </div>
 
@@ -142,7 +142,7 @@ const TableFilters: React.FC<TableFiltersProps> = ({
           <button
             type="button"
             onClick={onClearFilters}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-fg bg-surface-2 hover:bg-surface-2 rounded-lg transition-colors"
           >
             {t('tableAdmin.filters.clear')}
           </button>

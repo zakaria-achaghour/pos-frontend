@@ -28,9 +28,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
       }
     };
 
+    const handleKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
     };
   }, [onClose]);
 
@@ -40,7 +43,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     <div
       ref={dropdownRef}
       className={cn(
-        "absolute z-40 end-0 mt-2 rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark",
+        "absolute z-40 end-0 mt-2 rounded-xl border border-line bg-surface shadow-theme-lg dark:border-line dark:bg-surface",
         className
       )}
     >

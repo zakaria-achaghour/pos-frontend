@@ -56,8 +56,8 @@ export default function PermissionForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Permission Name */}
       <div>
-        <label htmlFor={nameId} className="block text-sm font-medium text-gray-700 mb-1">
-          {t('rbac.permissionForm.name')} <span className="text-red-500">*</span>
+        <label htmlFor={nameId} className="block text-sm font-medium text-fg mb-1">
+          {t('rbac.permissionForm.name')} <span className="text-danger">*</span>
         </label>
         <input
           type="text"
@@ -66,24 +66,24 @@ export default function PermissionForm({
           aria-invalid={getErrorMessage('name') ? true : undefined}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase() })}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            getErrorMessage('name') ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
+            getErrorMessage('name') ? 'border-danger' : 'border-line'
           }`}
           placeholder={t('rbac.permissionForm.namePlaceholder')}
           disabled={isLoading}
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-fg-muted">
           {t('rbac.permissionForm.hint')}
         </p>
         {getErrorMessage('name') && (
-          <p className="mt-1 text-sm text-red-600">{getErrorMessage('name')}</p>
+          <p className="mt-1 text-sm text-danger">{getErrorMessage('name')}</p>
         )}
       </div>
 
       {/* Common Permission Examples */}
-      <div className="bg-blue-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-900 mb-2"><span aria-hidden="true">📝</span> {t('rbac.permissionForm.examples')}</h4>
-        <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+      <div className="bg-primary/10 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-primary mb-2"><span aria-hidden="true">📝</span> {t('rbac.permissionForm.examples')}</h4>
+        <div className="grid grid-cols-2 gap-2 text-xs text-primary">
           <div>• view-menu</div>
           <div>• manage-menu</div>
           <div>• view-orders</div>
@@ -101,14 +101,14 @@ export default function PermissionForm({
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="px-4 py-2 border border-line rounded-lg text-fg hover:bg-bg disabled:opacity-60"
         >
           {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-60"
         >
           {isLoading ? t('rbac.saving') : isEdit ? t('rbac.permissionForm.update') : t('rbac.permissionForm.create')}
         </button>

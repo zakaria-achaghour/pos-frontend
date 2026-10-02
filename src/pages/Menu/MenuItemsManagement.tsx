@@ -114,7 +114,7 @@ export default function MenuItemsManagement() {
   return (
     <div>
       <PageMeta title={t('menuAdmin.metaTitle')} description={t('menuAdmin.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('menuAdmin.breadcrumb')} />
+      <PageBreadcrumb hideTitle pageTitle={t('menuAdmin.breadcrumb')} />
 
       {/* Success Alert */}
       {successMessage && (
@@ -139,46 +139,46 @@ export default function MenuItemsManagement() {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-wrap justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('menuAdmin.heading')}</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-fg">{t('menuAdmin.heading')}</h1>
+          <p className="text-sm text-fg-muted mt-1">
             {t('menuAdmin.subtitle', { total: menuItemStats.total })}
           </p>
         </div>
         <button
           type="button"
           onClick={() => navigate('/menu/items/add')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors font-medium"
         >
           {t('menuAdmin.add')}
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-surface rounded-2xl shadow-sm p-4 border border-line">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div>
-            <label htmlFor={searchId} className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
+            <label htmlFor={searchId} className="block text-sm font-medium text-fg mb-2">{t('common.search')}</label>
             <input
               id={searchId}
               type="text"
               placeholder={t('menuAdmin.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
 
           {/* Category Filter */}
           <div>
-            <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.category')}</label>
+            <label htmlFor={categoryId} className="block text-sm font-medium text-fg mb-2">{t('menuAdmin.category')}</label>
             <select
               id={categoryId}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('menuAdmin.allCategories')}</option>
               {categories.map(cat => (
@@ -189,12 +189,12 @@ export default function MenuItemsManagement() {
 
           {/* Status Filter */}
           <div>
-            <label htmlFor={statusId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.status')}</label>
+            <label htmlFor={statusId} className="block text-sm font-medium text-fg mb-2">{t('menuAdmin.status')}</label>
             <select
               id={statusId}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as MenuItemFilter)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('common.all')}</option>
               <option value="active">{t('menuAdmin.filterActive', { count: menuItemStats.active })}</option>
@@ -204,12 +204,12 @@ export default function MenuItemsManagement() {
 
           {/* Availability Filter */}
           <div>
-            <label htmlFor={availabilityId} className="block text-sm font-medium text-gray-700 mb-2">{t('menuAdmin.availability')}</label>
+            <label htmlFor={availabilityId} className="block text-sm font-medium text-fg mb-2">{t('menuAdmin.availability')}</label>
             <select
               id={availabilityId}
               value={availabilityFilter}
               onChange={(e) => setAvailabilityFilter(e.target.value as 'all' | 'available' | 'unavailable')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('common.all')}</option>
               <option value="available">{t('menuAdmin.filterAvailable', { count: menuItemStats.available })}</option>
@@ -220,7 +220,7 @@ export default function MenuItemsManagement() {
       </div>
 
       {/* Menu Items List */}
-      <div className="bg-white rounded-lg shadow">
+      <div>
         <MenuItemList
           menuItems={filteredMenuItems}
           loading={loading}
@@ -233,8 +233,8 @@ export default function MenuItemsManagement() {
       </div>
 
       {/* Pagination */}
-      {!loading && pagination.total > 0 && (
-        <div className="bg-white rounded-lg shadow dark:bg-gray-900">
+      {!loading && pagination.lastPage > 1 && (
+        <div className="bg-surface rounded-2xl shadow-sm dark:bg-surface border border-line">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}
@@ -262,7 +262,7 @@ export default function MenuItemsManagement() {
             </div>
           }
         >
-          <p className="text-gray-600">{t('menuAdmin.delete.body', { name: itemToDelete.name })}</p>
+          <p className="text-fg-muted">{t('menuAdmin.delete.body', { name: itemToDelete.name })}</p>
         </Modal>
       )}
 
@@ -293,7 +293,7 @@ export default function MenuItemsManagement() {
             </div>
           }
         >
-          <p className="text-gray-600">
+          <p className="text-fg-muted">
             {itemToToggleAvailability.is_available
               ? t('menuAdmin.availabilityToggle.unavailableBody', { name: itemToToggleAvailability.name })
               : t('menuAdmin.availabilityToggle.availableBody', { name: itemToToggleAvailability.name })}
@@ -328,7 +328,7 @@ export default function MenuItemsManagement() {
             </div>
           }
         >
-          <p className="text-gray-600">
+          <p className="text-fg-muted">
             {itemToToggleStatus.is_active
               ? t('menuAdmin.statusToggle.deactivateBody', { name: itemToToggleStatus.name })
               : t('menuAdmin.statusToggle.activateBody', { name: itemToToggleStatus.name })}

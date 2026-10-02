@@ -36,9 +36,9 @@ const CategoryTabsComponent = ({
         disabled={loading}
         onClick={() => onCategoryChange(id)}
         className={twMerge(
-          'min-h-12 shrink-0 rounded-xl px-4 text-base font-semibold transition-colors disabled:opacity-60',
+          'min-h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition-colors disabled:opacity-60',
           vertical ? 'w-full text-start' : 'whitespace-nowrap',
-          selected ? 'bg-primary text-primary-fg' : 'bg-surface text-fg ring-1 ring-line hover:bg-surface-2'
+          selected ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200 dark:bg-brand-500/15 dark:text-brand-300' : 'bg-surface text-fg ring-1 ring-line hover:bg-surface-2'
         )}
       >
         {label}

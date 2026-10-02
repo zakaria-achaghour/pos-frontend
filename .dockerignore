@@ -1,26 +1,55 @@
+# Keep the build context small and free of secrets.
+# The image only needs: package files, src/, public/, index.html, the Vite/TS/ESLint configs,
+# scripts/ (npm run build runs the i18n check) and docker/nginx.conf.
+# Do NOT ignore scripts/ or docker/.
+
 # VCS
 .git
 .gitignore
+.gitattributes
+.github
 
-# Node / Web
+# Dependencies and build output (installed / produced inside the image)
 node_modules
 dist
+dist-ssr
 build
-.cache
-.next
 out
 coverage
-*.log
+.cache
+.next
+*.tsbuildinfo
+.eslintcache
 
-# Editors/OS
+
+# Docker files themselves
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Tests and docs (not needed to build)
+tests
+*.md
+
+# Local tooling and AI-assistant files
+.claude
+.copilot
 .vscode
 .idea
-.DS_Store
+CLAUDE.MD
 
-# Backends you don’t need in this image
+# OS / logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Backend leftovers that don't belong in a frontend image
 vendor
 storage
 public/storage
 tmp
 *.sqlite
-.env*

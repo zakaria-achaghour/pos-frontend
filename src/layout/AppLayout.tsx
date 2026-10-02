@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "../hooks/useThemeRedux";
 import { useAuth } from "../hooks/useAuthRedux";
 import { Suspense } from "react";
@@ -13,6 +13,7 @@ const LayoutContent: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
 
   // Apply theme class to document root for table components
   useEffect(() => {
@@ -29,7 +30,7 @@ const LayoutContent: React.FC = () => {
   // Full-screen layout for kitchen staff and waiters (header only, no sidebar)
   if (isFullScreenRole) {
     return (
-      <div className="min-h-screen bg-bg text-fg transition-colors duration-300">
+      <div className="workspace min-h-screen bg-bg text-fg transition-colors duration-300">
         <AppHeader />
         <div className="p-4">
           <Suspense fallback={<RouteFallback />}>
@@ -43,28 +44,28 @@ const LayoutContent: React.FC = () => {
   // Normal layout for other roles
   return (
 
-    <div className={`min-h-screen md:flex bg-bg text-fg transition-colors duration-300 ${isTablePage ? 'table-management-layout' : ''}`}>
+    <div className={`workspace min-h-screen md:flex bg-bg text-fg transition-colors duration-300 ${isTablePage ? 'table-management-layout' : ''}`}>
       <AppSidebar />
       <Backdrop />
       {/* The sidebar slot already takes its own width in the flex row: no extra margin here */}
       <div className="min-w-0 flex-1">
         <AppHeader />
-        <div className={`p-4 mx-auto max-w-7xl md:p-6 ${isTablePage ? 'table-management-content' : ''
+        <main id="main-content" className={`workspace-content p-4 mx-auto max-w-[1600px] md:p-8 ${isTablePage ? 'table-management-content' : ''
           }`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
+              transition={{ duration: reduceMotion ? 0 : 0.2 }}
             >
               <Suspense fallback={<RouteFallback />}>
             <Outlet />
           </Suspense>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </main>
       </div>
     </div>
   );

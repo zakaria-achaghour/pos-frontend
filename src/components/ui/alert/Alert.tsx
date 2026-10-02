@@ -125,16 +125,16 @@ const Alert: React.FC<AlertProps> = ({
         </div>
 
         <div className="flex-1">
-          <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
+          <h4 className="mb-1 text-sm font-semibold text-fg dark:text-fg">
             {title}
           </h4>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+          <p className="text-sm text-fg-muted dark:text-fg-muted">{message}</p>
 
           {showLink && (
             <Link
               to={linkHref}
-              className="inline-block mt-3 text-sm font-medium text-gray-500 underline dark:text-gray-400"
+              className="inline-block mt-3 text-sm font-medium text-fg-muted underline dark:text-fg-muted"
             >
               {linkText}
             </Link>
@@ -146,7 +146,7 @@ const Alert: React.FC<AlertProps> = ({
             type="button"
             aria-label={t('common.dismiss')}
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-fg-muted hover:text-fg dark:text-fg-muted"
           >
             <span aria-hidden="true">&times;</span>
           </button>

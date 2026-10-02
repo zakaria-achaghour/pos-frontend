@@ -63,63 +63,63 @@ export default function StaffEditForm({
         <Form className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor={fid('first_name')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.firstName')}</label>
+              <label htmlFor={fid('first_name')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.firstName')}</label>
               <Field id={fid('first_name')}
 name="first_name"
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
               />
-              <ErrorMessage name="first_name" component="div" className="text-red-500 text-xs mt-1" />
+              <ErrorMessage name="first_name" component="div" className="text-danger text-xs mt-1" />
               {serverErrors?.first_name && (
-                <p className="text-red-500 text-xs mt-1">{serverErrors.first_name[0]}</p>
+                <p className="text-danger text-xs mt-1">{serverErrors.first_name[0]}</p>
               )}
             </div>
             <div>
-              <label htmlFor={fid('last_name')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.lastName')}</label>
+              <label htmlFor={fid('last_name')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.lastName')}</label>
               <Field id={fid('last_name')}
 name="last_name"
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
               />
-              <ErrorMessage name="last_name" component="div" className="text-red-500 text-xs mt-1" />
+              <ErrorMessage name="last_name" component="div" className="text-danger text-xs mt-1" />
               {serverErrors?.last_name && (
-                <p className="text-red-500 text-xs mt-1">{serverErrors.last_name[0]}</p>
+                <p className="text-danger text-xs mt-1">{serverErrors.last_name[0]}</p>
               )}
             </div>
           </div>
 
           <div>
-            <label htmlFor={fid('email')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.email')}</label>
+            <label htmlFor={fid('email')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.email')}</label>
             <Field id={fid('email')}
 name="email"
               type="email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             />
-            <ErrorMessage name="email" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="email" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.email && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.email[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.email[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor={fid('phone')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.phone')}</label>
+            <label htmlFor={fid('phone')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.phone')}</label>
             <Field id={fid('phone')}
 name="phone"
               type="tel"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             />
-            <ErrorMessage name="phone" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="phone" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.phone && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.phone[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.phone[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor={fid('role')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.position')}</label>
+            <label htmlFor={fid('role')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.position')}</label>
             <Field id={fid('role')}
 as="select"
               name="role"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             >
               {roles.map((r) => (
                 <option value={r} key={r}>
@@ -127,40 +127,40 @@ as="select"
                 </option>
               ))}
             </Field>
-            <ErrorMessage name="role" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="role" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.role && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.role[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.role[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor={fid('salary')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.salary')}</label>
+            <label htmlFor={fid('salary')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.salary')}</label>
             <Field id={fid('salary')}
 name="salary"
               type="number"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             />
-            <ErrorMessage name="salary" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="salary" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.hourly_rate && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.hourly_rate[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.hourly_rate[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor={fid('hireDate')} className="block text-sm font-medium text-gray-700 mb-1">{t('staffAdmin.form.hireDate')}</label>
+            <label htmlFor={fid('hireDate')} className="block text-sm font-medium text-fg mb-1">{t('staffAdmin.form.hireDate')}</label>
             <Field id={fid('hireDate')}
 name="hireDate"
               type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             />
-            <ErrorMessage name="hireDate" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="hireDate" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.hire_date && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.hire_date[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.hire_date[0]}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor={fid('password')} className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={fid('password')} className="block text-sm font-medium text-fg mb-1">
               {t('staffAdmin.form.newPassword')}
             </label>
             <Field
@@ -168,44 +168,44 @@ name="hireDate"
               name="password"
               type="password"
               placeholder={t('staffAdmin.form.newPasswordPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
             />
-            <ErrorMessage name="password" component="div" className="text-red-500 text-xs mt-1" />
+            <ErrorMessage name="password" component="div" className="text-danger text-xs mt-1" />
             {serverErrors?.password && (
-              <p className="text-red-500 text-xs mt-1">{serverErrors.password[0]}</p>
+              <p className="text-danger text-xs mt-1">{serverErrors.password[0]}</p>
             )}
           </div>
 
           {/* Current member info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">{t('staffAdmin.form.currentInfo')}</h4>
+          <div className="bg-bg rounded-lg p-4">
+            <h4 className="font-medium text-fg mb-2">{t('staffAdmin.form.currentInfo')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-600">{t('staffAdmin.details.status')}</span>
+                <span className="text-fg-muted">{t('staffAdmin.details.status')}</span>
                 <span className={`ms-2 px-2 py-1 rounded text-xs ${
-                  member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  member.status === 'active' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
                 }`}>
                   {dynamicT(`staffAdmin.status.${member.status}`, { defaultValue: member.status })}
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">{t('staffAdmin.form.memberSince')}</span>
+                <span className="text-fg-muted">{t('staffAdmin.form.memberSince')}</span>
                 <span className="ms-2 font-medium">{member.hireDate}</span>
               </div>
               <div>
-                <span className="text-gray-600">{t('staffAdmin.card.rating')}</span>
+                <span className="text-fg-muted">{t('staffAdmin.card.rating')}</span>
                 <span className="ms-2 font-medium">⭐ {member.performance.customerRating.toFixed(1)}</span>
               </div>
               <div>
-                <span className="text-gray-600">{t('staffAdmin.form.ordersCompleted')}</span>
+                <span className="text-fg-muted">{t('staffAdmin.form.ordersCompleted')}</span>
                 <span className="ms-2 font-medium">{member.performance.ordersCompleted}</span>
               </div>
             </div>
           </div>
 
           {serverErrors?.user_id && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-700 text-sm">
+            <div className="bg-danger/10 border border-danger/30 rounded-lg p-3">
+              <p className="text-danger text-sm">
                 <strong>{t('staffAdmin.errorTitle')}:</strong> {serverErrors.user_id[0]}
               </p>
             </div>
@@ -215,14 +215,14 @@ name="hireDate"
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              className="flex-1 bg-surface text-fg border border-line py-2 px-4 rounded-lg hover:bg-surface-2 transition-colors"
               disabled={loading || isSubmitting}
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
-              className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover transition-colors"
               disabled={loading || isSubmitting}
             >
               {loading || isSubmitting ? t('staffAdmin.form.updating') : t('staffAdmin.form.submitUpdate')}

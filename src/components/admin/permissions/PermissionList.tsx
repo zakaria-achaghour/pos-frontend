@@ -12,14 +12,14 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
   const { t, i18n } = useTranslation();
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-surface rounded-2xl shadow-sm overflow-x-auto border border-line">
         <div className="animate-pulse p-6 space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center justify-between">
-              <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-5 bg-surface-2 rounded w-1/3"></div>
               <div className="flex gap-2">
-                <div className="h-8 bg-gray-200 rounded w-16"></div>
-                <div className="h-8 bg-gray-200 rounded w-16"></div>
+                <div className="h-8 bg-surface-2 rounded w-16"></div>
+                <div className="h-8 bg-surface-2 rounded w-16"></div>
               </div>
             </div>
           ))}
@@ -30,41 +30,41 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
 
   if (permissions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow border p-12 text-center">
-        <div className="text-gray-400 text-6xl mb-4" aria-hidden="true">🔑</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('rbac.permissionList.emptyTitle')}</h3>
-        <p className="text-gray-600">{t('rbac.permissionList.emptyHint')}</p>
+      <div className="bg-surface rounded-2xl shadow-sm border p-12 text-center">
+        <div className="text-fg-muted text-6xl mb-4" aria-hidden="true">🔑</div>
+        <h3 className="text-lg font-medium text-fg mb-2">{t('rbac.permissionList.emptyTitle')}</h3>
+        <p className="text-fg-muted">{t('rbac.permissionList.emptyHint')}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-surface rounded-2xl shadow-sm overflow-x-auto border border-line">
+      <table className="min-w-full divide-y divide-line">
+        <thead className="bg-bg">
           <tr>
-            <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
               {t('rbac.permissionList.colName')}
             </th>
-            <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
               {t('rbac.permissionList.colCreated')}
             </th>
-            <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-end text-xs font-medium text-fg-muted uppercase tracking-wider">
               {t('rbac.permissionList.colActions')}
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-surface divide-y divide-line">
           {permissions.map((permission) => (
-            <tr key={permission.id} className="hover:bg-gray-50">
+            <tr key={permission.id} className="hover:bg-bg">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                     {permission.name}
                   </span>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-fg-muted">
                 {new Date(permission.created_at).toLocaleDateString(i18n.language)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
@@ -72,14 +72,14 @@ export default function PermissionList({ permissions, loading, onEdit, onDelete 
                   <button
                     type="button"
                     onClick={() => onEdit(permission)}
-                    className="text-blue-600 hover:text-blue-900"
+                    className="text-primary hover:text-primary"
                   >
                     <span aria-hidden="true">✏️</span> {t('rbac.edit')}
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(permission.id, permission.name)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-danger hover:text-danger"
                   >
                     <span aria-hidden="true">🗑️</span> {t('rbac.delete')}
                   </button>

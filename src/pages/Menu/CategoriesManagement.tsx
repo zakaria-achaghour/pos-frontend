@@ -120,7 +120,7 @@ export default function CategoriesManagement() {
   return (
     <div>
       <PageMeta title={t('categoriesAdmin.metaTitle')} description={t('categoriesAdmin.metaDescription')} />
-      <PageBreadcrumb pageTitle={t('categoriesAdmin.breadcrumb')} />
+      <PageBreadcrumb hideTitle pageTitle={t('categoriesAdmin.breadcrumb')} />
 
       {/* Success Alert */}
       {successMessage && (
@@ -145,46 +145,46 @@ export default function CategoriesManagement() {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-wrap justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('categoriesAdmin.heading')}</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-fg">{t('categoriesAdmin.heading')}</h1>
+          <p className="text-sm text-fg-muted mt-1">
             {t('categoriesAdmin.subtitle', { total: categoryStats.total })}
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors font-medium"
         >
           {t('categoriesAdmin.add')}
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-surface rounded-2xl shadow-sm p-4 border border-line">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div>
-            <label htmlFor={searchId} className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
+            <label htmlFor={searchId} className="block text-sm font-medium text-fg mb-2">{t('common.search')}</label>
             <input
               id={searchId}
               type="text"
               placeholder={t('categoriesAdmin.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
 
           {/* Status Filter */}
           <div>
-            <label htmlFor={statusId} className="block text-sm font-medium text-gray-700 mb-2">{t('categoriesAdmin.status')}</label>
+            <label htmlFor={statusId} className="block text-sm font-medium text-fg mb-2">{t('categoriesAdmin.status')}</label>
             <select
               id={statusId}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as CategoryFilter)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('categoriesAdmin.filterAll', { count: categoryStats.total })}</option>
               <option value="active">{t('categoriesAdmin.filterActive', { count: categoryStats.active })}</option>
@@ -194,7 +194,7 @@ export default function CategoriesManagement() {
 
           {/* Stats */}
           <div className="flex items-end">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-fg-muted">
               {t('categoriesAdmin.showing', { shown: filteredCategories.length, total: categoryStats.total })}
             </div>
           </div>
@@ -202,7 +202,7 @@ export default function CategoriesManagement() {
       </div>
 
       {/* Categories List */}
-      <div className="bg-white rounded-lg shadow">
+      <div>
         <CategoryList
           categories={filteredCategories}
           loading={loading}
@@ -214,8 +214,8 @@ export default function CategoriesManagement() {
       </div>
 
       {/* Pagination */}
-      {!loading && pagination.total > 0 && (
-        <div className="bg-white rounded-lg shadow dark:bg-gray-900">
+      {!loading && pagination.lastPage > 1 && (
+        <div className="bg-surface rounded-2xl shadow-sm dark:bg-surface border border-line">
           <PaginationWithText
             totalPages={pagination.lastPage}
             initialPage={pagination.currentPage}
@@ -252,7 +252,7 @@ export default function CategoriesManagement() {
             </div>
           }
         >
-          <p className="text-gray-600">{t('categoriesAdmin.delete.body', { name: categoryToDelete.name })}</p>
+          <p className="text-fg-muted">{t('categoriesAdmin.delete.body', { name: categoryToDelete.name })}</p>
         </Modal>
       )}
 
@@ -283,7 +283,7 @@ export default function CategoriesManagement() {
             </div>
           }
         >
-          <p className="text-gray-600">
+          <p className="text-fg-muted">
             {categoryToToggle.is_active
               ? t('categoriesAdmin.toggle.deactivateBody', { name: categoryToToggle.name })
               : t('categoriesAdmin.toggle.activateBody', { name: categoryToToggle.name })}

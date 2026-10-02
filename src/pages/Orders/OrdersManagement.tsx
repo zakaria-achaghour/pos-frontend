@@ -142,7 +142,7 @@ export default function OrdersManagement() {
   return (
     <div>
       <PageMeta title={t('orderList.meta.title')} description={t('orderList.meta.description')} />
-      <PageBreadcrumb pageTitle={t('orderList.title')} />
+      <PageBreadcrumb hideTitle pageTitle={t('orderList.title')} />
 
       {/* Success/Error Messages */}
       {successMessage && (
@@ -177,18 +177,18 @@ export default function OrdersManagement() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('orderList.title')}</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-fg">{t('orderList.title')}</h1>
+          <p className="text-fg-muted mt-1">
             {t('orderList.subtitle', { count: orderStats.total })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <label className="flex min-h-11 items-center gap-2 text-sm text-gray-700 cursor-pointer px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <label className="flex min-h-11 items-center gap-2 text-sm text-fg cursor-pointer px-3 py-2 bg-bg rounded-lg hover:bg-surface-2 transition-colors">
             <input
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-primary border-line rounded focus:ring-primary"
             />
             <span>{t('orderList.autoRefresh')}</span>
           </label>
@@ -203,62 +203,62 @@ export default function OrdersManagement() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('orderList.stats.total')}</div>
-          <div className="text-2xl font-bold text-gray-900">{orderStats.total}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('orderList.stats.total')}</div>
+          <div className="text-2xl font-bold text-fg">{orderStats.total}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('orderList.stats.active')}</div>
-          <div className="text-2xl font-bold text-blue-600">{orderStats.active}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('orderList.stats.active')}</div>
+          <div className="text-2xl font-bold text-primary">{orderStats.active}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.pending')}</div>
-          <div className="text-2xl font-bold text-yellow-600">{orderStats.pending}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.pending')}</div>
+          <div className="text-2xl font-bold text-warning">{orderStats.pending}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.preparing')}</div>
-          <div className="text-2xl font-bold text-orange-600">{orderStats.preparing}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.preparing')}</div>
+          <div className="text-2xl font-bold text-warning">{orderStats.preparing}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.ready')}</div>
-          <div className="text-2xl font-bold text-emerald-600">{orderStats.ready}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.ready')}</div>
+          <div className="text-2xl font-bold text-success">{orderStats.ready}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.served')}</div>
-          <div className="text-2xl font-bold text-teal-600">{orderStats.served}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.served')}</div>
+          <div className="text-2xl font-bold text-success">{orderStats.served}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.completed')}</div>
-          <div className="text-2xl font-bold text-green-600">{orderStats.completed}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.completed')}</div>
+          <div className="text-2xl font-bold text-success">{orderStats.completed}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">{t('status.cancelled')}</div>
-          <div className="text-2xl font-bold text-red-600">{orderStats.cancelled}</div>
+        <div className="bg-surface rounded-2xl shadow-sm p-4 border border-line">
+          <div className="text-sm text-fg-muted">{t('status.cancelled')}</div>
+          <div className="text-2xl font-bold text-danger">{orderStats.cancelled}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-surface rounded-2xl shadow-sm p-4 border border-line">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('common.search')}</label>
+            <label className="block text-sm font-medium text-fg mb-2">{t('common.search')}</label>
             <input
               type="text"
               placeholder={t('orderList.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('orderList.filters.status')}</label>
+            <label className="block text-sm font-medium text-fg mb-2">{t('orderList.filters.status')}</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as OrderFilter)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('orderList.filters.allStatus')}</option>
               <option value="active">{t('orderList.stats.active')} ({orderStats.active})</option>
@@ -274,11 +274,11 @@ export default function OrdersManagement() {
 
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('order.typeLabel')}</label>
+            <label className="block text-sm font-medium text-fg mb-2">{t('order.typeLabel')}</label>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as OrderTypeFilter)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('orderList.filters.allTypes')}</option>
               <option value="dine-in">{t('order.type.dineIn')}</option>
@@ -289,11 +289,11 @@ export default function OrdersManagement() {
 
           {/* Table Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('orderList.filters.table')}</label>
+            <label className="block text-sm font-medium text-fg mb-2">{t('orderList.filters.table')}</label>
             <select
               value={tableFilter}
               onChange={(e) => setTableFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="all">{t('orderList.filters.allTables')}</option>
               {/* TODO: Add table options from tables API */}
@@ -303,7 +303,7 @@ export default function OrdersManagement() {
       </div>
 
       {/* Orders List */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line">
         <OrderList
           orders={filteredOrders}
           loading={loading}
@@ -346,7 +346,7 @@ export default function OrdersManagement() {
             </>
           }
         >
-          <p className="text-gray-600">
+          <p className="text-fg-muted">
             <Trans
               i18nKey="orderList.cancelModal.body"
               values={{ order: orderToDelete.orderNumber || `#${orderToDelete.id}` }}
@@ -375,7 +375,7 @@ export default function OrdersManagement() {
             </>
           }
         >
-          <p className="text-gray-600">
+          <p className="text-fg-muted">
             <Trans
               i18nKey="orderList.statusModal.body"
               values={{

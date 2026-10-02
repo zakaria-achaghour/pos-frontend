@@ -30,10 +30,10 @@ export default function RestaurantFilters({
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-4">
+    <div className="bg-surface rounded-2xl shadow-sm p-6 space-y-4 border border-line">
       {/* Search Bar */}
       <div>
-        <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="search" className="block text-sm font-medium text-fg mb-2">
           {t('tenants.filters.search')}
         </label>
         <div className="relative">
@@ -43,17 +43,17 @@ export default function RestaurantFilters({
             placeholder={t('tenants.filters.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full ps-10 pe-4 py-2 border border-line rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
           />
           <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
-            <span className="text-gray-400" aria-hidden="true">🔍</span>
+            <span className="text-fg-muted" aria-hidden="true">🔍</span>
           </div>
         </div>
       </div>
 
       {/* Status Filter Buttons */}
       <div>
-        <span id="tenant-status-filter-label" className="block text-sm font-medium text-gray-700 mb-2">
+        <span id="tenant-status-filter-label" className="block text-sm font-medium text-fg mb-2">
           {t('tenants.filters.byStatus')}
         </span>
         <div className="flex flex-wrap gap-2" role="group" aria-labelledby="tenant-status-filter-label">
@@ -65,8 +65,8 @@ export default function RestaurantFilters({
               onClick={() => onStatusFilterChange(filter.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 statusFilter === filter.key
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-surface-2 text-fg hover:bg-surface-2'
               }`}
             >
               <span aria-hidden="true">{filter.icon}</span> {filter.label}
@@ -82,18 +82,18 @@ export default function RestaurantFilters({
 
       {/* Stats Summary */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-line">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-500">{t('tenants.filters.total')}</div>
+            <div className="text-2xl font-bold text-fg">{stats.total}</div>
+            <div className="text-sm text-fg-muted">{t('tenants.filters.total')}</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            <div className="text-sm text-gray-500">{t('tenants.status.active')}</div>
+            <div className="text-2xl font-bold text-success">{stats.active}</div>
+            <div className="text-sm text-fg-muted">{t('tenants.status.active')}</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.inactive}</div>
-            <div className="text-sm text-gray-500">{t('tenants.status.inactive')}</div>
+            <div className="text-2xl font-bold text-danger">{stats.inactive}</div>
+            <div className="text-sm text-fg-muted">{t('tenants.status.inactive')}</div>
           </div>
         </div>
       )}

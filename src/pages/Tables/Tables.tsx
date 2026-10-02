@@ -155,7 +155,7 @@ export default function Tables() {
   return (
     <div className={isWaiter ? 'pb-28' : ''}>
       <PageMeta title={`${title} | POS`} description={title} />
-      {!isWaiter && <PageBreadcrumb pageTitle={title} />}
+      {!isWaiter && <PageBreadcrumb hideTitle pageTitle={title} />}
       {isWaiter && <h1 className="mb-4 text-2xl font-bold text-fg">{title}</h1>}
 
       {location.state?.message && (

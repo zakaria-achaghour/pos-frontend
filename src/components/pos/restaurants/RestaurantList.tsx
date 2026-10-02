@@ -30,15 +30,15 @@ export default function RestaurantList({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success';
       case 'inactive':
-        return 'bg-red-100 text-red-800';
+        return 'bg-danger/10 text-danger';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
       case 'suspended':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-2 text-fg';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-2 text-fg';
     }
   };
 
@@ -46,10 +46,10 @@ export default function RestaurantList({
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div key={i} className="bg-surface rounded-2xl shadow-sm p-6 animate-pulse border border-line">
+            <div className="h-6 bg-surface-2 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-surface-2 rounded w-2/3 mb-2"></div>
+            <div className="h-4 bg-surface-2 rounded w-1/2"></div>
           </div>
         ))}
       </div>
@@ -58,10 +58,10 @@ export default function RestaurantList({
 
   if (restaurants.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="text-gray-400 text-6xl mb-4" aria-hidden="true">🏪</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('tenants.list.emptyTitle')}</h3>
-        <p className="text-gray-500">{t('tenants.list.emptyHint')}</p>
+      <div className="bg-surface rounded-2xl shadow-sm p-8 text-center border border-line">
+        <div className="text-fg-muted text-6xl mb-4" aria-hidden="true">🏪</div>
+        <h3 className="text-lg font-medium text-fg mb-2">{t('tenants.list.emptyTitle')}</h3>
+        <p className="text-fg-muted">{t('tenants.list.emptyHint')}</p>
       </div>
     );
   }
@@ -87,17 +87,17 @@ export default function RestaurantList({
 
   // Table view
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-surface rounded-2xl shadow-sm overflow-x-auto border border-line">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-bg border-b border-line">
             <tr>
               {onSelectRestaurant && (
                 <th className="px-6 py-3 text-start">
                   <input
                     type="checkbox"
                     aria-label={t('tenants.list.selectAll')}
-                    className="h-4 w-4 text-blue-600 rounded"
+                    className="h-4 w-4 text-primary rounded"
                     checked={restaurants.every(r => selectedRestaurants.includes(r.id))}
                     ref={node => { if (node) node.indeterminate = restaurants.some(r => selectedRestaurants.includes(r.id)) && !restaurants.every(r => selectedRestaurants.includes(r.id)); }}
                     onChange={(e) => {
@@ -107,31 +107,31 @@ export default function RestaurantList({
                   />
                 </th>
               )}
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colId')}
               </th>
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colName')}
               </th>
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colCity')}
               </th>
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colOwner')}
               </th>
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colStatus')}
               </th>
-              <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-start text-xs font-medium text-fg-muted uppercase tracking-wider">
                 {t('tenants.list.colActions')}
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface divide-y divide-line">
             {restaurants.map((restaurant) => {
               const status = restaurant.status || (restaurant.is_active ? 'active' : 'inactive');
               return (
-                <tr key={restaurant.id} className="hover:bg-gray-50">
+                <tr key={restaurant.id} className="hover:bg-bg">
                   {onSelectRestaurant && (
                     <td className="px-6 py-4">
                       <input
@@ -139,23 +139,23 @@ export default function RestaurantList({
                         checked={selectedRestaurants.includes(restaurant.id)}
                         onChange={() => onSelectRestaurant(restaurant.id)}
                         aria-label={t('tenants.card.select', { name: restaurant.name })}
-                        className="h-4 w-4 text-blue-600 rounded"
+                        className="h-4 w-4 text-primary rounded"
                       />
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-fg">
                     #{restaurant.id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{restaurant.name}</div>
+                    <div className="text-sm font-medium text-fg">{restaurant.name}</div>
                     {restaurant.email && (
-                      <div className="text-sm text-gray-500">{restaurant.email}</div>
+                      <div className="text-sm text-fg-muted">{restaurant.email}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-fg-muted">
                     {restaurant.city || t('tenants.notAvailable')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-fg-muted">
                     {restaurant.owner_name || t('tenants.notAvailable')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -168,7 +168,7 @@ export default function RestaurantList({
                       {onView && (
                         <button
                           onClick={() => onView(restaurant.id)}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-primary hover:text-primary font-medium"
                         >
                           {t('tenants.actions.view')}
                         </button>
@@ -176,7 +176,7 @@ export default function RestaurantList({
                       {onEdit && (
                         <button
                           onClick={() => onEdit(restaurant.id)}
-                          className="text-green-600 hover:text-green-800 font-medium"
+                          className="text-success hover:text-success font-medium"
                         >
                           {t('tenants.actions.edit')}
                         </button>
@@ -186,8 +186,8 @@ export default function RestaurantList({
                           onClick={() => onStatusChange(restaurant.id)}
                           className={`font-medium ${
                             status === 'active'
-                              ? 'text-orange-600 hover:text-orange-800'
-                              : 'text-green-600 hover:text-green-800'
+                              ? 'text-warning hover:text-warning'
+                              : 'text-success hover:text-success'
                           }`}
                         >
                           {status === 'active' ? t('tenants.actions.deactivate') : t('tenants.actions.activate')}
@@ -196,7 +196,7 @@ export default function RestaurantList({
                       {onDelete && (
                         <button
                           onClick={() => onDelete(restaurant.id)}
-                          className="text-red-600 hover:text-red-800 font-medium"
+                          className="text-danger hover:text-danger font-medium"
                         >
                           {t('tenants.actions.delete')}
                         </button>

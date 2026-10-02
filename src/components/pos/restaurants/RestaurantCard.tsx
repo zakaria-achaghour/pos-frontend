@@ -25,15 +25,15 @@ export default function RestaurantCard({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success';
       case 'inactive':
-        return 'bg-red-100 text-red-800';
+        return 'bg-danger/10 text-danger';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
       case 'suspended':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-2 text-fg';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-2 text-fg';
     }
   };
 
@@ -41,8 +41,8 @@ export default function RestaurantCard({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow border-2 ${
-        isSelected ? 'border-blue-500' : 'border-transparent'
+      className={`bg-surface rounded-lg shadow hover:shadow-lg transition-shadow border-2 ${
+        isSelected ? 'border-primary' : 'border-transparent'
       }`}
     >
       <div className="p-6">
@@ -55,15 +55,15 @@ export default function RestaurantCard({
                 checked={isSelected}
                 onChange={onSelect}
                 aria-label={t('tenants.card.select', { name: restaurant.name })}
-                className="mt-1 h-4 w-4 text-blue-600 rounded"
+                className="mt-1 h-4 w-4 text-primary rounded"
               />
             )}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className="text-lg font-semibold text-fg mb-1">
                 {restaurant.name}
               </h3>
               {restaurant.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">
+                <p className="text-sm text-fg-muted line-clamp-2">
                   {restaurant.description}
                 </p>
               )}
@@ -77,25 +77,25 @@ export default function RestaurantCard({
         {/* Restaurant details */}
         <div className="space-y-2 mb-4">
           {restaurant.city && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-fg-muted">
               <span className="me-2" aria-hidden="true">📍</span>
               <span>{restaurant.city}</span>
             </div>
           )}
           {restaurant.phone && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-fg-muted">
               <span className="me-2" aria-hidden="true">📞</span>
               <span>{restaurant.phone}</span>
             </div>
           )}
           {restaurant.email && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-fg-muted">
               <span className="me-2" aria-hidden="true">📧</span>
               <span>{restaurant.email}</span>
             </div>
           )}
           {restaurant.owner_name && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-fg-muted">
               <span className="me-2" aria-hidden="true">👤</span>
               <span>{t('tenants.card.owner', { name: restaurant.owner_name })}</span>
             </div>
@@ -103,22 +103,22 @@ export default function RestaurantCard({
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-b border-gray-100">
+        <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-b border-line">
           <div className="text-center">
-            <div className="text-sm text-gray-500">{t('tenants.card.tables')}</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-sm text-fg-muted">{t('tenants.card.tables')}</div>
+            <div className="text-lg font-semibold text-fg">
               {restaurant.tableCount || 0}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-500">{t('tenants.card.staff')}</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-sm text-fg-muted">{t('tenants.card.staff')}</div>
+            <div className="text-lg font-semibold text-fg">
               {restaurant.staffCount || 0}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-500">{t('tenants.card.rating')}</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-sm text-fg-muted">{t('tenants.card.rating')}</div>
+            <div className="text-lg font-semibold text-fg">
               <span aria-hidden="true">⭐</span> {restaurant.averageRating?.toFixed(1) || t('tenants.notAvailable')}
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function RestaurantCard({
           {onView && (
             <button
               onClick={() => onView(restaurant.id)}
-              className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+              className="flex-1 px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/15 transition-colors text-sm font-medium"
             >
               {t('tenants.actions.view')}
             </button>
@@ -137,7 +137,7 @@ export default function RestaurantCard({
           {onEdit && (
             <button
               onClick={() => onEdit(restaurant.id)}
-              className="flex-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+              className="flex-1 px-3 py-2 bg-success/10 text-success rounded-lg hover:bg-success/15 transition-colors text-sm font-medium"
             >
               {t('tenants.actions.edit')}
             </button>
@@ -147,8 +147,8 @@ export default function RestaurantCard({
               onClick={() => onStatusChange(restaurant.id)}
               className={`flex-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
                 status === 'active'
-                  ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+                  ? 'bg-warning/10 text-warning hover:bg-warning/15'
+                  : 'bg-success/10 text-success hover:bg-success/15'
               }`}
             >
               {status === 'active' ? t('tenants.actions.deactivate') : t('tenants.actions.activate')}
@@ -157,7 +157,7 @@ export default function RestaurantCard({
           {onDelete && (
             <button
               onClick={() => onDelete(restaurant.id)}
-              className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+              className="px-3 py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/15 transition-colors text-sm font-medium"
             >
               {t('tenants.actions.delete')}
             </button>

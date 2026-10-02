@@ -1543,5 +1543,23 @@
     "unique": "This value is already in use.",
     "email": "Enter a valid email address.",
     "number": "Enter a valid number."
+  },
+  "ux": {
+    "brand": "Service POS",
+    "eyebrow": "YOUR RESTAURANT, CONNECTED",
+    "headline": "Great service starts here.",
+    "intro": "From the first order to the last table. One clear workspace for your entire team.",
+    "workspace": "Restaurant workspace",
+    "welcome": "Welcome back",
+    "loginHelp": "Sign in to your account to start your service.",
+    "demo": "Explore a demo account",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "service": "Made for every service",
+    "overview": "Your service at a glance",
+    "confirm": "Confirm",
+    "pagination": "Pagination",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

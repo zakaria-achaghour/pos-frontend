@@ -1566,5 +1566,23 @@
     "unique": "Cette valeur est déjà utilisée.",
     "email": "Saisissez une adresse e-mail valide.",
     "number": "Saisissez un nombre valide."
+  },
+  "ux": {
+    "brand": "Service POS",
+    "eyebrow": "VOTRE RESTAURANT, CONNECTÉ",
+    "headline": "Un service réussi commence ici.",
+    "intro": "De la première commande à la dernière table. Un espace clair pour toute votre équipe.",
+    "workspace": "Espace restaurant",
+    "welcome": "Bon retour",
+    "loginHelp": "Connectez-vous à votre compte pour commencer votre service.",
+    "demo": "Explorer un compte de démonstration",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "service": "Pensé pour chaque service",
+    "overview": "Votre service en un coup d’œil",
+    "confirm": "Confirmer",
+    "pagination": "Pagination",
+    "previous": "Précédent",
+    "next": "Suivant"
   }
 }

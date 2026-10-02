@@ -37,7 +37,7 @@ export default function StaffFilters({
   ];
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-surface p-4 rounded-2xl shadow-sm border border-line">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         {/* View Mode Toggle */}
         <div className="flex gap-2">
@@ -49,8 +49,8 @@ export default function StaffFilters({
               onClick={() => onViewModeChange(mode.key)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 viewMode === mode.key
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-2 text-fg hover:bg-surface-2'
               }`}
             >
               <span aria-hidden="true">{mode.icon}</span> {t(mode.labelKey)}
@@ -64,7 +64,7 @@ export default function StaffFilters({
             value={roleFilter}
             aria-label={t('staffAdmin.filters.roleLabel')}
             onChange={(e) => onRoleFilterChange(e.target.value as StaffFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="px-3 py-2 border border-line rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
           >
             {roleFilters.map((filter) => (
               <option key={filter.value} value={filter.value}>
@@ -76,7 +76,7 @@ export default function StaffFilters({
           <button
             type="button"
             onClick={onAddStaff}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-hover transition-colors font-medium"
           >
             <span aria-hidden="true">➕</span> {t('staffAdmin.filters.add')}
           </button>

@@ -48,7 +48,7 @@ function KdsTicketComponent({ ticket, now, isNew, busy, onStart, onComplete }: K
     <article
       aria-label={`${where} #${ticket.ticket_number}`}
       className={twMerge(
-        'flex flex-col overflow-hidden rounded-2xl border-2 bg-surface text-fg shadow-sm',
+        'flex flex-col overflow-hidden rounded-xl border border-t-4 bg-surface text-fg shadow-sm',
         status.border,
         isNew && 'ring-4 ring-primary/60'
       )}
@@ -56,7 +56,7 @@ function KdsTicketComponent({ ticket, now, isNew, busy, onStart, onComplete }: K
       {/* Header: where + live timer; background follows ticket age */}
       <header className={twMerge('flex items-center justify-between gap-3 px-4 py-3', age.header)}>
         <div className="min-w-0">
-          <p className="truncate text-kds-qty font-black leading-tight">{where}</p>
+          <p className="truncate text-xl font-semibold leading-tight">{where}</p>
           <p className="text-sm opacity-80">
             {t('kitchen.ticket', { n: ticket.ticket_number })}
             {order?.customer_name ? ` · ${order.customer_name}` : ''}
@@ -68,7 +68,7 @@ function KdsTicketComponent({ ticket, now, isNew, busy, onStart, onComplete }: K
               {t('kitchen.new')}
             </span>
           )}
-          <p className="text-kds-timer font-bold tabular-nums" aria-label={t('kitchen.elapsed')}>
+          <p className="text-xl font-semibold tabular-nums" aria-label={t('kitchen.elapsed')}>
             {formatTimer(elapsedMs)}
           </p>
         </div>
@@ -99,8 +99,8 @@ function KdsTicketComponent({ ticket, now, isNew, busy, onStart, onComplete }: K
           ticket.items.map((item) => (
             <li key={item.id} className="py-3">
               <div className="flex items-baseline gap-3">
-                <span className="min-w-[2.5ch] text-kds-qty font-black tabular-nums">{item.quantity}×</span>
-                <span className="text-kds-item font-semibold leading-snug">{item.menu_item?.name}</span>
+                <span className="min-w-[2.5ch] text-xl font-semibold tabular-nums">{item.quantity}×</span>
+                <span className="text-lg font-medium leading-snug">{item.menu_item?.name}</span>
               </div>
               {item.removed_ingredients && item.removed_ingredients.length > 0 && (
                 <p className="mt-1 ps-[3.5ch] text-lg font-bold uppercase text-danger">

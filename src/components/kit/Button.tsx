@@ -22,7 +22,7 @@ const VARIANT: Record<Variant, string> = {
 
 const SIZE: Record<Size, string> = {
   md: 'min-h-11 px-4 text-sm',
-  lg: 'min-h-touch px-5 text-base',
+  lg: 'min-h-touch px-5 text-sm',
   xl: 'min-h-14 px-6 text-lg',
 };
 
@@ -37,7 +37,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={twMerge(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors',
+        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT[variant],
         SIZE[size],
